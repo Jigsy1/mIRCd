@@ -5,20 +5,17 @@ Not meant to be used as a proper IRCd since there's far better alternatives for 
 
 Mainly doing this for my own personal amusement.
 
-That said, this repo is currently a placeholder as the script is <a href="https://i.imgur.com/NkiGm8f.png">a work in progress</a>.
-
 # Progress
 
-A good majority of commands have been written (but not finished - E.g. unfinished error response parsing), while others have been started but not finished (E.g. OPMODE), and others don't exist yet (E.g. DIE)
+Seeing as I haven't touched this in about two months, I'm just going to upload what I've done.
 
-However, I believe last Thursday that the script in question might have had a negative effect on my hard drive.
+A lot of commands haven't been finished (response wise, and the like), and there's no error checking. (Esp. with the config.)
 
-I'm sure I heard a dreaded click of death - though it could have been me scrolling with my mouse - and the Read Error Rate is being incredibly idiosyncratic - 10,008 > 8 > 8,000 > 0 > 9 > 9,000 > etc. - at the moment.
+You can however join channels, part channels, disconnect, set modes (to an extent), talk, etc.
 
-The S.M.A.R.T. health status is good, though.
+If you want to try the IRCd for yourself, tweak the config, then do /mIRCd.load followed by /mIRCd.start.
 
-As a result, I'm currently debating on if I should:
+Then just connect to localhost on the port(s) used. E.g. /server localhost 6667
 
-1. Risk the code as is
-2. Split the commands into separate scripts such as mIRCd_MODE.mrc, mIRCd_PRIVMSG.mrc, etc. and test that
-3. Or just abandon the project and just publish the unfinished code (which is currently under 90 KB)
+
+-Jigsy
