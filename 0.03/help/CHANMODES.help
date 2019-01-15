@@ -1,0 +1,30 @@
+Modes that do not require any extra arguments:
+--------------------------------------------------
++i - Channel is invite only.
++m - Channel is moderated. The user requires status (@, %, +) in order to talk.
++n - No external messages are permitted. The user must be on the channel in order to talk.
++p - Channel is private.
++s - Channel is secret.
++t - Only ops are allowed to (un)set the topic on the channel.
++u - No part/quit messages are displayed. A generic message is shown instead. (This does not override messages like ping timeouts.)
++N - Any /notice(s) to the channel are blocked.
++C - Any /ctcp(s) to the channel are blocked.
++S - Strip any control codes (bold, colors, reverse, underline) from incoming messages.
+
+Note: +p and +s cannot be set together.
+
+Modes that require arguments:
+------------------------------
++b <n!u@h> - Bans an address from the channel, preventing any matches from joining. Any matches actually in the channel won't be able to speak.
++h <nick>  - Grants half operator status to a user. (%)
++k <key>   - Sets a key on a channel. Those who wish to /join must know the key. Once set, this mode must be unset in order to assign a new key.
++l <N>     - Limits the channel to N users.
++o <nick>  - Grants operator status to a user. (@)
++v <nick>  - Grants voice status to a user. (+)
+
+Modes that can only be set by an IRC operator:
+--------------------------------------------------
++O - Only IRC operators can join the channel.
++P - The channel is persistant. After the last user has left, the channel will not be destroyed.
+
+To see a list of available channel mode(s), do: /<helpCommand> USERMODES

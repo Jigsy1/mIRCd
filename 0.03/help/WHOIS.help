@@ -1,0 +1,6 @@
+<thisCommand> <nick[,nick,nick,...]>
+
+Returns information about a user such as the channel(s) they're on, if they're an IRC operator, usermode(s), etc.
+
+/<thisCommand> Jigsy
+/<thisCommand> Jigsy,Adam

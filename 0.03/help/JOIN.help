@@ -1,0 +1,16 @@
+<thisCommand> <#chan[,#chan,#chan,...]> [<key[,key,key,...]>]
+
+Attempt to join a channel or channel(s).
+
+If the channel does not exist, it will be created. Otherwise you will be added into the channel(s) userbase.
+
+However, certain modes might prevent you from joining the channel.
+
++b = Means you are banned from entering the channel. (Or the channel is a blacklisted term.)
++i = Means you need to be invited to the channel first.
++k = Means you need to enter a key in order to join. This is a comma separated delimeter after the channel(s).
++l = Means the channel is full.
++O = Means you need to be an IRC operator.
+
+/<thisCommand> #localhost
+/<thisCommand> #Doom1,#Doom2,#Doom3 BLUE_KEY,RED_KEY,YELLOW_KEY

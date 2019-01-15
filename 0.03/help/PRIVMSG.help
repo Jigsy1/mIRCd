@@ -1,0 +1,7 @@
+<thisCommand> <target[,target,target,...]> <message>
+
+Sends a message to the specified target(s).
+
+/<thisCommand> #localhost Hi!
+/<thisCommand> Jigsy Are you around?
+/<thisCommand> #Help,#Opers,Alice I need some help!

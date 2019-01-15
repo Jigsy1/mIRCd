@@ -1,0 +1,6 @@
+<thisCommand> [<nick> <#chan>]
+
+Invites a user to join a channel. If no arguments are specified, all outstanding invites you have are listed.
+
+<thisCommand>
+<thisCommand> Mary #Opers

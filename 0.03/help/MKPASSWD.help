@@ -1,0 +1,5 @@
+<thisCommand> <text>
+
+Encrypts the specified text and returns a result to be used in the [Opers] section of the config.
+
+/<thisCommand> mys3cretP@ssw0rd

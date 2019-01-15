@@ -1,0 +1,6 @@
+<thisCommand> <#chan> <nick> [<reason>]
+
+Removes a user from a channel with the specified reason.
+
+/<thisCommand> #localhost John
+/<thisCommand> #localhost Sue Go spam elsewhere.

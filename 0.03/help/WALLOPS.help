@@ -1,0 +1,7 @@
+<thisCommand> <message>
+
+Sends a message to all users on the network who have the usermode(s) +o and +w.
+
+/<thisCommand> Help!
+
+Note: This command can only be used by IRC operators.
