@@ -1,0 +1,11 @@
+mIRCd <thisVersion> by Jigsy - http://github.com/Jigsy1/
+
+WiZ (Jarkko Oikarinen)  - For inventing IRC. Which is still the superior form of multi-user communication.
+Khaled Mardam-Bey       - For inventing mIRC.
+
+Hero_Number_Zero (Dave) - For once sharing some mIRC code with me which allowed conversion of P10 numerics to numbers, and vice versa.
+Vladdy (M. L.)          - For once sharing "ircserver.mrc" with me - a script now lost to time - over a decade ago, which showed that it was possible to script an IRCd in mIRC.
+
+And the following people on the mIRC forums who helped in some minor way(s).
+--------------------------------------------------------------------------------
+maroon, Raccoon
