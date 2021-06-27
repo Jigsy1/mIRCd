@@ -19,6 +19,10 @@ Then just connect to localhost on the port(s) used. E.g. /server localhost 6667
 
 # 2021:
 
-I have decided to try and attempt this again from scratch. Scripts are separated this time, and I am currently focusing on connection handling first before jumping ahead like I usually have a bad habit of doing.
+I have decided to try and attempt this again from scratch.
+
+Scripts are separated this time, and I am currently focusing on connection handling first before jumping ahead like I usually have a bad habit of doing.
+
+27/06/2021: Connection handling is coming along nicely, as well as "Ping Timeout" and Socket errors.
 
 -Jigsy
