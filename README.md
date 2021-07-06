@@ -17,12 +17,14 @@ If you want to try the IRCd for yourself, tweak the config, then do /mIRCd.load 
 
 Then just connect to localhost on the port(s) used. E.g. /server localhost 6667
 
-# 2021:
+# 2021 (Revision 2):
 
 I have decided to try and attempt this again from scratch.
 
 Scripts are separated this time, and I am currently focusing on connection handling first before jumping ahead like I usually have a bad habit of doing.
 
 27/06/2021: Connection handling is coming along nicely, as well as "Ping Timeout" and Socket errors.
+
+06/07/2021: A good majority of stuff has been completed, channel handling and so forth. A bunch of commands need finishing, and I might recode some of the commands to make them suck less or to replace them with non-nested code. (Looking at you, MODE parsing!)
 
 -Jigsy
