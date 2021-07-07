@@ -27,4 +27,6 @@ Scripts are separated this time, and I am currently focusing on connection handl
 
 06/07/2021: A good majority of stuff has been completed, channel handling and so forth. A bunch of commands need finishing, and I might recode some of the commands to make them suck less or to replace them with non-nested code. (Looking at you, MODE parsing!)
 
+08/07/2021: MODE parsing completely rewritten - it still follows the same rules as v0 (unused), but I've tried to condense it into one group. Also wrote a n!u@h maker, so +b supported. (Which means SILENCE, SHUN and a few other things should now be possible.)
+
 -Jigsy
