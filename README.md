@@ -19,4 +19,6 @@ Scripts are separated this time, and I am currently focusing on connection handl
 
 15/07/21: With the exception of the REHASH command, everything possible is now done. G-line works (sans $RrealName), shun works (ditto), Z-line works. Should hopefully be able to get this released by the end of the month.
 
+<img src="https://i.imgur.com/NP4zPYU.png" height="150" /> <img src="https://i.imgur.com/mzbehCS.png" height="150" /><img src="https://i.imgur.com/Dm2b6jR.png" height="150" /><img src="https://i.imgur.com/dB8AQj3.png" height="150" />
+
 -Jigsy
