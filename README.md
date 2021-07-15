@@ -5,18 +5,6 @@ Not meant to be used as a proper IRCd since there's far better alternatives for 
 
 Mainly doing this for my own personal amusement.
 
-# Progress (old - 0.03)
-
-Seeing as I haven't touched this in about two months, I'm just going to upload what I've done.
-
-A lot of commands haven't been finished (response wise, and the like), and there's no error checking. (Esp. with the config.)
-
-You can however join channels, part channels, disconnect, set modes (to an extent), talk, etc.
-
-If you want to try the IRCd for yourself, tweak the config, then do /mIRCd.load followed by /mIRCd.start.
-
-Then just connect to localhost on the port(s) used. E.g. /server localhost 6667
-
 # 2021 (Revision 2):
 
 I have decided to try and attempt this again from scratch.
@@ -28,5 +16,7 @@ Scripts are separated this time, and I am currently focusing on connection handl
 06/07/2021: A good majority of stuff has been completed, channel handling and so forth. A bunch of commands need finishing, and I might recode some of the commands to make them suck less or to replace them with non-nested code. (Looking at you, MODE parsing!)
 
 08/07/2021: MODE parsing completely rewritten - it still follows the same rules as v0 (unused), but I've tried to condense it into one group. Also wrote a n!u@h maker, so +b supported. (Which means SILENCE, SHUN and a few other things should now be possible.)
+
+15/07/21: With the exception of the REHASH command, everything possible is now done. G-line works (sans $RrealName), shun works (ditto), Z-line works. Should hopefully be able to get this released by the end of the month.
 
 -Jigsy
