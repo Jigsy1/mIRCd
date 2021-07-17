@@ -1,5 +1,0 @@
-<thisCommand> [command]
-
-Gives detailed information about a specified command, such as syntax, what it does, how to use it.
-
-Specifying <thisCommand> without any arguments will list all available commands.

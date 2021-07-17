@@ -1,6 +1,0 @@
-<thisCommand> <#chan[,#chan,#chan,...]> [part message]
-
-Leaves the specified channel(s) with the specified part message.
-
-/<thisCommand> #localhost
-/<thisCommand> #Help,#Opers See you later!

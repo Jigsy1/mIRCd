@@ -1,6 +1,0 @@
-<thisCommand> <#chan[,#chan,#chan,...]>
-
-Returns a list of names on a channel, including their channel modes.
-
-/<thisCommand> #localhost
-/<thisCommand> #localhost,#Opers
