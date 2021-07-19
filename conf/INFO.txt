@@ -1,0 +1,30 @@
+<thisVersion> by Jigsy - http://github.com/Jigsy1/mIRCd/
+
+Scripted in just under 30 days!
+
+Jarkko Oikarinen (WiZ):
+-------------------------
+For inventing IRC. Which is still the superior form of multi-user communication.
+
+Khaled Mardam-Bey:
+--------------------
+For creating mIRC.
+
+Dave (Codex` / Hero_Number_Zero):
+-----------------------------------
+For sharing some mIRC code with me which allowed conversion of P10 numerics to
+numbers, and vice versa. (Even though it's not used in this.)
+
+M. L. (Vladdy):
+---------------
+For once sharing "ircserverscript.mrc" with me - a script now lost to time -
+around 2002/3(?), which showed that it was possible to script an IRCd in mIRC.
+
+(Asilar):
+----------
+For helping test the IRCd, which led to me locating some bugs.
+
+The following people on the mIRC forums who helped in other way(s):
+----------------------------------------------------------------------
+Brax, maroon, qwerty, Raccoon, Saturn
+
