@@ -7,6 +7,7 @@ Mainly did this for my own personal amusement.
 
 Limitations:
 ---------------
+* Could be used to phish NickServ passwords, so be careful.
 * No SSL/TLS support (socklisten doesn't support SSL)
 * Not IRCv3 compliant
 * Some commands are missing: WHO, WHOWAS and anything related to server linking (BURST, etc.)
