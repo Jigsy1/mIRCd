@@ -1,0 +1,9 @@
+﻿<thisCommand> <#chan[,#chan,#chan,...]> <message>
+
+Will request to be invited into a channel.
+
+This will not work if the channel is +K (No /KNOCK), +p(rivate), an open channel (not -i or -k) or if you are banned.
+
+Example(s):
+---------------
+/<thisCommand> #Secret-Society Let me in!

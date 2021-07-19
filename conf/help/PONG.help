@@ -1,0 +1,5 @@
+﻿<thisCommand> :<arg>
+
+Will pong the server letting it know you are still active.
+
+Note: This should be automatically done by your IRC client.

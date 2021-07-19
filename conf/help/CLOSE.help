@@ -1,0 +1,5 @@
+﻿<thisCommand>
+
+Will close all the unknown connections currently attempting to connect to the server.
+
+Note: This command can only be used by IRC operators.

@@ -1,0 +1,10 @@
+﻿<thisCommand> <#chan[,#chan,#chan,...]> :[topic]
+
+Will set or remove a topic on a channel. If no args are specified, it will return the topics for the specified channel(s).
+
+Example(s):
+---------------
+/<thisCommand> #<thisNetwork> :Welcome!
+/<thisCommand> #<thisNetwork>,#Help
+/<thisCommand> #Games :
+/<thisCommand> #Admin,#Staff :We've moved to #Opers.

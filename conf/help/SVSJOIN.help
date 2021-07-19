@@ -1,0 +1,5 @@
+<thisCommand> <nick> <#chan>
+
+Will force a user to join a channel. (Excluding G-lined channels.)
+
+Note: This command can only be used by IRC operators.

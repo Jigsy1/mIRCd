@@ -1,0 +1,11 @@
+﻿<thisCommand> [<-|+nick!user@host>]
+
+Will add or remove a user to/from your server-side ignore list. If no nick!user@host is specified, all ignores are listed.
+
+All silences are cleared upon disconnection.
+
+Example(s):
+---------------
+/<thisCommand>
+/<thisCommand> +Bob!*@*
+/<thisCommand> -Alice!*@*

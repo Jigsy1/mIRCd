@@ -1,0 +1,5 @@
+﻿<thisCommand> [<password>]
+
+Will terminate the IRCd. If a password is set in the config, it must be used.
+
+Note: This command can only be used by IRC operators.

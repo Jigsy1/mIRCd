@@ -1,0 +1,33 @@
+﻿i - Invite only. You cannot join unless someone /INVITEs you.
+m - Moderated. Only voices or above may change their nick or talk.
+n - No external messages. User must be on the channel in order to talk.
+p - Private. Channel will not appear in /LIST.
+s - Secret*. Does not appear in /LIST, /WHOIS replies, etc.
+t - Only (h)ops may change the topic.
+y - Anybody can use the /INVITE command.
+C - /CTCP is not allowed.
+N - /NOTICE is not allowed.
+K - /KNOCK is not allowed.
+S - Strips any incoming messages of control codes such as bold, colors, etc.
+T - Multi-target (/amsg, etc.) messages are not allowed.
+Y - /INVITE is not allowed. (This mode trumps +y.)
+
+Modes that require args:
+-------------------------
+b - Banned. User cannot join the channel. They may not also change nicks or talk, unless voice or above. (+b n!u@h, etc.)
+g - Gagged. Users must be a member of a channel for X seconds before being able to talk. (+g 60, etc.)
+h - Halfop (%). Can do everything an op can do except (de)op or (de)hop users. (+h <thisNick>, etc.)
+k - A key is required to join the channel. Done via: /JOIN #chan key (+k password, etc.)
+l - Limited to N users. (+l 100, etc.)
+o - Op (@). Can change modes, the topic, kick others, etc. (+o <thisNick>, etc.)
+v - Voice (+). Can talk when +b or +m, bypass other restrictions such as +S. (+v <thisNick>, etc.)
+
+Can only be set by IRC operators:
+-----------------------------------
+O - Only IRC operators can join.
+P - Persistent. The channel will not be deleted after the last user has left.
+
+*The existence of the channel can be revealed by certain commands - E.g. trying to /kick when not on the channel.
+If you set DENY_SECRET=TRUE in the config, it will vehemently deny that the channel exists.
+
+See also: SNOMASK, USERMODES

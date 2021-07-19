@@ -1,0 +1,7 @@
+﻿<thisCommand> <user> <null> <null> :<name>
+
+Registers you on the server with the user as your user and name as your "real name."
+
+Example(s):
+---------------
+/<thisCommand> <thisUser> 0 0 :<thisName>
