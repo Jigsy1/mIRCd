@@ -1,0 +1,420 @@
+; mIRCd_misc.mrc
+;
+; This script contains the following commands: AWAY, HELP, ISON, LIST, LUSERS, MKPASSWD, MOTD, PROTOCTL, STATS, USERHOST, USERIP, VERSION,
+;   WHOIS
+
+alias mIRCd_command_away {
+  ; /mIRCd_command_away <sockname> AWAY :[away message]
+
+  if (($3 == :) || ($3 == $null)) {
+    if ($mIRCd.info($1,away) != $null) { mIRCd.delUserItem $1 away }
+    mIRCd.sraw $1 $mIRCd.reply(305,$mIRCd.info($1,nick))
+    return
+  }
+  mIRCd.updateUser $1 away $left($decolonize($3-),$mIRCd(AWAYLEN))
+  mIRCd.sraw $1 $mIRCd.reply(306,$mIRCd.info($1,nick))
+}
+alias mIRCd_command_help {
+  ; /mIRCd_command_help <sockname> HELP [item]
+
+  if ($3 == $null) {
+    var %this.sock = $1
+    tokenize 44 $mIRCd.commands(1)
+    scon -r mIRCd.sraw %this.sock NOTICE $mIRCd.info(%this.sock,nick) $!+(:, $* )
+    ; `-> A quick and dirty loop.
+    return
+  }
+  var %this.file = $+($mIRCd.dirHelp,$3,.help")
+  if (($exists(%this.file) == $false) || ($lines(%this.file) == 0)) {
+    mIRCd.sraw $1 $mIRCd.reply(608,$mIRCd.info($1,nick),$3)
+    return
+  }
+  var %this.loop = 0
+  while (%this.loop < $lines(%this.file)) {
+    inc %this.loop 1
+    mIRCd.sraw $1 $mIRCd.reply(610,$mIRCd.info($1,nick),$3,$replace($read(%this.file, n, %this.loop), <helpCommand>, $upper($2), <thisCommand>, $upper($3), <thisNetwork>, $mIRCd(NETWORK_NAME), <thisName>, $mIRCd.info($1,realName), <thisNick>, $mIRCd.info($1,nick), <thisUser>, $remove($mIRCd.info($1,user), ~)))
+  }
+  mIRCd.sraw $1 $mIRCd.reply(611,$mIRCd.info($1,nick),$3)
+}
+alias mIRCd_command_ison {
+  ; /mIRCd_command_ison <sockname> ISON <nick [nick nick ...]>
+
+  if ($3 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  var %this.isons = $3-
+  if ($hget($mIRCd.targMax,TARGMAX_ISON) != $null) { var %this.isons = $deltok(%this.isons,$+($calc($v1 + 1),-),32) }
+  if (%this.isons == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  var %this.loop = 0, %this.string = $null
+  while (%this.loop < $numtok(%this.isons,32)) {
+    inc %this.loop 1
+    var %this.nick = $gettok(%this.isons,%this.loop,32)
+    if ($getSockname(%this.nick) != $null) { var %this.string = %this.string $mIRCd.info($getSockname(%this.nick),nick) }
+    ; `-> NOTE: This has to return their EXACT nick.
+    if ($len(%this.string) > 500) { return }
+    ; `-> NOTE: The length of an ison reply is limited to 512(?) characters. But, we'll use 500 as a failsafe.
+  }
+  mIRCd.sraw $1 $mIRCd.reply(303,$mIRCd.info($1,nick),%this.string)
+}
+alias mIRCd_command_list {
+  ; /mIRCd_command_list <sockname> LIST [STOP]
+
+  if ($3 == STOP) {
+    if ($mIRCd.info($1,listing) != $null) {
+      mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $+(:/,$upper($2)) aborted
+      mIRCd.delUserItem $1 listing
+      goto exitSafely
+    }
+    return
+  }
+  if ($mIRCd(CONNECTED_LIST_THROTTLE) isnum 1-) {
+    if ($sock($1).to < $mIRCd(CONNECTED_LIST_THROTTLE)) {
+      mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $+(:,$upper($2)) cannot be used for $v2 second(s) upon connecting to the server.
+      return
+    }
+  }
+  if ($mIRCd.info($1,listing) == $null) {
+    ; `-> WARNING!: _DO NOT_ allow /LIST on top of /LIST!
+    mIRCd.updateUser $1 listing 1
+    mIRCd.sraw $1 $mIRCd.reply(321,$mIRCd.info($1,nick))
+    var %this.loop = 0
+    while (%this.loop < $hcount($mIRCd.chans)) {
+      var %this.onChan = 0, %this.modes = $null, %this.modeArgs = $null, %this.string = $null
+      inc %this.loop 1
+      if ($mIRCd.info($1,listing) == $null) { break }
+      ; `-> Backup. If listing was removed via STOP, stop listing.
+      var %this.id = $hget($mIRCd.chans,%this.loop).item
+      if (($is_oper($1) == $true) || ($is_on(%this.id,$1) == $true)) { var %this.onChan = 1 }
+      if (($is_private(%this.id) == $true) || ($is_secret(%this.id) == $true)) {
+        if (%this.OnChan != 1) { continue }
+      }
+      var %this.modes = $mIRCd.info(%this.id,modes), %this.modeItem = g gagTime,l limit,k key
+      var %this.key = $iif($is_oper($1) == $false && $is_on(%this.id,$1) == $false,*,$mIRCd.info(%this.id,key))
+      ; >-> Key needs to appear as * if they're not an oper or not on the channel.
+      var %this.modeArgs = $regsubex(%this.modes,/(.)/g,$iif($poscs(glk,\t) != $null,$+($iif(\t === k,%this.key,$mIRCd.info(%this.id,$gettok($matchtok(%this.modeItem,\t,1,44),2,32))),$chr(32))))
+      var %this.string = $bracket(%this.modes $iif(%this.ModeArgs != $null,$v1)) $mIRCd.info(%this.id,topic)
+      mIRCd.sraw $1 $mIRCd.reply(322,$mIRCd.info($1,nick),$mIRCd.info(%this.id,name),$hcount($mIRCd.chanUsers(%this.id)),%this.string)
+    }
+  }
+  :exitSafely
+  mIRCd.sraw $1 $mIRCd.reply(323,$mIRCd.info($1,nick))
+  if ($mIRCd.info($1,listing) != $null) { mIRCd.delUserItem $1 listing }
+}
+alias mIRCd_command_lusers {
+  ; /mIRCd_command_lusers <sockname> LUSERS
+
+  mIRCd.sraw $1 $mIRCd.reply(251,$mIRCd.info($1,nick))
+  mIRCd.sraw $1 $mIRCd.reply(252,$mIRCd.info($1,nick))
+  if ($hcount($mIRCd.unknown) > 0) { mIRCd.sraw $1 $mIRCd.reply(253,$mIRCd.info($1,nick)) }
+  mIRCd.sraw $1 $mIRCd.reply(254,$mIRCd.info($1,nick))
+  mIRCd.sraw $1 $mIRCd.reply(255,$mIRCd.info($1,nick))
+  mIRCd.sraw $1 $mIRCd.reply(265,$mIRCd.info($1,nick),$hget($mIRCd.temp,highCount))
+  ; (Numeric 266) GLOBAL_INFO/GLOBAL_MAX
+  ; ,-> WARNING!: If you change the line for raw 250 in mIRCd.raws it will totally screw up the line below. So, either don't change the line, or comment the two lines below out after you change it.
+  var %this.string = $hget($mIRCd.raws,250)
+  mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $puttok($puttok(%this.string,$hget($mIRCd.temp,highCount),4,32),$+($chr(40),$hget($mIRCd.temp,highCount)),5,32) $parenthesis($hget($mIRCd.temp,totalCount) connections received)
+}
+alias mIRCd_command_mkpasswd {
+  ; /mIRCd_command_mkpasswd <sockname> MKPASSWD <password>
+
+  if ($3 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :Encrypted: $mIRCd.encryptPass($3)
+}
+alias mIRCd_command_motd {
+  ; /mIRCd_command_motd <sockname> MOTD
+
+  if (($exists($mIRCd.fileMotd) == $false) || ($lines($mIRCd.fileMotd) == 0)) {
+    mIRCd.sraw $1 $mIRCd.reply(422,$mIRCd.info($1,nick))
+    return
+  }
+  mIRCd.sraw $1 $mIRCd.reply(375,$mIRCd.info($1,nick))
+  mIRCd.sraw $1 $mIRCd.reply(372,$mIRCd.info($1,nick),$asctime($file($mIRCd.fileMotd).mtime,dd/mm/yyyy HH:nn))
+  ; `-> I believe this line showing the last time that the MOTD was updated is in fact entirely optional. (No harm in having it, though.)
+  var %this.loop = 0
+  while (%this.loop < $lines($mIRCd.fileMotd)) {
+    inc %this.loop 1
+    mIRCd.sraw $1 $mIRCd.reply(372,$mIRCd.info($1,nick),$read($mIRCd.fileMotd, n, %this.loop))
+  }
+  mIRCd.sraw $1 $mIRCd.reply(376,$mIRCd.info($1,nick))
+}
+alias mIRCd_command_protoctl {
+  ; /mIRCd_command_protoctl <sockname> PROTOCTL <uhnames|namesx>
+
+  if ($3 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  if (($3 == NAMESX) && ($mIRCd.info($1,NAMESX) == $null)) { mIRCd.updateUser $1 NAMESX 1 }
+  if (($3 == UHNAMES) && ($mIRCd.info($1,UHNAMES) == $null)) { mIRCd.updateUser $1 UHNAMES 1 }
+}
+; ¦-> If the client does these, it means they want NAMESX (@%+nick) and UHNAMES (n!u@h) in /NAMES replies.
+; `-> We'll set them in their hash table, but we don't do anything with them for now.
+alias mIRCd_command_stats {
+  ; /mIRCd_command_stats <sockname> STATS <flag>
+
+  if ($3 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  if ($mIRCd(OPER_STATS) != $null) {
+    if (($istokcs($mIRCd(OPER_STATS),$3,44) == $true) && ($is_oper($1) == $false)) {
+      mIRCd.sraw $1 $mIRCd.reply(481,$mIRCd.info($1,nick))
+      return
+    }
+  }
+  var %this.sock = $1, %this.flag = $3
+  if ($3 == g) {
+    var %this.loop = 0
+    while (%this.loop < $hcount($mIRCd.glines)) {
+      inc %this.loop 1
+      var %this.item = $hget($mIRCd.glines,%this.loop).item
+      var %this.data = $hget($mIRCd.glines,%this.item)
+      mIRCd.sraw $1 $mIRCd.reply(247,$mIRCd.info($1,nick),%this.item,$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
+    }
+  }
+  if ($3 == k) {
+    var %this.loop = 0
+    while (%this.loop < $hcount($mIRCd.klines)) {
+      inc %this.loop 1
+      var %this.item = $hget($mIRCd.klines,%this.loop).item
+      mIRCd.sraw $1 $mIRCd.reply(216,$mIRCd.info($1,nick),%this.item,$hget($mIRCd.klines,%this.item))
+    }
+  }
+  if ($3 == m) {
+    ; `-> m/M are the same.
+    var %this.loop = 0
+    while (%this.loop < $numtok($mIRCd.commands(1),44)) {
+      inc %this.loop 1
+      var %this.command = $gettok($mIRCd.commands(1),%this.loop,44), %this.data = $iif($hget($mIRCd.mStats,%this.command) != $null,$v1,0)
+      mIRCd.sraw $1 $mIRCd.reply(212,$mIRCd.info($1,nick),%this.command,%this.data)
+    }
+  }
+  if ($3 == o) {
+    ; `-> Ditto for o/O.
+    var %this.loop = 0
+    while (%this.loop < $hcount($mIRCd.opers)) {
+      inc %this.loop 1
+      var %this.item = $hget($mIRCd.opers,%this.loop).item
+      mIRCd.sraw $1 $mIRCd.reply(243,$mIRCd.info($1,nick),%this.item)
+    }
+  }
+  if ($3 == p) {
+    ; `-> Ditto for p/P.
+    tokenize 44 $sorttok($mIRCd(CLIENT_PORTS),44,n)
+    scon -r mIRCd.sraw %this.sock $!mIRCd.reply(217,$mIRCd.info(%this.sock,nick),%this.flag, $* )
+    ; ¦-> A quick and dirty loop.
+    ; `-> I also believe the final * on the raw reply - which should actually be a number here - is the amount of clients on that port?
+  }
+  if ($3 == s) {
+    ; `-> Ditto for s/S.
+    var %this.loop = 0
+    while (%this.loop < $hcount($mIRCd.shuns)) {
+      inc %this.loop 1
+      var %this.item = $hget($mIRCd.shuns,%this.loop).item
+      var %this.data = $hget($mIRCd.shuns,%this.item)
+      mIRCd.sraw $1 $mIRCd.reply(290,$mIRCd.info($1,nick),$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
+    }
+  }
+  if ($3 === u) {
+    ; `-> Note: This _MUST_ be lowercase.
+    var %this.duration = $calc($ctime - $iif($hget($mIRCd.temp,startTime) != $null,$v1,$sock($mIRCd.info($1,thruSock)).to))
+    var %this.days = $int($calc(%this.duration / 86400)), %this.hours = $int($calc((%this.duration % 86400) / 3600))
+    var %this.mins = $int($calc((%this.duration % 3600) / 60)), %this.secs = $int($calc(%this.duration % 60))
+    var %this.output = %this.days days, $+(%this.hours,:,$base(%this.mins,10,10,2),:,$base(%this.secs,10,10,2))
+    mIRCd.sraw $1 $mIRCd.reply(242,$mIRCd.info($1,nick),%this.output)
+    mIRCd.sraw $1 $mIRCd.reply(250,$mIRCd.info($1,nick),$hget($mIRCd.temp,highCount),$hget($mIRCd.temp,highCount))
+  }
+  if ($3 === U) {
+    ; `-> _Uppercase_!
+    if ($hcount($mIRCd.badNicks) > 0) {
+      var %this.string = $sorttok($left($regsubex($str(.,$hget($mIRCd.badNicks,0).item),/./g,$+($hget($mIRCd.badNicks,\n).data,$comma)),-1),44,a)
+      mIRCd.sraw $1 $mIRCd.reply(248,$mIRCd.info($1,nick),%this.string)
+    }
+  }
+  if ($3 == z) {
+    ; `-> Ditto for z/Z.
+    var %this.loop = 0
+    while (%this.loop < $hcount($mIRCd.zlines)) {
+      inc %this.loop 1
+      var %this.item = $hget($mIRCd.zlines,%this.loop).item
+      var %this.data = $hget($mIRCd.zlines,%this.item)
+      mIRCd.sraw $1 $mIRCd.reply(292,$mIRCd.info($1,nick),%this.item,$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
+    }
+  }
+  mIRCd.sraw %this.sock $mIRCd.reply(219,$mIRCd.info(%this.sock,nick),%this.flag)
+  ; `-> Just return "End of /STATS report" regardless of if it exists or not.
+}
+; `-> I honestly doubt anything else other than these few will be added?
+alias mIRCd_command_userhost {
+  ; /mIRCd_command_userhost <sockname> USERHOST <nick [nick nick ...]>
+
+  if ($3 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  var %this.userhosts = $3-
+  if ($hget($mIRCd.targMax,TARGMAX_USERHOST) != $null) { var %this.userhosts = $deltok(%this.userhosts,$+($calc($v1 + 1),-),32) }
+  if (%this.userhosts == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  var %this.loop = 0, %this.string = $null
+  while (%this.loop < $numtok(%this.userhosts,32)) {
+    inc %this.loop 1
+    var %this.nick = $gettok(%this.userhosts,%this.loop,32)
+    if ($getSockname(%this.nick) != $null) {
+      var %this.sock = $v1
+      var %this.operFlag = $iif($is_oper(%this.sock) == $true,*), %this.host = $iif($is_modeSet(%this.sock,x).nick == $true && $bool_fmt($mIRCd(HIDE_HOSTS_FREELY)) == $true && $is_oper($1) == $false,$mIRCd.info(%this.sock,host),$mIRCd.info(%this.sock,trueHost))
+      var %this.string = %this.string $+(%this.nick,%this.operFlag,=,$iif($mIRCd.info(%this.sock,away) != $null,-,+),$iif($mIRCd.info(%this.sock,ident) != $null,$v1,$mIRCd.info(%this.sock,user)),@,%this.host)
+    }
+    if ($numtok(%this.string,32) == 5) { break }
+    ; `-> This command is limited to five replies.
+  }
+  mIRCd.sraw $1 $mIRCd.reply(302,$mIRCd.info($1,nick),%this.string)
+}
+alias mIRCd_command_userip {
+  ; /mIRCd_command_userip <sockname> USERIP <nick [nick nick ...]>
+
+  if ($3 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  var %this.userips = $3-
+  if ($hget($mIRCd.targMax,TARGMAX_USERIP) != $null) { var %this.userips = $deltok(%this.userips,$+($calc($v1 + 1),-),32) }
+  if (%this.userips == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  var %this.loop = 0, %this.string = $null
+  while (%this.loop < $numtok(%this.userips,32)) {
+    inc %this.loop 1
+    var %this.nick = $gettok(%this.userips,%this.loop,32)
+    if ($getSockname(%this.nick) != $null) {
+      var %this.sock = $v1
+      var %this.operFlag = $iif($is_oper(%this.sock) == $true,*), %this.ip = $iif($is_modeSet(%this.sock,x).nick == $true && $bool_fmt($mIRCd(HIDE_HOSTS_FREELY)) == $true && $is_oper($1) == $false,0.0.0.0,$sock(%this.sock).ip)
+      var %this.string = %this.string $+(%this.nick,%this.operFlag,=,$iif($mIRCd.info(%this.sock,away) != $null,-,+),$iif($mIRCd.info(%this.sock,ident) != $null,$v1,$mIRCd.info(%this.sock,user)),@,%this.ip)
+    }
+    if ($numtok(%this.string,32) == 5) { break }
+    ; `-> This command is limited to five replies.
+  }
+  mIRCd.sraw $1 $mIRCd.reply(340,$mIRCd.info($1,nick),%this.string)
+}
+alias mIRCd_command_version {
+  ; /mIRCd_command_version <sockname> VERSION
+
+  mIRCd.sraw $1 $mIRCd.reply(351,$mIRCd.info($1,nick))
+  mIRCd.raw005 $1
+}
+alias mIRCd_command_whois {
+  ; /mIRCd_command_whois <sockname> WHOIS <nick[,nick,nick,...>]
+
+  if ($3 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(431,$mIRCd.info($1,nick),$2)
+    return
+  }
+  var %this.whois = $3
+  if ($hget($mIRCd.targMax,TARGMAX_WHOIS) != $null) { var %this.whois = $deltok(%this.whois,$+($calc($v1 + 1),-),44) }
+  if (%this.whois == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(431,$mIRCd.info($1,nick),$2)
+    return
+  }
+  var %this.loop = 0
+  while (%this.loop < $numtok(%this.whois,44)) {
+    inc %this.loop 1
+    var %this.nick = $gettok(%this.whois,%this.loop,44), %this.sock = $getSockname(%this.nick)
+    if (* isin %this.nick) {
+      mIRCd.sraw $1 $mIRCd.reply(416,$mIRCd.info($1,nick),%this.nick)
+      continue
+    }
+    if ($is_exists(%this.nick).nick == $false) {
+      mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.nick)
+      continue
+    }
+    var %this.nick = $mIRCd.info(%this.sock,nick)
+    ; `-> Use their properly formatted nick.
+    if (($is_modeSet(%this.sock,W).nick == $true) && ($1 != %this.sock)) { mIRCd.sraw %this.sock NOTICE %this.nick $+(:,$mIRCd.info($1,nick)) is performing a $+(/,$upper($2)) on you. }
+    var %this.user = $iif($mIRCd.info(%this.sock,ident) != $null,$v1,$mIRCd.info(%this.sock,user))
+    mIRCd.sraw $1 $mIRCd.reply(311,$mIRCd.info($1,nick),%this.nick,%this.user,$mIRCd.info(%this.sock,host),$mIRCd.info(%this.sock,realName))
+    var %this.chans = $mIRCd.info(%this.sock,chans)
+    ; `-> Note: +k (Network Service) should skip sending channels as well; but that's only for services connected via a C:lined server.
+    if (%this.chans != $null) {
+      if ($is_modeSet(%this.sock,d).nick == $true) { var %this.flag = - }
+      var %this.chan = 0, %this.string = $null
+      while (%this.chan < $numtok(%this.chans,44)) {
+        inc %this.chan 1
+        var %this.id = $gettok(%this.chans,%this.chan,44)
+        var %this.status = $mid(@%+,$findtok($gettok($hget($mIRCd.chanUsers(%this.id),%this.sock),3-,32),1,1,32),1)
+        if ($is_modeSet(%this.sock,n).nick == $true) {
+          if (($is_oper($1) == $true) || ($1 == %this.sock)) { goto processWhois }
+          goto cleanupString
+        }
+        if ($is_modeSet(%this.sock,i).nick == $true) {
+          if (($is_oper($1) == $true) || ($1 == %this.sock) || ($is_mutualID(%this.id,$1,%this.sock) == $true)) { goto processWhois }
+          goto cleanupString
+        }
+        if ($is_private(%this.id) == $true) {
+          if ($is_oper($1) == $true) || ($1 == %this.sock) || ($is_mutualID(%this.id,$1,%this.sock) == $true)) { goto processWhois }
+          goto cleanupString
+        }
+        if ($is_secret(%this.id) == $true) {
+          if (($is_oper($1) == $true) || ($1 == %this.sock) || ($is_mutualID(%this.id,$1,%this.sock) == $true)) { goto processWhois }
+          goto cleanupString
+        }
+        :processWhois
+        var %this.string = %this.string $+(%this.flag,%this.status,$mIRCd.info(%this.id,name))
+        :cleanupString
+        if ($len(%this.string) >= 399) {
+          ; `-> If the length of the string is longer than or equal to 399 characters (#becauseofusersjoiningtotallylongasschannelnames) send the string.
+          mIRCd.sraw $1 $mIRCd.reply(319,$mIRCd.info($1,nick),%this.nick,%this.string)
+          var %this.string = $null
+        }
+      }
+      if (%this.string != $null) { mIRCd.sraw $1 $mIRCd.reply(319,$mIRCd.info($1,nick),%this.nick,%this.string) }
+    }
+    if (($is_oper($1) == $true) || ($1 == %this.sock)) { mIRCd.sraw $1 $mIRCd.reply(338,$mIRCd.info($1,nick),%this.nick,$+(%this.user,@,$mIRCd.info(%this.sock,trueHost)),$sock(%this.sock).ip) }
+    mIRCd.sraw $1 $mIRCd.reply(312,$mIRCd.info($1,nick),%this.nick,$hget($mIRCd.temp,SERVER_NAME),$mIRCd(NETWORK_INFO))
+    if ($is_modeSet(%this.sock,o).nick == $true) { mIRCd.sraw $1 $mIRCd.reply(313,$mIRCd.info($1,nick),%this.nick) }
+    if ($is_modeSet(%this.sock,k).nick == $true) { mIRCd.sraw $1 $mIRCd.reply(310,$mIRCd.info($1,nick),%this.nick) }
+    if ($is_modeSet(%this.sock,D).nick == $true) { mIRCd.sraw $1 $mIRCd.reply(316,$mIRCd.info($1,nick),%this.nick) }
+    if ($mIRCd.info(%this.sock,away) != $null) { mIRCd.sraw $1 $mIRCd.reply(301,$mIRCd.info($1,nick),%this.nick,$v1) }
+    if ($is_modeSet(%this.sock,I).nick == $true) {
+      if (($is_oper($1) != $true) || ($1 != %this.sock)) { goto skipIdle }
+    }
+    mIRCd.sraw $1 $mIRCd.reply(317,$mIRCd.info($1,nick),%this.nick,$iif($mIRCd.info(%this.sock,idleTime),$calc($ctime - $v1),$sock(%this.sock).to),$calc($ctime - $sock(%this.sock).to))
+    :skipIdle
+  }
+  mIRCd.sraw $1 $mIRCd.reply(318,$mIRCd.info($1,nick),$3)
+}
+
+; Commands and Functions
+
+alias is_mutualID {
+  ; $is_mutualID(<chan ID>,<sockname>,<sockname>)
+
+  var %this.first = $iif($hget($mIRCd.chanUsers($1),$2) != $null,1,0), %this.second = $iif($hget($mIRCd.chanUsers($1),$3) != $null,1,0)
+  return $iif($calc(%this.first + %this.second) == 2,$true,$false)
+}
+alias mIRCd.dirHelp { return $+(",$scriptdirconf\help\) }
+; `-> Note: The closing quote is missing because of what'll be done in the command.
+alias mIRCd.encryptPass { return $hmac($sha512($1), $+($1,:,$hget($mIRCd.temp,SALT)), sha512, 0) }
+alias mIRCd.fileMotd { return $+($scriptdirmIRCd.motd) }
+alias mIRCd.mkpasswd {
+  ; /mIRCd.mkpasswd <password>
+
+  if ($1 == $null) {
+    mIRCd.echo /mIRCd.mkpasswd: insufficient parameters
+    return
+  }
+  clipboard $mIRCd.encryptPass($1)
+  mIRCd.echo /mIRCd.mkpasswd: copied password to clipboard
+}
+; `-> For generating "O:lines." (Oper password.)
+
+; EOF
