@@ -1,0 +1,9 @@
+The following commands are generally not part of ircu based IRCds, but I have included them.
+
+* KNOCK
+* SHUN
+* ZLINE
+
+Also added the following due to the fact that /msg or /notice $* doesn't work because I haven't coded it in.
+
+* GNOTICE

@@ -1,0 +1,27 @@
+* THE FOLLOWING MODES ARE GENERALLY RESERVED AND THEREFORE SHOULD NOT BE USED.
+
+Chanmodes:
+----------
+e - Ban exemption for n!u@h.
+d - Auditorium mode set by server when -D, but hidden users are still in the channel.
+r - Only registered users can join the channel.
+u - Part/quit messages are hidden from users in the channel.
+D - Auditorium mode. Users will not show up in /NAMES until they talk.
+I - Invite exemption for n!u@h.
+M - Only registered users may talk.
+Q - Quiet. (n!u@h)
+Z - Only users on an SSL connection may join the channel.
+
+Usermodes:
+----------
+h - User has a fakehost. (This is a hidden mode.)
+r - User is registered. (This is a hidden mode.)
+B - Bot.
+R - Only registered users can message you.
+Z - User is connected via SSL. (Cannot be unset.)
+
+Deprecated usermodes:
+-------------------------
+O - Local IRC Operator.
+
+Note: c isn't included in my IRCd, but I don't consider it reserved simply because +S trumps +c.
