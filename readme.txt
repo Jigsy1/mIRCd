@@ -25,7 +25,7 @@ Setting up mIRCd.
 3. To load everything into memory, type: /mIRCd.load
    You can also do this via the Menubar, /mIRCd.gui or by LOAD.bat.
 
-4. Generate a password for your Oper account, by doing: /mkpasswd password
+4. Generate a password for your Oper account, by doing: /mIRCd.mkpasswd password
    You can also do /raw MKPASSWD password when connected to the server, or via MKPASSWD.bat which will dump a sha512
    hash into a file called mkpasswd.txt. (Copy that into mIRCd.ini.)
 
