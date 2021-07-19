@@ -365,7 +365,7 @@ alias mIRCd_command_svsjoin {
     return
   }
   if ($is_exists(%this.chan).chan == $false) {
-    if ($is_glineMatch(%this.chan) == $true) {
+    if (($is_klineMatch(%this.chan) == $true) || ($is_glineMatch(%this.chan) == $true)) {
       mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
       return
     }
