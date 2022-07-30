@@ -272,11 +272,6 @@ alias mIRCd.ipaddr {
 
   return $+($gettok($mIRCd.fulladdr($1),1,64),@,$sock($1).ip)
 }
-alias mIRCd.mStatsIncrease {
-  ; /mIRCd.mStatsIncrease <command>
-
-  hinc -m $mIRCd.mStats $1 1
-}
 alias mIRCd.pingUsers {
   ; /mIRCd.pingUsers
 

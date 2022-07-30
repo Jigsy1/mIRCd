@@ -17,7 +17,7 @@ on *:load:{
     mIRCd.loadScripts
     return
   }
-  mIRCd.echo mIRCd: unloading - version is not compatible; please us mIRC 7.66 or newer
+  mIRCd.echo mIRCd: unloading - version is not compatible; please use mIRC 7.66 or newer
   .unload -rs $qt($script)
 }
 on *:signal:mIRCd:{
