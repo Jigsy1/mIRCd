@@ -1,7 +1,7 @@
 ﻿Everyone:
 ----------
 d - Deaf. The user will not see any messages in a channel.
-i - "Invisible."
+i - Invisible. Will not appear in /NAMES unless you're on the same channel.
 n - Hide channels from other user(s) from your /WHOIS. (Excluding opers.)
 s - See server notices.
 w - See wallops (opers only) or wallusers messages.
@@ -16,7 +16,7 @@ Can only be set by IRC operators:
 -----------------------------------
 g - See server wallops messages.
 k - Network Service. User cannot be de-opped, kicked or killed.
-o - IRC operator. Cannot be set except via /OPER.
+o - IRC operator. (Cannot be set except via /OPER.)
 W - /whois paranoia. Show who is performing a /WHOIS on you.
 X - Oper override. Walk through modes like +k, etc.; talk through +m, etc.; as well as change modes or topics or kick users without being opped.
 

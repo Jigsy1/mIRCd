@@ -9,7 +9,7 @@ C - /CTCP is not allowed.
 N - /NOTICE is not allowed.
 K - /KNOCK is not allowed.
 S - Strips any incoming messages of control codes such as bold, colors, etc.
-T - Multi-target (/amsg, etc.) messages are not allowed.
+T - Multi-target (/PRIVMSG #chan1,#chan2,... etc.) messages are not allowed.
 Y - /INVITE is not allowed. (This mode trumps +y.)
 
 Modes that require args:
@@ -27,7 +27,7 @@ Can only be set by IRC operators:
 O - Only IRC operators can join.
 P - Persistent. The channel will not be deleted after the last user has left.
 
-*The existence of the channel can be revealed by certain commands - E.g. trying to /kick when not on the channel.
+*The existence of the channel can be revealed by certain commands - E.g. trying to /KICK when not on the channel.
 If you set DENY_SECRET=TRUE in the config, it will vehemently deny that the channel exists.
 
 See also: SNOMASK, USERMODES

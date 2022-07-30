@@ -2,7 +2,7 @@
 
 Will request to be invited into a channel.
 
-This will not work if the channel is +K (No /KNOCK), +p(rivate), an open channel (not -i or -k) or if you are banned.
+This will not work if the channel is +K (No /KNOCK), +p(rivate), an open channel (not set as +i or +k) or if you are banned.
 
 Example(s):
 ---------------
