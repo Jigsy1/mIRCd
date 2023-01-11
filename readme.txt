@@ -1,5 +1,5 @@
-mIRCd v0.09 (Revision 2) - by Jigsy (https://github.com/Jigsy1/mIRCd)
-----------------------------------------------------------------------
+mIRCd v0.09hf3 (Revision 2) - by Jigsy (https://github.com/Jigsy1/mIRCd)
+---------------------------------------------------------------------------
 
 Files included in this release:
 
