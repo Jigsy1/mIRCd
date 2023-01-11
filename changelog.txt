@@ -1,0 +1,14 @@
+mIRCd[0.09hf3(Rev.2)]:
+-------------------------
+1. /LIST STOP cannot be used if connected on the IRCd for < CONNECTED_LIST_THROTTLE.
+2. Minor string correction(s).
+
+mIRCd[0.09hf2(Rev.2)]:
+-------------------------
+1. Fixed a typo in mIRCd.mrc
+2. Corrected the final line in SNOMASK.help
+3. Added root to nicks.403
+4. Corrected (not -i or -k) to (not set as +i or +k) in KNOCK.help
+5. Updated example K-lines
+6. Updated CHANMODES.help and USERMODES.help to clarify a couple of things better
+7. Removed some unused code from mIRCd_connHandle.mrc

@@ -1,4 +1,4 @@
-; mIRCd v0.09 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (http://github.com/Jigsy1/mIRCd)
+; mIRCd v0.09hf3 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
@@ -289,7 +289,7 @@ alias mIRCd.unload {
   scon -r if ( $!script( $* ) ) { .unload -rs $!qt( $* ) }
   ; `-> A quick and dirty loop.
 }
-alias mIRCd.version { return mIRCd[0.09(Rev.2)][2021] }
+alias mIRCd.version { return mIRCd[0.09hf3(Rev.2)][2021] }
 alias mIRCd.window { return @mIRCd }
 
 ; EOF

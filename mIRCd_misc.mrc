@@ -63,19 +63,19 @@ alias mIRCd_command_ison {
 alias mIRCd_command_list {
   ; /mIRCd_command_list <sockname> LIST [STOP]
 
-  if ($3 == STOP) {
-    if ($mIRCd.info($1,listing) != $null) {
-      mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $+(:/,$upper($2)) aborted
-      mIRCd.delUserItem $1 listing
-      goto exitSafely
-    }
-    return
-  }
   if ($mIRCd(CONNECTED_LIST_THROTTLE) isnum 1-) {
     if ($sock($1).to < $mIRCd(CONNECTED_LIST_THROTTLE)) {
       mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $+(:,$upper($2)) cannot be used for $v2 second(s) upon connecting to the server.
       return
     }
+  }
+  if ($3 == STOP) {
+    if ($mIRCd.info($1,listing) != $null) {
+      mIRCd.delUserItem $1 listing
+      mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $+(:/,$upper($2)) aborted
+      goto exitSafely
+    }
+    return
   }
   if ($mIRCd.info($1,listing) == $null) {
     ; `-> WARNING!: _DO NOT_ allow /LIST on top of /LIST!
@@ -171,6 +171,7 @@ alias mIRCd_command_stats {
   }
   var %this.sock = $1, %this.flag = $3
   if ($3 == g) {
+    ; `-> g/G are the same.
     var %this.loop = 0
     while (%this.loop < $hcount($mIRCd.glines)) {
       inc %this.loop 1
@@ -180,6 +181,7 @@ alias mIRCd_command_stats {
     }
   }
   if ($3 == k) {
+    ; `-> Ditto.
     var %this.loop = 0
     while (%this.loop < $hcount($mIRCd.klines)) {
       inc %this.loop 1
@@ -188,7 +190,7 @@ alias mIRCd_command_stats {
     }
   }
   if ($3 == m) {
-    ; `-> m/M are the same.
+    ; `-> Ditto.
     var %this.loop = 0
     while (%this.loop < $numtok($mIRCd.commands(1),44)) {
       inc %this.loop 1

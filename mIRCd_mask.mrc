@@ -65,7 +65,7 @@ alias mIRCd_command_gline {
     if ($is_exists(%this.what).chan == $true) {
       ; ¦-> Make sure the channel exists first, because the restriction on wildcards could prevent G-lining a channel like:
       ; `-> #this***************chan
-      mIRCd.serverNotice 512 $mIRCd.info($1,nick) adding local BADCHAN for $+($+(%this.trim,$comma),:) expiring at $+($calc($ctime + $4),:) %this.reason
+      mIRCd.serverNotice 512 $mIRCd.info($1,nick) adding local BADCHAN for $+(%this.trim,$comma) expiring at $+($calc($ctime + $4),:) %this.reason
       mIRCd.addPunishment $mIRCd.glines %this.trim $+($calc($ctime + $4),:) %this.reason
       ; `-> Add the G-line first to prevent anyone else joining it.
       var %this.id = $getChanID(%this.what)
