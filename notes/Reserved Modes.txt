@@ -15,7 +15,7 @@ Z - Only users on an SSL connection may join the channel.
 Usermodes:
 ----------
 h - User has a fakehost. (This is a hidden mode.)
-r - User is registered. (This is a hidden mode.)
+r - User is registered. (This is a hidden mode. Cannot be unset.)
 B - Bot.
 R - Only registered users can message you.
 Z - User is connected via SSL. (Cannot be unset.)

@@ -7,3 +7,5 @@ The following commands are generally not part of ircu based IRCds, but I have in
 Also added the following due to the fact that /msg or /notice $* doesn't work because I haven't coded it in.
 
 * GNOTICE
+
+It's called GNOTICE because mIRC cannot read files called GLOBAL, so GLOBAL.HELP doesn't work.
