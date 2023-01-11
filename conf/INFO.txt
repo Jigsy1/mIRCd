@@ -1,4 +1,4 @@
-<thisVersion> by Jigsy - http://github.com/Jigsy1/mIRCd/
+<thisVersion> by Jigsy - https://github.com/Jigsy1/mIRCd/
 
 Scripted in just under 30 days!
 
