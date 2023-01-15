@@ -86,6 +86,8 @@ $3 $4 $5 * $+(:,$6-)
 $3 $4 $+(:,$5-)
 313
 $3 :is an IRC operator
+314
+$3 $4 $5 * $+(:,$6-)
 316
 :does not accept private messages
 317
@@ -134,6 +136,8 @@ $3 :End of /NAMES list.
 $3 $4 $5 $6
 368
 $3 :End of Channel Ban List
+369
+$3 :End of WHOWAS
 371
 $+(:,$3-)
 372
@@ -160,6 +164,8 @@ $3 :No such channel
 $3 :Cannot send to channel $4-
 405
 $3 :You have joined too many channels
+406
+$3 :There was no such nickname
 409
 :No origin specified
 411
