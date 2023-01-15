@@ -23,5 +23,3 @@ Z - User is connected via SSL. (Cannot be unset.)
 Deprecated usermodes:
 -------------------------
 O - Local IRC Operator.
-
-Note: c isn't included in my IRCd, but I don't consider it reserved simply because +S trumps +c.
