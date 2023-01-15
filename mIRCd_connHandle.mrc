@@ -104,6 +104,17 @@ alias makeHost {
 
   return $+($gettok($regsubex($upper($hmac($sha512($1), $+($longip($1),:,$mIRCd(SALT)), sha512, 0)),/(.{8})/g,\1.),1-3,46),.IP)
 }
+alias mIRCd.addWhoWas {
+  ; /mIRCd.addWhoWas <sockname>
+
+  var %this.sock = $1, %this.nick = $mIRCd.info($1,nick), %this.timestamp = $ctime, %this.table = $+(%this.nick,:,%this.timestamp)
+  tokenize 44 host,ident,nick,realName,trueHost,user
+  scon -r hadd -m $mIRCd.whoWas(%this.table) $* $!mIRCd.info(%this.sock, $* )
+  ; `-> A quick and dirty loop.
+  hadd -m $mIRCd.whoWas(%this.table) signon $calc(%this.timestamp - $sock(%this.sock).to)
+  ; `-> We have to add this one manually.
+  hadd -m $mIRCd.whoWas %this.table 1
+}
 alias mIRCd.checkRegistering {
   ; /mIRCd.checkRegistering
 
@@ -144,6 +155,7 @@ alias mIRCd.createUser {
     hadd -m $mIRCd.ident %this.sock $sock($1).port $+ , $gettok($2,-1,46)
     sockopen %this.sock $sock($1).ip 113
     /*
+    ; ,-> Unused code, but retained. (For now.)
     var %this.command = sockopen %this.sock $sock($1).ip 113
     if ($mIRCd(LOOKUP_DELAY) > 0) { $+(.timermIRCd.ident,%this.sock) -o 1 0 %this.command }
     else { %this.command }
@@ -164,6 +176,10 @@ alias mIRCd.destroyIdent {
 alias mIRCd.destroyUser {
   ; /mIRCd.destroyUser <sockname> [quit message]
 
+  if ($mIRCd.info($1,isReg) == 1) {
+    ; `-> There is no point caching unregistered users.
+    if ($bool_fmt($mIRCd(CACHE_WHOWAS)) == $true) { mIRCd.addWhoWas $1 }
+  }
   var %this.error = $mIRCd.info($1,error), %this.fulladdr = $mIRCd.fulladdr($1), %this.sock = $1
   if ($hget($mIRCd.unknown,%this.sock) == $null) { mIRCd.serverNotice 16384 Client quit: $mIRCd.info(%this.sock,nick) $parenthesis($gettok(%this.fulladdr,2,33)) }
   ; `-> Temporarily store the (error), fulladdr and name of the socket.

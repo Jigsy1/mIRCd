@@ -1,4 +1,4 @@
-; mIRCd v0.09hf3 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+; mIRCd v0.09hf4 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
@@ -17,7 +17,7 @@ on *:load:{
     mIRCd.loadScripts
     return
   }
-  mIRCd.echo mIRCd: unloading - version is not compatible; please use mIRC 7.66 or newer
+  mIRCd.echo mIRCd: unloading - mIRC version is not compatible; please use mIRC 7.66 or newer
   .unload -rs $qt($script)
 }
 on *:signal:mIRCd:{
@@ -57,6 +57,7 @@ alias mIRCd.table { return $+(mIRCd[,$1,]) }
 alias mIRCd.unknown { return mIRCd[Unknown] }
 ; `-> User(s) currently in the process of connecting to the server.
 alias mIRCd.users { return mIRCd[Users] }
+alias mIRCd.whoWas { return $+(mIRCd[WhoWas],$iif($1 != $null,$+([,$v1,]))) }
 
 ; Commands and Functions
 
@@ -86,11 +87,12 @@ alias mIRCd { return $hget($mIRCd.main,$1) }
 alias mIRCd.commands {
   if ($1 == 0) { return NICK,PONG,POST,QUIT,USER }
   ; `-> Not registered with the IRCd. No other commands other than these five are permitted.
-  if ($1 == 1) { return ADMIN,AWAY,CLEARMODE,CLOSE,DIE,ERROR,GET,GLINE,GNOTICE,HASH,HELP,INFO,INVITE,ISON,JOIN,KICK,KILL,KNOCK,LINKS,LIST,LUSERS,MAP,MKPASSWD,MODE,MOTD,NAMES,NICK,NOTICE,OPER,OPMODE,PART,PING,PONG,POST,PRIVMSG,PROTOCTL,QUIT,REHASH,RESTART,SHUN,SILENCE,STATS,SVSJOIN,SVSNICK,SVSPART,TIME,TOPIC,USER,USERHOST,USERIP,VERSION,WALLCHOPS,WALLHOPS,WALLOPS,WALLUSERS,WALLVOICES,WHOIS,ZLINE }
+  if ($1 == 1) { return ADMIN,AWAY,CLEARMODE,CLOSE,DIE,ERROR,GET,GLINE,GNOTICE,HASH,HELP,INFO,INVITE,ISON,JOIN,KICK,KILL,KNOCK,LINKS,LIST,LUSERS,MAP,MKPASSWD,MODE,MOTD,NAMES,NICK,NOTICE,OPER,OPMODE,PART,PING,PONG,POST,PRIVMSG,PROTOCTL,QUIT,REHASH,RESTART,SHUN,SILENCE,STATS,SVSJOIN,SVSNICK,SVSPART,TIME,TOPIC,USER,USERHOST,USERIP,VERSION,WALLCHOPS,WALLHOPS,WALLOPS,WALLUSERS,WALLVOICES,WHOWAS,WHOIS,ZLINE }
   ; `-> Registered with the IRCd.
   else { return ADMIN,PING,PONG,QUIT }
   ; `-> The user is shunned. No other commands other than these four are permitted.
 }
+; `-> I should really replace these with a hash table: mIRCd[Commands][0], mIRCd[Commands][1], etc.
 alias mIRCd.fileBadNicks { return $qt($scriptdirconf\nicks.403) }
 alias mIRCd.fileConf { return $qt($scriptdirmIRCd.ini) }
 alias mIRCd.fileKlines { return $qt($scriptdirconf\mIRCd.klines) }
@@ -105,7 +107,8 @@ alias mIRCd.die {
   sockclose mIRCd.*
   hfree -w mIRCd[mIRCd.*
   ; `-> This should cover channel(s), channel user(s) and user(s) themselves.
-  var %this.tables = $mIRCd.dns , $mIRCd.chans , $mIRCd.glines , $mIRCd.ident , $mIRCd.invisible , $mIRCd.mStats , $mIRCd.opersOnline , $mIRCd.shuns , $mIRCd.temp , $mIRCd.unknown , $mIRCd.users , $mIRCd.zlines
+  hfree -w $mIRCd.whowas(*)
+  var %this.tables = $mIRCd.dns , $mIRCd.chans , $mIRCd.glines , $mIRCd.ident , $mIRCd.invisible , $mIRCd.mStats , $mIRCd.opersOnline , $mIRCd.shuns , $mIRCd.temp , $mIRCd.unknown , $mIRCd.users , $mIRCd.whowas , $mIRCd.zlines
   tokenize 44 %this.tables
   ; `-> A quick and dirty loop.
   scon -r if ( $!hget( $* ) ) { hfree $* }
@@ -188,7 +191,8 @@ alias mIRCd.restart {
   sockclose mIRCd.*
   hfree -w mIRCd[mIRCd.*
   ; `-> This should cover channel(s), channel user(s) and user(s) themselves.
-  var %this.tables = $mIRCd.dns , $mIRCd.chans , $mIRCd.glines , $mIRCd.ident , $mIRCd.invisible , $mIRCd.mStats , $mIRCd.opersOnline , $mIRCd.shuns , $mIRCd.temp , $mIRCd.unknown , $mIRCd.users , $mIRCd.zlines
+  hfree -w $mIRCd.whoWas(*)
+  var %this.tables = $mIRCd.dns , $mIRCd.chans , $mIRCd.glines , $mIRCd.ident , $mIRCd.invisible , $mIRCd.mStats , $mIRCd.opersOnline , $mIRCd.shuns , $mIRCd.temp , $mIRCd.unknown , $mIRCd.users , $mIRCd.whoWas , $mIRCd.zlines
   tokenize 44 %this.tables
   scon -r if ( $!hget( $* ) ) { hfree $* }
   ; `-> A quick and dirty loop.
@@ -276,6 +280,9 @@ alias mIRCd.start {
     ; `-> WARNING!: These two may not be modified when the IRCd is already running.
     if ($timer(mIRCd.checkRegistering) == $null) { .timermIRCd.checkRegistering -o 0 $mIRCd(REGISTRATION_DURATION) mIRCd.checkRegistering }
     if ($timer(mIRCd.pingUsers) == $null) { .timermIRCd.pingUsers -o 0 $mIRCd(PING_DURATION) mIRCd.pingUsers }
+    if ($timer(mIRCd.cleanWhoWas) == $null) { .timermIRCd.cleanWhoWas -o 0 3600 .signal -n mIRCd_cleanWhoWas }
+    ; ¦-> For automatically cleaning the /WHOWAS cache. (As this isn't important, I'd say check every hour to see if anything needs purging.)
+    ; `-> This needs to be active even if CACHE_WHOWAS=FALSE due to the fact that someone might set it to TRUE then /REHASH.
     if ($timer(mIRCd.timeCheck) == $null) { .timermIRCd.timeCheck -o 0 1 .signal -n mIRCd_timeCheck }
     ; `-> For automatically expiring G-lines, shuns and Z-lines.
     mIRCd.echo /mIRCd.start: now running
@@ -289,7 +296,7 @@ alias mIRCd.unload {
   scon -r if ( $!script( $* ) ) { .unload -rs $!qt( $* ) }
   ; `-> A quick and dirty loop.
 }
-alias mIRCd.version { return mIRCd[0.09hf3(Rev.2)][2021] }
+alias mIRCd.version { return mIRCd[0.09hf4(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 
 ; EOF

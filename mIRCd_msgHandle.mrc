@@ -133,6 +133,11 @@ alias mIRCd.parseMsg {
         continue
       }
       if (($is_op(%this.id,$1) == $true) || ($is_hop(%this.id,$1) == $true)) { goto parsePublic }
+      if (($is_modeSet(%this.id,c).chan == $true) && ($+(*,$chr(3),*) iswm %this.message)) {
+        ; `-> Just block the use of color. Bold, underline, etc. is okay.
+        mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (No colors allowed (+c))
+        continue
+      }
       if (($is_modeSet(%this.id,C).chan == $true) && ($2 == PRIVMSG) && ($+($chr(1),*,$chr(1)) iswm %this.message) && ($+($chr(1),ACTION *,$chr(1)) !iswm %this.message)) {
         mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (/CTCP is not allowed (+C))
         continue
@@ -180,6 +185,12 @@ alias mIRCd.parseMsg {
     }
     var %this.sock = $getSockname(%this.target), %this.nick = $mIRCd.info(%this.sock,nick)
     if ($1 == %this.sock) { goto parsePrivate }
+    if (($is_modeSet(%this.sock,c).nick == $true) && ($+(*,$chr(3),*) iswm %this.message)) {
+      if ($is_oper($1) == $false) {
+        mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user blocks colors (+c))
+        continue
+      }
+    }
     if (($is_modeSet(%this.sock,D).nick == $true) && ($is_oper($1) == $false)) {
       mIRCd.sraw $1 $mIRCd.reply(487,$mIRCd.info($1,nick),%this.nick)
       continue

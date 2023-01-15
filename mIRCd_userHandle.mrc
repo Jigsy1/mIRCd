@@ -185,6 +185,9 @@ alias mIRCd_command_user {
     return
   }
   mIRCd.updateUser $1 user $+(~,$left($legalizeIdent($3),$calc($mIRCd.userLen - 1)))
+  mIRCd.updateUser $1 trueUser $left($legalizeIdent($3),$mIRCd.userLen)
+  ; ¦-> 15/01/2023: There was a reason for me to add this, but I forgot what for at this juncture.
+  ; `-> I just know it had to do with the user being truncated by -1, and no way of telling that against something.
   mIRCd.updateUser $1 realName $left($decolonize($6-),50)
   ; `-> Note: Control codes count towards real name length.
   if ($mIRCd.info($1,nick) != $null) { mIRCd.registerUser $1 }
@@ -308,6 +311,7 @@ alias mIRCd.registerUser {
   var %this.command = mIRCd.raw $1 PING $+(:,$mIRCd.info($1,passPing))
   if ($mIRCd(LOOKUP_DELAY) != $null) { $+(.timermIRCd.ping,$1) -o 1 $v1 %this.command }
   else { %this.command }
+  ; `-> ?: [ [ %this.command ] ]
 }
 
 ; EOF

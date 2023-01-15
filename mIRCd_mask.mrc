@@ -220,6 +220,49 @@ alias mIRCd_command_shun {
     }
   }
 }
+alias mIRCd_command_silence {
+  ; /mIRCd_command_silence <sockname> SILENCE [<nick>|<-|+n!u@h>]
+
+  if (($pos(-+,$left($3,1)) == $null) || ($3 == $null)) {
+    ; ¦-> Show any silences (for a user). Note: Being able to see the silence(s) of other users when non-oper is not a bug.
+    ; `-> However, I am torn if a non-user should be able to see them or if I should make them user/oper only.
+    var %this.sock = $1
+    if ($getSockname($3) != $null) { var %this.sock = $v1 }
+    if ($hcount($mIRCd.silence(%this.sock)) == 0) {
+      mIRCd.sraw $1 $mIRCd.reply(272,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick))
+      return
+    }
+    var %this.loop = 0
+    while (%this.loop < $hcount($mIRCd.silence(%this.sock))) {
+      inc %this.loop 1
+      var %this.mask = $hget($mIRCd.silence(%this.sock),%this.loop).item
+      mIRCd.sraw $1 $mIRCd.reply(271,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick),%this.mask)
+    }
+    mIRCd.sraw $1 $mIRCd.reply(272,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick))
+    return
+  }
+  var %this.flag = $left($3,1), %this.mask = $makeMask($right($3,-1))
+  if (%this.flag == -) {
+    if ($hfind($mIRCd.silence($1),%this.mask,0,w) == 0) { return }
+    var %this.loop = $hfind($mIRCd.silence($1),%this.mask,0,w)
+    while (%this.loop > 0) {
+      var %this.mask = $hfind($mIRCd.silence($1),%this.mask,%this.loop,w).item
+      mIRCd.delSilence $1 %this.mask
+      dec %this.loop 1
+    }
+    mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) SILENCE $3
+    return
+  }
+  ; ,-> Treat everything else as an addition.
+  if ($is_silenced($1,%this.mask) == $true) { return }
+  if ($hcount($mIRCd.silence($1)) >= $mIRCd(MAXSILENCE)) {
+    mIRCd.sraw $1 $mIRCd.reply(511,$mIRCd.info($1,nick),%this.mask)
+    return
+  }
+  ; TODO: +*!*@* should trump everything like -.
+  mIRCd.addSilence $1 %this.mask
+  mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) SILENCE $3
+}
 alias mIRCd_command_zline {
   ; /mIRCd_command_zline <sockname> ZLINE [<-|+ip> <duration> :<reason>]
 
@@ -288,48 +331,6 @@ alias mIRCd_command_zline {
     }
     dec %this.loop 1
   }
-}
-alias mIRCd_command_silence {
-  ; /mIRCd_command_silence <sockname> SILENCE [<nick>|<-|+n!u@h>]
-
-  if (($pos(-+,$left($3,1)) == $null) || ($3 == $null)) {
-    ; `-> Show any silences (for a user).
-    var %this.sock = $1
-    if ($getSockname($3) != $null) { var %this.sock = $v1 }
-    if ($hcount($mIRCd.silence(%this.sock)) == 0) {
-      mIRCd.sraw $1 $mIRCd.reply(272,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick))
-      return
-    }
-    var %this.loop = 0
-    while (%this.loop < $hcount($mIRCd.silence(%this.sock))) {
-      inc %this.loop 1
-      var %this.mask = $hget($mIRCd.silence(%this.sock),%this.loop).item
-      mIRCd.sraw $1 $mIRCd.reply(271,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick),%this.mask)
-    }
-    mIRCd.sraw $1 $mIRCd.reply(272,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick))
-    return
-  }
-  var %this.flag = $left($3,1), %this.mask = $makeMask($right($3,-1))
-  if (%this.flag == -) {
-    if ($hfind($mIRCd.silence($1),%this.mask,0,w) == 0) { return }
-    var %this.loop = $hfind($mIRCd.silence($1),%this.mask,0,w)
-    while (%this.loop > 0) {
-      var %this.mask = $hfind($mIRCd.silence($1),%this.mask,%this.loop,w).item
-      mIRCd.delSilence $1 %this.mask
-      dec %this.loop 1
-    }
-    mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) SILENCE $3
-    return
-  }
-  ; ,-> Treat everything else as an addition.
-  if ($is_silenced($1,%this.mask) == $true) { return }
-  if ($hcount($mIRCd.silence($1)) >= $mIRCd(MAXSILENCE)) {
-    mIRCd.sraw $1 $mIRCd.reply(511,$mIRCd.info($1,nick),%this.mask)
-    return
-  }
-  ; TODO: +*!*@* should trump everything like -.
-  mIRCd.addSilence $1 %this.mask
-  mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) SILENCE $3
 }
 
 ; Commands and Functions

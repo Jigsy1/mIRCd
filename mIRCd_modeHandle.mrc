@@ -227,8 +227,8 @@ alias is_voice {
   var %this.id = $1
   return $bool_fmt($gettok($hget($mIRCd.chanUsers(%this.id),$2),5,32))
 }
-alias mIRCd.chanModes { return bghiklmnopstvyCNOKPSTY bghklov }
-alias mIRCd.chanModesSupport { return b,k,gl,imnpstyCNOKPSTY }
+alias mIRCd.chanModes { return bcghiklmnopstvyCHNOKPSTY bghklov }
+alias mIRCd.chanModesSupport { return b,k,gl,cimnpstyCHNOKPSTY }
 ; `-> RPL_ISUPPORT.
 alias -l mIRCd.parseMode {
   ; /mIRCd.parseMode <args>
@@ -277,7 +277,29 @@ alias -l mIRCd.parseMode {
           var %this.flag = %this.char
           continue
         }
-        if ($poscs(dgiknoswxCDIMSWX,%this.char) != $null) {
+        if ($poscs(cS,%this.char) != $null) {
+          if (%this.flag == -) {
+            if (%this.isSet == $false) { continue }
+            mIRCd.updateUser $1 modes $removecs($mIRCd.info($1,modes),%this.char)
+            var %this.minus = $+(%this.minus,%this.char)
+            if (%this.char isincs %this.plus) { var %this.plus = $removecs(%this.plus,%this.char) }
+            continue
+          }
+          ; ,-> +
+          if (%this.isSet == $true) { continue }
+          mIRCd.updateUser $1 modes $+($mIRCd.info($1,modes),%this.char)
+          var %this.plus = $+(%this.plus,%this.char)
+          if (%this.char isincs %this.minus) { var %this.minus = $removecs(%this.minus,%this.char) }
+          var %this.polar = $iif(%this.char === c,S,c)
+          ; `-> Make sure that the polar opposite isn't set. +c cannot be set as well as +S.
+          if ($is_modeSet($1,%this.polar).nick == $true) {
+            mIRCd.updateUser $1 modes $removecs($mIRCd.info($1,modes),%this.polar)
+            var %this.minus = $+(%this.minus,%this.polar)
+            if (%this.polar isincs %this.plus) { var %this.plus = $removecs(%this.plus,%this.polar) }
+          }
+          continue
+        }
+        if ($poscs(dgiknoswxCDIMWX,%this.char) != $null) {
           if (%this.flag == -) {
             if ((%this.isSet == $false) || (%this.char === x)) { continue }
             ; `-> +x may not be unset.
@@ -592,7 +614,7 @@ alias -l mIRCd.parseMode {
         }
         goto cleanupModes
       }
-      if ($poscs(imntyCNKOPSTY,%this.char) != $null) {
+      if ($poscs(imntyCHNKOPTY,%this.char) != $null) {
         if ($poscs(OP,%this.char) != $null) {
           if ($is_oper($1) == $false) {
             mIRCd.sraw $1 $mIRCd.reply(481,$mIRCd.info($1,nick))
@@ -611,6 +633,28 @@ alias -l mIRCd.parseMode {
         mIRCd.updateChan %this.id modes $+($mIRCd.info(%this.id,modes),%this.char)
         var %this.plus = $+(%this.plus,%this.char)
         if (%this.char isincs %this.minus) { var %this.minus = $removecs(%this.minus,%this.char) }
+        goto cleanupModes
+      }
+      if ($poscs(cS,%this.char) != $null) {
+        if (%this.flag == -) {
+          if (%this.isSet == $false) { goto cleanupModes }
+          mIRCd.updateChan %this.id modes $removecs($mIRCd.info(%this.id,modes),%this.char)
+          var %this.minus = $+(%this.minus,%this.char)
+          if (%this.char isincs %this.plus) { var %this.plus = $removecs(%this.plus,%this.char) }
+          goto cleanupModes
+        }
+        ; ,-> +
+        if (%this.isSet == $true) { goto cleanupModes }
+        mIRCd.updateChan %this.id modes $+($mIRCd.info(%this.id,modes),%this.char)
+        var %this.plus = $+(%this.plus,%this.char)
+        if (%this.char isincs %this.minus) { var %this.minus = $removecs(%this.minus,%this.char) }
+        var %this.polar = $iif(%this.char === c,S,c)
+        ; `-> Make sure that the polar opposite isn't set. +c cannot be set as well as +S.
+        if ($is_modeSet(%this.id,%this.polar).chan == $true) {
+          mIRCd.updateChan %this.id modes $removecs($mIRCd.info(%this.id,modes),%this.polar)
+          var %this.minus = $+(%this.minus,%this.polar)
+          if (%this.polar isincs %this.plus) { var %this.plus = $removecs(%this.plus,%this.polar) }
+        }
         goto cleanupModes
       }
       if ($poscs(ps,%this.char) != $null) {
@@ -674,4 +718,4 @@ alias -l mIRCd.modeTell {
     mIRCd.raw $hget($mIRCd.chanUsers($3),%this.push).item $+(:,$iif($2 == OPMODE,$hget($mIRCd.temp,SERVER_NAME),$mIRCd.fulladdr($1))) MODE $mIRCd.info($3,name) %this.string
   }
 }
-alias mIRCd.userModes { return dgiknoswxCDIMSWX }
+alias mIRCd.userModes { return cdgiknoswxCDIMSWX }

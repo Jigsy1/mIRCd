@@ -1,10 +1,21 @@
-mIRCd[0.09hf3(Rev.2)]:
--------------------------
+mIRCd[0.09hf4(Rev.2)][2021-2023]:
+-----------------------------------
+1. Updated debugUser.mrc to use /debugUser.raw instead of: sockwrite -nt $sockname
+2. I decided to add the mode to block colors (+c) on channels. Bold, underline, etc. will still work.
+   Just like the polarity of +p/+s, this cannot be set in conjunction with +S.
+3. Ditto, but for usermode.
+4. Added a channel mode to hide the modes set on a channel from appearing in /LIST. (+H)
+5. Updated CHANMODES.help and USERMODES.help to clarify a few things better.
+6. Added /WHOWAS.
+7. Other minor changes.
+
+mIRCd[0.09hf3(Rev.2)][2021]:
+------------------------------
 1. /LIST STOP cannot be used if connected on the IRCd for < CONNECTED_LIST_THROTTLE.
 2. Minor string correction(s).
 
-mIRCd[0.09hf2(Rev.2)]:
--------------------------
+mIRCd[0.09hf2(Rev.2)][2021]:
+------------------------------
 1. Fixed a typo in mIRCd.mrc
 2. Corrected the final line in SNOMASK.help
 3. Added root to nicks.403

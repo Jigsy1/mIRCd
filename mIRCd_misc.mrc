@@ -1,8 +1,9 @@
 ; mIRCd_misc.mrc
 ;
 ; This script contains the following commands: AWAY, HELP, ISON, LIST, LUSERS, MKPASSWD, MOTD, PROTOCTL, STATS, USERHOST, USERIP, VERSION,
-;   WHOIS
+;   WHOWAS, WHOIS
 
+on *:signal:mIRCd_cleanWhoWas:{ mIRCd.cleanWhoWas }
 alias mIRCd_command_away {
   ; /mIRCd_command_away <sockname> AWAY :[away message]
 
@@ -96,7 +97,11 @@ alias mIRCd_command_list {
       var %this.key = $iif($is_oper($1) == $false && $is_on(%this.id,$1) == $false,*,$mIRCd.info(%this.id,key))
       ; >-> Key needs to appear as * if they're not an oper or not on the channel.
       var %this.modeArgs = $regsubex(%this.modes,/(.)/g,$iif($poscs(glk,\t) != $null,$+($iif(\t === k,%this.key,$mIRCd.info(%this.id,$gettok($matchtok(%this.modeItem,\t,1,44),2,32))),$chr(32))))
-      var %this.string = $bracket(%this.modes $iif(%this.ModeArgs != $null,$v1)) $mIRCd.info(%this.id,topic)
+      var %this.modeString = $bracket(%this.modes $iif(%this.ModeArgs != $null,$v1))
+      if (H isincs %this.modes) {
+        if (%this.onChan != 1) { var %this.modeString = $null }
+      }
+      var %this.string = %this.modeString $mIRCd.info(%this.id,topic)
       mIRCd.sraw $1 $mIRCd.reply(322,$mIRCd.info($1,nick),$mIRCd.info(%this.id,name),$hcount($mIRCd.chanUsers(%this.id)),%this.string)
     }
   }
@@ -113,7 +118,7 @@ alias mIRCd_command_lusers {
   mIRCd.sraw $1 $mIRCd.reply(254,$mIRCd.info($1,nick))
   mIRCd.sraw $1 $mIRCd.reply(255,$mIRCd.info($1,nick))
   mIRCd.sraw $1 $mIRCd.reply(265,$mIRCd.info($1,nick),$hget($mIRCd.temp,highCount))
-  ; (Numeric 266) GLOBAL_INFO/GLOBAL_MAX
+  ; PLACEHOLDER FOR NUMERIC 266: GLOBAL_INFO/GLOBAL_MAX
   ; ,-> WARNING!: If you change the line for raw 250 in mIRCd.raws it will totally screw up the line below. So, either don't change the line, or comment the two lines below out after you change it.
   var %this.string = $hget($mIRCd.raws,250)
   mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $puttok($puttok(%this.string,$hget($mIRCd.temp,highCount),4,32),$+($chr(40),$hget($mIRCd.temp,highCount)),5,32) $parenthesis($hget($mIRCd.temp,totalCount) connections received)
@@ -315,7 +320,7 @@ alias mIRCd_command_version {
   mIRCd.raw005 $1
 }
 alias mIRCd_command_whois {
-  ; /mIRCd_command_whois <sockname> WHOIS <nick[,nick,nick,...>]
+  ; /mIRCd_command_whois <sockname> WHOIS <nick[,nick,nick,...]>
 
   if ($3 == $null) {
     mIRCd.sraw $1 $mIRCd.reply(431,$mIRCd.info($1,nick),$2)
@@ -394,6 +399,43 @@ alias mIRCd_command_whois {
   }
   mIRCd.sraw $1 $mIRCd.reply(318,$mIRCd.info($1,nick),$3)
 }
+alias mIRCd_command_whowas {
+  ; /mIRCd_command_whowas <sockname> WHOWAS <nick[,nick,nick,...]>
+
+  if ($3 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(431,$mIRCd.info($1,nick),$2)
+    return
+  }
+  var %this.whowas = $3
+  if ($hget($mIRCd.targMax,TARGMAX_WHOWAS) != $null) { var %this.whowas = $deltok(%this.whowas,$+($calc($v1 + 1),-),44) }
+  if (%this.whowas == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(431,$mIRCd.info($1,nick),$2)
+    return
+  }
+  var %this.loop = 0
+  while (%this.loop < $numtok(%this.whowas,44)) {
+    inc %this.loop 1
+    var %this.nick = $gettok(%this.whowas,%this.loop,44)
+    if (* isin %this.nick) {
+      mIRCd.sraw $1 $mIRCd.reply(406,$mIRCd.info($1,nick),%this.nick)
+      continue
+    }
+    if ($is_whoWasMatch(%this.nick) == $false) {
+      mIRCd.sraw $1 $mIRCd.reply(406,$mIRCd.info($1,nick),%this.nick)
+      continue
+    }
+    var %this.wasLoop = 0
+    while (%this.wasLoop < $hfind($mIRCd.whoWas,$+(%this.nick,:,*),0,w)) {
+      inc %this.wasLoop 1
+      var %this.table = $hfind($mIRCd.whoWas,$+(%this.nick,:,*),%this.wasLoop,w).item
+      var %this.user = $iif($hget($mIRCd.whoWas(%this.table),ident) != $null,$v1,$hget($mIRCd.whoWas(%this.table),user)), %this.host = $hget($mIRCd.whoWas(%this.table),$iif($is_oper($1) == $true,trueHost,host))
+      ; `-> Only oper(s) can see the trueHost.
+      mIRCd.sraw $1 $mIRCd.reply(314,$mIRCd.info($1,nick),$hget($mIRCd.whoWas(%this.table),nick),%this.user,%this.host,$hget($mIRCd.whoWas(%this.table),realName))
+      mIRCd.sraw $1 $mIRCd.reply(312,$mIRCd.info($1,nick),$hget($mIRCd.whoWas(%this.table),nick),$hget($mIRCd.temp,SERVER_NAME),$asctime($hget($mIRCd.whoWas(%this.table),signon),ddd mmm d hh:mm:ss yyyy))
+    }
+  }
+  mIRCd.sraw $1 $mIRCd.reply(369,$mIRCd.info($1,nick),%this.whowas)
+}
 
 ; Commands and Functions
 
@@ -402,6 +444,38 @@ alias is_mutualID {
 
   var %this.first = $iif($hget($mIRCd.chanUsers($1),$2) != $null,1,0), %this.second = $iif($hget($mIRCd.chanUsers($1),$3) != $null,1,0)
   return $iif($calc(%this.first + %this.second) == 2,$true,$false)
+}
+alias is_whoWasMatch {
+  ; $is_whoWasMatch(<nick>)
+
+  return $iif($hfind($mIRCd.whoWas,$+($1,:,*),0,w) > 0,$true,$false)
+}
+; `-> Redundant?
+alias mIRCd.cleanWhoWas {
+  ; /mIRCd.cleanWhoWas
+
+  if ($mIRCd(CLEAR_WHOWAS_CACHE) != $null) {
+    var %this.temp = $v1
+    if (%this.temp !isnum 1-) {
+      var %this.duration = 86400
+      goto clearEntries
+    }
+    var %this.duration = %this.temp
+    goto clearEntries
+  }
+  var %this.duration = 86400
+  ; `-> 86400s is 1d.
+  :clearEntries
+  if ($hcount($mIRCd.whoWas) == 0) { return }
+  var %this.loop = $hcount($mIRCd.whoWas)
+  while (%this.loop > 0) {
+    var %this.table = $hget($mIRCd.whoWas,%this.loop).item
+    if ($calc($ctime - $gettok(%this.table,2,58)) >= %this.duration) {
+      hfree $mIRCd.whoWas(%this.table)
+      hdel $mIRCd.whoWas %this.table
+    }
+    dec %this.loop 1
+  }
 }
 alias mIRCd.dirHelp { return $+(",$scriptdirconf\help\) }
 ; `-> Note: The closing quote is missing because of what'll be done in the command.
