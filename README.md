@@ -1,9 +1,9 @@
 # mIRCd
-An IRCd written in mIRC scripting language (mSL) and more or less based on ircu based IRCds.
+An IRCd written in mIRC Scripting Language (mSL) and more or less based on ircu based IRCds.
 
-Not meant to be used as a proper IRCd since there's far better alternatives for that. (Like *actual* IRCds.)
+This is not meant to be used as a proper IRCd since there's far better alternatives for that. (Like *actual* IRCds.)
 
-Mainly did this for my own personal amusement.
+I mainly did this for my own personal amusement.
 
 
 ## Limitations:
@@ -17,7 +17,7 @@ Please consult readme.txt on how to get it running. -Jigsy
 
 ##### Things I would at least like to try to do some day:
 * Finish some of the commands. (/GLINE and $RealName)
-* Add /WHO, /WHOWAS.
+* Add /WHO, ~~/WHOWAS~~.
 * Server linking. Though given the nature of this, it would require me to rescript the entire IRCd from scratch. (Rev.3)
 
 ###### Screenshots
