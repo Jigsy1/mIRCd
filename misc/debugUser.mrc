@@ -7,8 +7,8 @@ on *:sockclose:debugUser:{
 }
 on *:sockopen:debugUser:{
   if ($sockerr == 0) {
-    sockwrite -nt $sockname NICK $debugUser.nick
-    sockwrite -nt $sockname USER $debugUser.nick 0 0 $+(:4D7,$str(e,7),8b9,$str(u,7),10gg11,$str(e,7),13r15,$str(!,7))
+    debugUser.raw NICK $debugUser.nick
+    debugUser.raw USER $debugUser.nick 0 0 $+(:4D7,$str(e,7),8b9,$str(u,7),10gg11,$str(e,7),13r15,$str(!,7))
     return
   }
   if ($window($debugUser.window) != $null) { echo -ci2t "Info text" $v1 [E]: $sockname error }
@@ -23,7 +23,7 @@ on *:sockread:debugUser:{
     if ($window($debugUser.window) != $null) { echo -ci2t "Info text" $v1 [E]: $sockname error }
     return
   }
-  if ($1 == PING) { sockwrite -nt $sockname PONG $2- }
+  if ($1 == PING) { debugUser.raw PONG $2- }
 }
 
 ; Commands and Functions
