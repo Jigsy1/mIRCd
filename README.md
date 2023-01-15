@@ -10,14 +10,14 @@ I mainly did this for my own personal amusement.
 * This could be used by nefarious actors to phish NickServ/Oper passwords, so end users should be wary of this
 * No SSL/TLS support (/socklisten doesn't support these)
 * Not IRCv3 compliant (though I personally don't consider this to be a bad thing as IRC conversation is supposed to be ephemeral)
-* Some commands are missing: WHO, WHOWAS and anything related to server linking (ACCOUNT, BURST, JUPE, etc.)
+* Some commands are missing: WHO and anything related to server linking (ACCOUNT, BURST, JUPE, etc.)
 
 Please consult readme.txt on how to get it running. -Jigsy
 
 
 ##### Things I would at least like to try to do some day:
 * Finish some of the commands. (/GLINE and $RealName)
-* Add /WHO, ~~/WHOWAS~~.
+* Add /WHO.
 * Server linking. Though given the nature of this, it would require me to rescript the entire IRCd from scratch. (Rev.3)
 
 ###### Screenshots
