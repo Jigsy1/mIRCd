@@ -88,6 +88,8 @@ $3 $4 $+(:,$5-)
 $3 :is an IRC operator
 314
 $3 $4 $5 * $+(:,$6-)
+315
+$3 $4 :End of /WHO list.
 316
 :does not accept private messages
 317
@@ -124,8 +126,12 @@ $+(:,$3)
 :End of Invite List
 351
 $mIRCd.version $hget($mIRCd.temp,SERVER_NAME) :0
+352
+$3-
 353
 $3 $4 $+(:,$5-)
+354
+$3-
 364
 $3 $4 $+(:,$5) $6-
 365
