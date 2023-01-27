@@ -1,0 +1,12 @@
+<thisCommand> [<mask>] [matchflags][%includeflags] [:search]
+
+This will display a list of user(s), either online, in a channel, which match certain masks.
+
+Example(s):
+---------------
+<thisCommand> WHO #<thisNetwork>,<thisNick>
+<thisCommand> WHO #Opers o
+<thisCommand> WHO * i :255.255.255.255
+<thisCommand> WHO * r :Spambot*
+
+See also: http://xise.nl/mirc/who.html
