@@ -23,12 +23,16 @@ alias mIRCd_command_invite {
   var %this.id = $getChanID($4), %this.name = $iif($mIRCd.info(%this.id,name) != $null,$v1,$4)
   if ($is_on(%this.id,$1) == $false) {
     ; `-> DENY_SECRET doesn't apply here.
-    mIRCd.sraw $1 $mIRCd.reply(442,$mIRCd.info($1,nick),%this.name)
-    return
+    if ($is_modeSet($1,X).nick == $false) {
+      mIRCd.sraw $1 $mIRCd.reply(442,$mIRCd.info($1,nick),%this.name)
+      return
+    }
   }
   if ($is_modeSet(%this.id,Y).chan == $true) {
-    mIRCd.sraw $1 $mIRCd.reply(598,$mIRCd.info($1,nick),%this.name)
-    return
+    if ($is_modeSet($1,X).nick == $false) {
+      mIRCd.sraw $1 $mIRCd.reply(598,$mIRCd.info($1,nick),%this.name)
+      return
+    }
   }
   var %this.sock = $getSockname($3)
   if (%this.sock == $null) {
@@ -57,7 +61,7 @@ alias mIRCd_command_join {
     return
   }
   var %this.joins = $3
-  if ($hget($mIRCd.targMax,TARGMAX_JOIN) != $null) { var %this.joins = $deltok(%this.joins,$+($calc($v1 + 1),-),44) }
+  if ($hget($mIRCd.targMax,TARGMAX_JOIN) isnum 1-) { var %this.joins = $deltok(%this.joins,$+($calc($v1 + 1),-),44) }
   if ($istok(%this.joins,0,44) == $true) {
     ; `-> Do not join any given channels before 0. Part the ones they're currently in, then join everything post the last 0 given.
     if ($mIRCd.info($1,chans) == $null) { var %this.flag = 1 }
@@ -109,6 +113,8 @@ alias mIRCd_command_join {
       mIRCd.updateUser $1 invites $remtok($mIRCd.info($1,invites),%this.id,1,44)
       goto parseJoin
     }
+    if ($is_modeSet($1,X).nick == $true) { goto parseJoin }
+    ; `-> Oper override not subject to below.
     if (($is_banMatch(%this.id,$mIRCd.fulladdr($1)) == $true) || ($is_banMatch(%this.id,$mIRCd.ipaddr($1)) == $true) || ($is_banMatch(%this.id,$mIRCd.trueaddr($1)) == $true)) {
       mIRCd.sraw $1 $mIRCd.reply(474,$mIRCd.info($1,nick),%this.name)
       continue
@@ -127,7 +133,7 @@ alias mIRCd_command_join {
     }
     ; ,-> Do +k last due the nature of it.
     if (($is_modeSet(%this.id,k).chan == $true) && ($istokcs($4,$mIRCd.info(%this.id,key),44) == $false)) {
-      ; `-> Just check the key against any given args. (It's either this or another loop...)
+      ; `-> Just check the key against any given args. (It's either this hacky way or another loop...)
       mIRCd.sraw $1 $mIRCd.reply(475,$mIRCd.info($1,nick),%this.name)
       continue
     }
@@ -148,19 +154,21 @@ alias mIRCd_command_kick {
   }
   var %this.id = $getChanID($3), %this.name = $mIRCd.info(%this.id,name)
   if ($is_on(%this.id,$1) == $false) {
-    if (($is_secret(%this.id) == $true) && ($bool_fmt($mIRCd(DENY_SECRET)) == $true)) {
-      mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),$3)
+    if ($is_modeSet($1,X).nick == $false) {
+      if (($is_secret(%this.id) == $true) && ($bool_fmt($mIRCd(DENY_SECRET)) == $true)) {
+        mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),$3)
+        return
+      }
+      mIRCd.sraw $1 $mIRCd.reply(442,$mIRCd.info($1,nick),%this.name)
       return
     }
-    mIRCd.sraw $1 $mIRCd.reply(442,$mIRCd.info($1,nick),%this.name)
-    return
   }
   if (($is_op(%this.id,$1) == $false) && ($is_hop(%this.id,$1) == $false) && ($is_modeSet($1,X).nick == $false)) {
     mIRCd.sraw $1 $mIRCd.reply(482,$mIRCd.info($1,nick),%this.name)
     return
   }
   var %this.kicks = $4
-  if ($hget($mIRCd.targMax,TARGMAX_KICK) != $null) { var %this.kicks = $deltok(%this.kicks,$+($calc($v1 + 1),-),44) }
+  if ($hget($mIRCd.targMax,TARGMAX_KICK) isnum 1-) { var %this.kicks = $deltok(%this.kicks,$+($calc($v1 + 1),-),44) }
   if (%this.kicks == $null) {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
@@ -198,7 +206,7 @@ alias mIRCd_command_knock {
     return
   }
   var %this.knocks = $3
-  if ($hget($mIRCd.targMax,TARGMAX_KNOCK) != $null) { var %this.knocks = $deltok(%this.knocks,$+($calc($v1 + 1),-),44) }
+  if ($hget($mIRCd.targMax,TARGMAX_KNOCK) isnum 1-) { var %this.knocks = $deltok(%this.knocks,$+($calc($v1 + 1),-),44) }
   if (%this.knocks == $null) {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
@@ -237,12 +245,14 @@ alias mIRCd_command_knock {
       continue
     }
     if ($is_modeSet(%this.id,K).chan == $true) {
-      if (($is_secret(%this.id) == $true) && ($bool_fmt($mIRCd(DENY_SECRET)) == $true)) {
-        mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),%this.nick)
+      if ($is_modeSet($1,X).nick == $false) {
+        if (($is_secret(%this.id) == $true) && ($bool_fmt($mIRCd(DENY_SECRET)) == $true)) {
+          mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),%this.knock)
+          continue
+        }
+        mIRCd.sraw $1 $mIRCd.reply(597,$mIRCd.info($1,nick),$2,%this.name,$parenthesis($upper($2) not allowed $parenthesis(+K)))
         continue
       }
-      mIRCd.sraw $1 $mIRCd.reply(597,$mIRCd.info($1,nick),$2,%this.name,$parenthesis($upper($2) not allowed $parenthesis(+K)))
-      continue
     }
     var %this.user = 0
     while (%this.user < $hcount($mIRCd.chanUsers(%this.id))) {
@@ -263,7 +273,7 @@ alias mIRCd_command_names {
     return
   }
   var %this.names = $3
-  if ($hget($mIRCd.targMax,TARGMAX_NAMES) != $null) { var %this.names = $deltok(%this.names,$+($calc($v1 + 1),-),44) }
+  if ($hget($mIRCd.targMax,TARGMAX_NAMES) isnum 1-) { var %this.names = $deltok(%this.names,$+($calc($v1 + 1),-),44) }
   if (%this.names == $null) {
     mIRCd.sraw $1 $mIRCd.reply(366,$mIRCd.info($1,nick),*)
     return
@@ -308,7 +318,7 @@ alias mIRCd_command_part {
     return
   }
   var %this.parts = $3
-  if ($hget($mIRCd.targMax,TARGMAX_PART) != $null) { var %this.parts = $deltok(%this.parts,$+($calc($v1 + 1),-),44) }
+  if ($hget($mIRCd.targMax,TARGMAX_PART) isnum 1-) { var %this.parts = $deltok(%this.parts,$+($calc($v1 + 1),-),44) }
   if (%this.parts == $null) {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
@@ -422,7 +432,7 @@ alias mIRCd_command_topic {
     return
   }
   var %this.topics = $3
-  if ($hget($mIRCd.targMax,TARGMAX_TOPIC) != $null) { var %this.topics = $deltok(%this.topics,$+($calc($v1 - 1),-),44) }
+  if ($hget($mIRCd.targMax,TARGMAX_TOPIC) isnum 1-) { var %this.topics = $deltok(%this.topics,$+($calc($v1 - 1),-),44) }
   if (%this.topics == $null) {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
@@ -452,12 +462,14 @@ alias mIRCd_command_topic {
       continue
     }
     if ($is_on(%this.id,$1) == $false) {
-      if (($is_secret(%this.id) == $true) && ($bool_fmt($mIRCd(DENY_SECRET)) == $true)) {
-        mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),%this.target)
+      if ($is_modeSet($1,X).nick == $false) {
+        if (($is_secret(%this.id) == $true) && ($bool_fmt($mIRCd(DENY_SECRET)) == $true)) {
+          mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),%this.target)
+          continue
+        }
+        mIRCd.sraw $1 $mIRCd.reply(442,$mIRCd.info($1,nick),%this.name)
         continue
       }
-      mIRCd.sraw $1 $mIRCd.reply(442,$mIRCd.info($1,nick),%this.name)
-      continue
     }
     if (($is_modeSet(%this.id,t).chan == $true) && ($is_op(%this.id,$1) == $false) && ($is_hop(%this.id,$1) == $false) && ($is_modeSet($1,X).nick == $false)) {
       mIRCd.sraw $1 $mIRCd.reply(482,$mIRCd.info($1,nick),%this.name)
@@ -558,7 +570,7 @@ alias mIRCd.createChan {
   hadd -m $mIRCd.table(%this.id) name $1
   hadd -m $mIRCd.table(%this.id) createTime $ctime
   hadd -m $mIRCd.table(%this.id) modes +nt
-  ; `-> NOTE: Hardcoded +nt.
+  ; `-> NOTE: Hardcoded +nt. (For now, anyway.)
   mIRCd.chanAddUser %this.id $2
 }
 alias mIRCd.delChanItem {

@@ -1,5 +1,38 @@
-mIRCd[0.09hf4(Rev.2)][2021-2023]:
------------------------------------
+mIRCd[0.09hf5(Rev.2)][2021-2023] - 27/01/2023
+--------------------------------------------------
+1. You can now limit the amount of users on the IRCd by using MAX_USERS=<number> under [Server] in the mIRCd.ini.
+   Those connecting via localhost (127.*) and LAN (192.168.*) are not subject to this restriction.
+2. You can now deny external connections to the IRCd by using DENY_EXTERNAL_CONNECTIONS=TRUE under [Mechanics] in the mIRCd.ini.
+   Those connecting via localhost (127.*) and LAN (192.168.*) are not subject to this restriction.
+3. Fixed a bugs regarding oper override:
+
+   * Opers can now /INVITE, /KICK, change /MODEs and the /TOPIC when not on the channel.
+   * Since I apparently forgot to code it in two years ago, opers can now walk past +i, +k, etc.
+
+4. Oper override now trumps +K and +Y. (Though since they could just past the modes, why would they need to use /KNOCK?)
+5. Fixed a bug in KNOCK where I specified %this.nick instead of %this.knock, meaning the channel name didn't show.
+6. Users should now at least see the server notice when DIE and RESTART are issued.
+7. WHOWAS cache cleaning will start on the next hour from when you started the IRCd.
+   E.g. If, for example, you start the IRCd at 21:47, the cleaning timer will start at 22:00.
+8. Added /WHO. (WHOX)
+
+   I'm not going to lie, there are a couple of bugs with it. For example, a channel that's not +s and a user who is +i,
+   the user who is +i is on the channel and you do /WHO #chan,user. You will get no results even though you should for the nick.
+
+   But if you do /WHO user,#chan you'll see the user. (You can /WHO on +i users if you know their nick.)
+
+   This is my own fault with the way I've coded it. But rather than chase down even more bugs - I've spent two
+   solid days on this already - I've decided to just okay it for now and I'll eventually try and redo it at some point
+   in time.
+
+   Other than that, everything else works as it should. /WHO #chan,nick, /WHO * r :*, /WHO * %nr, etc.
+
+9. You can throttle the use of WHO by adding WHO_THROTTLE=<number> under [Mechanics] in the mIRCd.
+10. Other major and minor bug fixes/tweaks.
+
+
+mIRCd[0.09hf4(Rev.2)][2021-2023] - 15/01/2023:
+--------------------------------------------------
 1. Updated debugUser.mrc to use /debugUser.raw instead of: sockwrite -nt $sockname
 2. I decided to add the mode to block colors (+c) on channels. Bold, underline, etc. will still work.
    Just like the polarity of +p/+s, this cannot be set in conjunction with +S.
@@ -9,13 +42,15 @@ mIRCd[0.09hf4(Rev.2)][2021-2023]:
 6. Added /WHOWAS.
 7. Other minor changes.
 
-mIRCd[0.09hf3(Rev.2)][2021]:
-------------------------------
+
+mIRCd[0.09hf3(Rev.2)][2021] - 11/01/2023:
+---------------------------------------------
 1. /LIST STOP cannot be used if connected on the IRCd for < CONNECTED_LIST_THROTTLE.
 2. Minor string correction(s).
 
-mIRCd[0.09hf2(Rev.2)][2021]:
-------------------------------
+
+mIRCd[0.09hf2(Rev.2)][2021] - 30/07/2022:
+---------------------------------------------
 1. Fixed a typo in mIRCd.mrc
 2. Corrected the final line in SNOMASK.help
 3. Added root to nicks.403
@@ -23,3 +58,7 @@ mIRCd[0.09hf2(Rev.2)][2021]:
 5. Updated example K-lines
 6. Updated CHANMODES.help and USERMODES.help to clarify a couple of things better
 7. Removed some unused code from mIRCd_connHandle.mrc
+
+mIRCd[0.09(Rev.2)][2021] - 19/07/2021:
+---------------------------------------------
+1. Initial release.

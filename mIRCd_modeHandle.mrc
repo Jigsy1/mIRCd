@@ -397,12 +397,14 @@ alias -l mIRCd.parseMode {
   }
   if ($2 == OPMODE) { goto parseOpmode }
   if ($is_on(%this.id,$1) == $false) {
-    if (($is_secret(%this.id) == $true) && ($bool_fmt($mIRCd(DENY_SECRET)) == $true)) {
-      mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),$3)
+    if ($is_modeSet($1,X).nick == $false) {
+      if (($is_secret(%this.id) == $true) && ($bool_fmt($mIRCd(DENY_SECRET)) == $true)) {
+        mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),$3)
+        return
+      }
+      mIRCd.sraw $1 $mIRCd.reply(442,$mIRCd.info($1,nick),%this.name)
       return
     }
-    mIRCd.sraw $1 $mIRCd.reply(442,$mIRCd.info($1,nick),%this.name)
-    return
   }
   if (($is_op(%this.id,$1) == $false) && ($is_hop(%this.id,$1) == $false) && ($is_modeSet($1,X).nick == $false)) {
     mIRCd.sraw $1 $mIRCd.reply(482,$mIRCd.info($1,nick),%this.name)

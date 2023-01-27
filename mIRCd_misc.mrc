@@ -45,7 +45,7 @@ alias mIRCd_command_ison {
     return
   }
   var %this.isons = $3-
-  if ($hget($mIRCd.targMax,TARGMAX_ISON) != $null) { var %this.isons = $deltok(%this.isons,$+($calc($v1 + 1),-),32) }
+  if ($hget($mIRCd.targMax,TARGMAX_ISON) isnum 1-) { var %this.isons = $deltok(%this.isons,$+($calc($v1 + 1),-),32) }
   if (%this.isons == $null) {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
@@ -267,7 +267,7 @@ alias mIRCd_command_userhost {
     return
   }
   var %this.userhosts = $3-
-  if ($hget($mIRCd.targMax,TARGMAX_USERHOST) != $null) { var %this.userhosts = $deltok(%this.userhosts,$+($calc($v1 + 1),-),32) }
+  if ($hget($mIRCd.targMax,TARGMAX_USERHOST) isnum 1-) { var %this.userhosts = $deltok(%this.userhosts,$+($calc($v1 + 1),-),32) }
   if (%this.userhosts == $null) {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
@@ -294,7 +294,7 @@ alias mIRCd_command_userip {
     return
   }
   var %this.userips = $3-
-  if ($hget($mIRCd.targMax,TARGMAX_USERIP) != $null) { var %this.userips = $deltok(%this.userips,$+($calc($v1 + 1),-),32) }
+  if ($hget($mIRCd.targMax,TARGMAX_USERIP) isnum 1-) { var %this.userips = $deltok(%this.userips,$+($calc($v1 + 1),-),32) }
   if (%this.userips == $null) {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
@@ -305,7 +305,7 @@ alias mIRCd_command_userip {
     var %this.nick = $gettok(%this.userips,%this.loop,32)
     if ($getSockname(%this.nick) != $null) {
       var %this.sock = $v1
-      var %this.operFlag = $iif($is_oper(%this.sock) == $true,*), %this.ip = $iif($is_modeSet(%this.sock,x).nick == $true && $bool_fmt($mIRCd(HIDE_HOSTS_FREELY)) == $true && $is_oper($1) == $false,0.0.0.0,$sock(%this.sock).ip)
+      var %this.operFlag = $iif($is_oper(%this.sock) == $true,*), %this.ip = $iif($is_modeSet(%this.sock,x).nick == $true && $bool_fmt($mIRCd(HIDE_HOSTS_FREELY)) == $true && $is_oper($1) == $false,$mIRCd.fakeIP,$sock(%this.sock).ip)
       var %this.string = %this.string $+(%this.nick,%this.operFlag,=,$iif($mIRCd.info(%this.sock,away) != $null,-,+),$iif($mIRCd.info(%this.sock,ident) != $null,$v1,$mIRCd.info(%this.sock,user)),@,%this.ip)
     }
     if ($numtok(%this.string,32) == 5) { break }
@@ -327,7 +327,7 @@ alias mIRCd_command_whois {
     return
   }
   var %this.whois = $3
-  if ($hget($mIRCd.targMax,TARGMAX_WHOIS) != $null) { var %this.whois = $deltok(%this.whois,$+($calc($v1 + 1),-),44) }
+  if ($hget($mIRCd.targMax,TARGMAX_WHOIS) isnum 1-) { var %this.whois = $deltok(%this.whois,$+($calc($v1 + 1),-),44) }
   if (%this.whois == $null) {
     mIRCd.sraw $1 $mIRCd.reply(431,$mIRCd.info($1,nick),$2)
     return
@@ -407,7 +407,7 @@ alias mIRCd_command_whowas {
     return
   }
   var %this.whowas = $3
-  if ($hget($mIRCd.targMax,TARGMAX_WHOWAS) != $null) { var %this.whowas = $deltok(%this.whowas,$+($calc($v1 + 1),-),44) }
+  if ($hget($mIRCd.targMax,TARGMAX_WHOWAS) isnum 1-) { var %this.whowas = $deltok(%this.whowas,$+($calc($v1 + 1),-),44) }
   if (%this.whowas == $null) {
     mIRCd.sraw $1 $mIRCd.reply(431,$mIRCd.info($1,nick),$2)
     return

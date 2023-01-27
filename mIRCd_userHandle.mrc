@@ -158,6 +158,22 @@ alias mIRCd_command_pong {
     $+(.timermIRCd.gline,$1) -o 1 0 mIRCd.errorUser $1 G-lined $parenthesis(%this.match)
     return
   }
+  ; `-> K-line takes priority, but there's no specific order to Z-line or G-line.
+  if ($bool_fmt($mIRCd(DENY_EXTERNAL_CONNECTIONS)) == $true) {
+    if ((127.* !iswm $sock($1).ip) && (192.168.* !iswm  $sock($1).ip)) {
+      $+(.timermIRCd.deny,$1) -o 1 0 mIRCd.errorUser $1 No more connections allowed $parenthesis(No external connections.)
+      return
+    }
+  }
+  if ($mIRCd(MAX_USERS) isnum 1-) {
+    if ((127.* !iswm $sock($1).ip) && (192.168.* !iswm $sock($1).ip)) {
+      ; `-> Allow localhost and LAN to override the next line of code.
+      if ($calc($hcount($mIRCd.users) - $hcount($mIRCd.unknown)) >= $mIRCd(MAX_USERS)) {
+        $+(.timermIRCd.full,$1) -o 1 0 mIRCd.errorUser $1 No more connections allowed $parenthesis(The server is full.)
+        return
+      }
+    }
+  }
   mIRCd.welcome $1
 }
 alias mIRCd_command_post {
@@ -268,9 +284,9 @@ alias mIRCd.welcome {
   mIRCd.serverNotice 16384 Client connecting: $mIRCd.info($1,nick) $parenthesis($gettok($mIRCd.fulladdr($1),2,33)) $bracket($sock($1).ip) $bracket($+($mIRCd.info($1,realName),))
   mIRCd.updateUser $1 isReg 1
   ; `-> The user is now officially registered with the IRCd! (Yay!)
+  hdel $mIRCd.unknown $1
   mIRCd.delUserItem $1 passPing
   ; `-> No longer needed.
-  hdel $mIRCd.unknown $1
   mIRCd.updateUser $1 lastPing $ctime
   mIRCd.updateUser $1 modes +
   mIRCd.updateUser $1 snoMask $mIRCd(DEFAULT_SNOMASK)
@@ -287,9 +303,9 @@ alias mIRCd.welcome {
 alias mIRCd.raw005 {
   ; /mIRCd.raw005 <sockname>
 
-  if ($hcount($mIRCd.targMax) > 0) { var %this.targmax = $+(TARGMAX=,$sorttok($left($regsubex($str(.,$hget($mIRCd.targMax,0).item),/./g,$+($gettok($hget($mIRCd.targMax,\n).item,2,95),:,$iif($hget($mIRCd.targMax,\n).data != $null,$v1,$null),$comma)),-1),44,a)) }
+  if ($hcount($mIRCd.targMax) > 0) { var %this.targmax = $+(TARGMAX=,$sorttok($left($regsubex($str(.,$hget($mIRCd.targMax,0).item),/./g,$iif(TARGMAX_* iswm $hget($mIRCd.targMax,\n).item && $hget($mIRCd.targMax,\n).data isnum 1-,$+($gettok($hget($mIRCd.targMax,\n).item,2,95),:,$iif($hget($mIRCd.targMax,\n).data != $null,$v1,$null),$comma))),-1),44,a)) }
   ; `-> Prep. TARGMAX=... first. Send it as the last part of RPL_ISUPPORT last too because of the length(?).
-  var %this.list = $+(AWAYLEN=,$mIRCd(AWAYLEN)) CASEMAPPING=ascii $+(CHANNELLEN=,$mIRCd(MAXCHANNELLEN)) $+(CHANMODES=,$mIRCd.chanModesSupport) CHANTYPES=# DEAF=d $+(KEYLEN=,$mIRCd(KEYLEN)) $+(KICKLEN=,$mIRCd(KICKLEN)) $iif($istok($mIRCd.commands(1),KNOCK,44) == $true,KNOCK) $+(MAXBANS=,$mIRCd(MAXBANS)) $+(MAXCHANNELS=,$mIRCd(MAXCHANNELS)) $iif($istok($mIRCd.commands(1),MAP,44) == $true,MAP) $+(MAXLIST=b:,$mIRCd(MAXBANS)) $+(MAXNICKLEN=,$mIRCd(MAXNICKLEN)) $iif($mIRCd(MAXTARGETS) != $null,$+(MAXTARGETS=,$mIRCd(MAXTARGETS))) $+(MODES=,$mIRCd(MODESPL)) NAMESX $+(NETWORK=,$mIRCd(NETWORK_NAME)) $+(NICKLEN=,$mIRCd(MAXNICKLEN)) PREFIX=(ohv)@%+ $+(SILENCE=,$mIRCd(MAXSILENCE)) SAFELIST STATUSMSG=@%+ $+(TOPICLEN=,$mIRCd(TOPICLEN)) UHNAMES $iif($istok($mIRCd.commands(1),USERIP,44) == $true,USERIP) $+(USERLEN=,$mIRCd.userLen) $iif($istok($mIRCd.commands(1),WALLCHOPS,44) == $true,WALLCHOPS) $iif($istok($mIRCd.commands(1),WALLVOICES,44) == $true,WALLVOICES) $iif(%this.targmax != $null,$v1)
+  var %this.list = $+(AWAYLEN=,$mIRCd(AWAYLEN)) CASEMAPPING=ascii $+(CHANNELLEN=,$mIRCd(MAXCHANNELLEN)) $+(CHANMODES=,$mIRCd.chanModesSupport) CHANTYPES=# DEAF=d $+(KEYLEN=,$mIRCd(KEYLEN)) $+(KICKLEN=,$mIRCd(KICKLEN)) $iif($istok($mIRCd.commands(1),KNOCK,44) == $true,KNOCK) $+(MAXBANS=,$mIRCd(MAXBANS)) $+(MAXCHANNELS=,$mIRCd(MAXCHANNELS)) $iif($istok($mIRCd.commands(1),MAP,44) == $true,MAP) $+(MAXLIST=b:,$mIRCd(MAXBANS)) $+(MAXNICKLEN=,$mIRCd(MAXNICKLEN)) $iif($mIRCd(MAXTARGETS) != $null,$+(MAXTARGETS=,$mIRCd(MAXTARGETS))) $+(MODES=,$mIRCd(MODESPL)) NAMESX $+(NETWORK=,$mIRCd(NETWORK_NAME)) $+(NICKLEN=,$mIRCd(MAXNICKLEN)) PREFIX=(ohv)@%+ $+(SILENCE=,$mIRCd(MAXSILENCE)) SAFELIST STATUSMSG=@%+ $+(TOPICLEN=,$mIRCd(TOPICLEN)) UHNAMES $iif($istok($mIRCd.commands(1),USERIP,44) == $true,USERIP) $+(USERLEN=,$mIRCd.userLen) $iif($istok($mIRCd.commands(1),WALLCHOPS,44) == $true,WALLCHOPS) $iif($istok($mIRCd.commands(1),WALLVOICES,44) == $true,WALLVOICES) $iif($istok($mIRCd.commands(1),WHO,44) == $true,WHOX) $iif(%this.targmax != $null,$v1)
   ; ¦-> I'm not 100% sure on if my CASEMAPPING=... is ascii or rfc1459. I've opted for ascii for now. (Make an issue on Github and let me know if it's wrong.)
   ; `-> Anything else? Reference: https://defs.ircdocs.horse/defs/isupport.html
   var %this.loop = 0, %this.string = $null

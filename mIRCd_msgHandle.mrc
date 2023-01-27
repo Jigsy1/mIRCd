@@ -102,11 +102,11 @@ alias mIRCd.parseMsg {
   mIRCd.updateUser $1 idleTime $ctime
   ; `-> Update their idleTime. It doesn't matter if the message goes through or not.
   var %this.targets = $3
-  if ($mIRCd(MAXTARGETS) != $null) {
+  if ($mIRCd(MAXTARGETS) isnum 1-) {
     ; `-> NOTE: This trumps TARGMAX_NOTICE/TARGMAX_PRIVMSG.
     var %this.targets = $deltok(%this.targets,$+($calc($v1 + 1),-),44), %this.flag = 1
   }
-  if ((%this.flag != 1) && ($hget($mIRCd.targMax,$+(TARGMAX_,$2)) != $null)) { var %this.targets = $deltok(%this.targets,$+($calc($v1 + 1),-),44) }
+  if ((%this.flag != 1) && ($hget($mIRCd.targMax,$+(TARGMAX_,$2)) isnum 1-)) { var %this.targets = $deltok(%this.targets,$+($calc($v1 + 1),-),44) }
   if (%this.targets == $null) {
     mIRCd.sraw $1 $mIRCd.reply(411,$mIRCd.info($1,nick),$2)
     return

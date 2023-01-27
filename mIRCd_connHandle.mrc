@@ -140,6 +140,8 @@ alias mIRCd.createUser {
   hadd -m $mIRCd.unknown $1 $ctime
   mIRCd.updateUser $1 isReg 0
   mIRCd.updateUser $1 thruSock $2
+  mIRCd.updateUser $1 ip $sock($1).ip
+  ; `-> Yes, I know I can get the ip via $sock().ip, but when I recode /WHO, I want to make it easier on myself!
   mIRCd.updateUser $1 host $sock($1).ip
   mIRCd.updateUser $1 trueHost $sock($1).ip
   if ($bool_fmt($mIRCd(DNS_USERS)) == $true) {
