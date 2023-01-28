@@ -1,6 +1,12 @@
 <thisVersion> by Jigsy - https://github.com/Jigsy1/mIRCd/
 
-Scripted in just under 30 days!
+An IRCd written in mIRC Scripting Language (mSL) and more or less based on ircu
+IRCds.
+
+My Magnum Opus. Originally scripted in the summer of 2021 in just under 30 days!
+With (minor) fixes in 2022/2023.
+
+Thanks to...
 
 Jarkko Oikarinen (WiZ):
 -------------------------
@@ -13,7 +19,7 @@ For creating mIRC.
 Dave (Codex` / Hero_Number_Zero):
 -----------------------------------
 For sharing some mIRC code with me which allowed conversion of P10 numerics to
-numbers, and vice versa. (Even though it's not used in this.)
+numbers, and vice versa for server linking. (Even though it's not used in this.)
 
 M. L. (Vladdy):
 ---------------
@@ -22,6 +28,10 @@ around 2002/3(?), which showed that it was possible to script an IRCd in mIRC.
 
 (Asilar):
 ----------
+For helping test the IRCd, which led to me locating some bugs.
+
+(Demolution):
+--------------------
 For helping test the IRCd, which led to me locating some bugs.
 
 The following people on the mIRC forums who helped in other way(s):

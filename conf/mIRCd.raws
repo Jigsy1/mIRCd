@@ -214,10 +214,14 @@ $upper($3) $4- :Not enough parameters
 :Banned: $3-
 467
 $3 :Channel key already set
+469
+$3 :Cannot join channel (+j) (New connection throttle: Try again in $4 second(s).)
 470
 $3 :Cannot join channel (+O)
 471
 $3 :Cannot join channel (+l)
+472
+$3 :is unknown mode char to me
 473
 $3 :Cannot join channel (+i)
 474
