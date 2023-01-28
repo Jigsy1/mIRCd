@@ -1,6 +1,7 @@
 The following were not part of s_err.c in the ircu source code, so I've stolen them for my own reasons.
 They are obviously not binding to real IRCds.
 
+ERR_JOINTHROTTLECHAN	= 469: <nick> :Cannot join channel (+j) (New connection throttle: Try again in <secs> second(s).)
 ERR_CANNOTSENDTOUSER	= 599: <nick> :Cannot send to user
 ERR_INVITEDISALLOWED	= 598: <chan> :INVITE not allowed (+Y)
 ERR_CANTKNOCK		= 597: <chan> :<string>

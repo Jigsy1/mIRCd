@@ -1,4 +1,4 @@
-The following commands are generally not part of ircu based IRCds, but I have included them.
+The following commands are generally not part of ircu based IRCds, but I have included them because of their usefulness.
 
 * KNOCK
 * SHUN

@@ -5,7 +5,6 @@ Chanmodes:
 e - Ban exemption for n!u@h.
 d - Auditorium mode set by server when -D, but hidden users are still in the channel.
 r - Only registered users can join the channel.
-u - Part/quit messages are hidden from users in the channel.
 D - Auditorium mode. Users will not show up in /NAMES until they talk.
 I - Invite exemption for n!u@h.
 M - Only registered users may talk.
