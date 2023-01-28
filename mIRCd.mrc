@@ -1,5 +1,5 @@
-; mIRCd v0.09hf5 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
-;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm
+; mIRCd v0.09hf6 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm (Jurrasic Park)
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
 
@@ -11,6 +11,8 @@ menu Menubar {
   .$iif($sock(mIRCd.*,0) > 0,&DIE,&DIE $parenthesis(not running)):{ mIRCd.die }
   .$iif($sock(mIRCd.*,0) > 0,RE&HASH,RE&HASH $parenthesis(not running)):{ mIRCd.rehash }
   .$iif($sock(mIRCd.*,0) > 0,&RESTART,&RESTART $parenthesis(not running)):{ mIRCd.restart }
+  .-
+  .$iif($window($mIRCd.window) != $null,$style(2)) &Information Window:{ window -ek0n $mIRCd.window }
 }
 on *:load:{
   if ($version >= $requiredVersion) {
@@ -21,7 +23,7 @@ on *:load:{
   .unload -rs $qt($script)
 }
 on *:signal:mIRCd:{
-  if ($istok(DIE LOAD REHASH RESTART START,$1,32) == $true) { [ $+(mIRCd.,$lower($1)) ] }
+  if ($istok(DIE LOAD REHASH RESTART START,$1,32) == $true) { [ $+(.mIRCd.,$lower($1)) ] }
   if ($1 == MKPASSWD) { write -c $qt($scriptdirmkpasswd.txt) $mIRCd.encryptPass($2) }
 }
 ; `-> Note: This requires the following to work correctly: http://xise.nl/mirc/sigmirc.zip
@@ -53,10 +55,12 @@ alias mIRCd.table { return $+(mIRCd[,$1,]) }
 alias mIRCd.unknown { return mIRCd[Unknown] }
 ; `-> User(s) currently in the process of connecting to the server.
 alias mIRCd.users { return mIRCd[Users] }
-alias mIRCd.whoWas { return $+(mIRCd[WhoWas],$iif($1 != $null,$+([,$v1,]))) }
+alias mIRCd.whoWas { return $+(mIRCd[WhoWas],$iif($1 != $null,$bracket($v1))) }
 
 ; Commands and Functions
 
+alias _debugline { echo -aet [DEBUGLINE]: $1- }
+; `-> Useful for hunting down annoying bugs.
 alias bracket { return [[ $+ $$1- $+ ]] }
 alias bool_fmt { return $iif($istok(1 on t true y yes,$1,32) == $true,$true,$false) }
 alias colonize { return $iif($count($1-,:) == 0,$+(:,$gettok($1-,-1,32)),$gettok($1-,$+($findtok($1-,$matchtok($1-,:,1,32),1,32),-),32)) }
@@ -83,7 +87,7 @@ alias mIRCd { return $hget($mIRCd.main,$1) }
 alias mIRCd.commands {
   if ($1 == 0) { return NICK,PONG,POST,QUIT,USER }
   ; `-> Not registered with the IRCd. No other commands other than these five are permitted.
-  if ($1 == 1) { return ADMIN,AWAY,CLEARMODE,CLOSE,DIE,ERROR,GET,GLINE,GNOTICE,HASH,HELP,INFO,INVITE,ISON,JOIN,KICK,KILL,KNOCK,LINKS,LIST,LUSERS,MAP,MKPASSWD,MODE,MOTD,NAMES,NICK,NOTICE,OPER,OPMODE,PART,PING,PONG,POST,PRIVMSG,PROTOCTL,QUIT,REHASH,RESTART,SHUN,SILENCE,STATS,SVSJOIN,SVSNICK,SVSPART,TIME,TOPIC,USER,USERHOST,USERIP,VERSION,WALLCHOPS,WALLHOPS,WALLOPS,WALLUSERS,WALLVOICES,WHO,WHOWAS,WHOIS,ZLINE }
+  if ($1 == 1) { return ADMIN,AWAY,CLEARMODE,CLOSE,DIE,ERROR,GET,GLINE,HASH,HELP,INFO,INVITE,ISON,JOIN,KICK,KILL,KNOCK,LINKS,LIST,LUSERS,MAP,MKPASSWD,MODE,MOTD,NAMES,NICK,NOTICE,OPER,OPMODE,PART,PING,PONG,POST,PRIVMSG,PROTOCTL,QUIT,REHASH,RESTART,SHUN,SILENCE,STATS,SVSJOIN,SVSNICK,SVSPART,TIME,TOPIC,USER,USERHOST,USERIP,VERSION,WALLCHOPS,WALLHOPS,WALLOPS,WALLUSERS,WALLVOICES,WHO,WHOWAS,WHOIS,ZLINE }
   ; `-> Registered with the IRCd.
   else { return ADMIN,PING,PONG,QUIT }
   ; `-> The user is shunned. No other commands other than these four are permitted.
@@ -98,7 +102,7 @@ alias mIRCd.die {
 
   ; ,-> _EVERYTHING_ will be wiped aside from the config (including opers, targets, etc.) and raws.
   if ($sock(mIRCd.*,0) == 0) { return }
-  mIRCd.echo /mIRCd.die: done
+  if ($show == $true) { mIRCd.echo /mIRCd.die: done }
   mIRCd.serverNotice 1 Instruction received $iif($hget($mIRCd.temp,DIE) != $null,from $v1) to shutdown the server.
   .timermIRCd.die_ -o 1 1 mIRCd.die_
   ; `-> The instant death of the server means nobody ever sees the server notice; so add a short delay.
@@ -148,7 +152,7 @@ alias mIRCd.rehash {
     goto processCleanup
   }
   .mIRCd.load
-  ; >-> Just reload everything via mIRCd.load. Next, we need to delete the removed items. We need to check four times.
+  ; >-> Just reload everything via /mIRCd.load. Next, we need to delete the removed items. We need to check five times.
   :processCleanup
   var %this.loop = $hcount($mIRCd.klines)
   while (%this.loop > 0) {
@@ -187,7 +191,7 @@ alias mIRCd.restart {
 
   ; ,-> _EVERYTHING_ will be wiped aside from the config (including opers, targets, etc.) and raws.
   if ($sock(mIRCd.*,0) == 0) { return }
-  mIRCd.echo /mIRCd.restart: done
+  if ($show == $true) { mIRCd.echo /mIRCd.restart: done }
   mIRCd.serverNotice 1 Instruction received $iif($hget($mIRCd.temp,RESTART) != $null,from $v1) to restart the server.
   .timermIRCd.restart_ -o 1 1 mIRCd.restart_
   ; `-> The instant death of the server means nobody ever sees the server notice; so add a short delay.
@@ -218,8 +222,8 @@ alias mIRCd.load {
     mIRCd.echo /mIRCd.load: cannot load config due to errors; fix them first, then try again
     return
   }
-  var %this.sections = Server,Mechanics,Features
-  tokenize 44 %this.sections
+  var %these.sections = Server,Mechanics,Features
+  tokenize 44 %these.sections
   scon -r hload -im $mIRCd.main $mIRCd.fileConf $*
   if ($ini($mIRCd.fileConf, Admin) != $null) { hload -im $mIRCd.main $mIRCd.fileConf Admin }
   if ($ini($mIRCd.fileConf, Targets) != $null) { hload -im $mIRCd.targmax $mIRCd.fileConf Targets }
@@ -228,8 +232,9 @@ alias mIRCd.load {
   ; `-> Opers are loaded into a separate table.
   hload -m $mIRCd.raws $mIRCd.fileRaws
   if (($lines($mIRCd.fileKlines) > 0) && ($calc($lines($mIRCd.fileKlines) % 2) == 0)) { hload -m $mIRCd.klines $mIRCd.fileKlines }
+  ; `-> Won't get loaded if the entries are an odd number.
   if ($lines($mIRCd.fileBadNicks) > 0) { hload -mn $mIRCd.badNicks $mIRCd.fileBadNicks }
-  mIRCd.echo /mIRCd.load: done
+  if ($show == $true) { mIRCd.echo /mIRCd.load: done }
 }
 alias mIRCd.loadScripts {
   var %these.scripts = $regsubex($str(.,$findfile($scriptdir,mIRCd_*.mrc,0)),/./g,$+($findfile($scriptdir,mIRCd_*.mrc,\n),¦))
@@ -283,9 +288,15 @@ alias mIRCd.start {
     if ($hget($mIRCd.temp,highCount) == $null) { hadd -m $mIRCd.temp highCount 0 }
     if ($hget($mIRCd.temp,totalCount) == $null) { hadd -m $mIRCd.temp totalCount 0 }
     ; `-> The last two are for stats tracking only.
+    if ($hget($mIRCd.temp,DEFAULT_CHANMODES) == $null) { hadd -m $mIRCd.temp DEFAULT_CHANMODES $iif($mIRCd.makeDefaultModes($mIRCd(DEFAULT_CHANMODES)).chan != $null,$v1,$mIRCd.defaultChanModes) }
+    if ($hget($mIRCd.temp,DEFAULT_USERMODES) == $null) { hadd -m $mIRCd.temp DEFAULT_USERMODES $mIRCd.makeDefaultModes($mIRCd(DEFAULT_USERMODES)).nick }
+    if ($hget($mIRCd.temp,HALFOP) == $null) { hadd -m $mIRCd.temp HALFOP $iif($bool_fmt($mIRCd(HALFOP)) == $true,1,0) }
+    if ($hget($mIRCd.temp,LOOSE_OBFUSCATION) == $null) { hadd -m $mIRCd.temp LOOSE_OBFUSCATION $iif($bool_fmt($mIRCd(LOOSE_OBFUSCATION)) == $true,1,0) }
+    if ($hget($mIRCd.temp,OPER_OVERRIDE) == $null) { hadd -m $mIRCd.temp OPER_OVERRIDE $iif($bool_fmt($mIRCd(OPER_OVERRIDE)) == $true,1,0) }
+    if ($hget($mIRCd.temp,PERSISTANT_CHANNELS) == $null) { hadd -m $mIRCd.temp PERSISTANT_CHANNELS $iif($bool_fmt($mIRCd(PERSISTANT_CHANNELS)) == $true,1,0) }
     if ($hget($mIRCd.temp,SALT) == $null) { hadd -m $mIRCd.temp SALT $mIRCd(SALT) }
     if ($hget($mIRCd.temp,SERVER_NAME) == $null) { hadd -m $mIRCd.temp SERVER_NAME $mIRCd(SERVER_NAME) }
-    ; `-> WARNING!: These two may not be modified when the IRCd is already running.
+    ; `-> WARNING!: These may not be modified when the IRCd is already running.
     if ($timer(mIRCd.checkRegistering) == $null) { .timermIRCd.checkRegistering -o 0 $mIRCd(REGISTRATION_DURATION) mIRCd.checkRegistering }
     if ($timer(mIRCd.pingUsers) == $null) { .timermIRCd.pingUsers -o 0 $mIRCd(PING_DURATION) mIRCd.pingUsers }
     if ($timer(mIRCd.cleanWhoWas) == $null) { .timermIRCd.startCleanWhoWas -o $nextHour 1 1 mIRCd.startCleanWhoWas }
@@ -294,7 +305,7 @@ alias mIRCd.start {
     ; `-> This will start automatically on the next hour. (So if you start the IRCd at, for example, 21:47, it will start at 22:00.)
     if ($timer(mIRCd.timeCheck) == $null) { .timermIRCd.timeCheck -o 0 1 .signal -n mIRCd_timeCheck }
     ; `-> For automatically expiring G-lines, shuns and Z-lines.
-    mIRCd.echo /mIRCd.start: now running
+    if ($show == $true) { mIRCd.echo /mIRCd.start: now running }
   }
 }
 alias mIRCd.startCleanWhoWas { .timermIRCd.cleanWhoWas -o 0 3600 .signal -n mIRCd_cleanWhoWas }
@@ -306,9 +317,10 @@ alias mIRCd.unload {
   scon -r if ( $!script( $* ) ) { .unload -rs $!qt( $* ) }
   ; `-> A quick and dirty loop.
 }
-alias mIRCd.version { return mIRCd[0.09hf5(Rev.2)][2021-2023] }
+alias mIRCd.version { return mIRCd[0.09hf6(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 alias -l nextHour { return $+($asctime($calc($ctime + 3600),HH),:00) }
 alias -l requiredVersion { return 7.66 }
+; `-> Although I've modified this from a version higher than 7.66 (currently 7.72), this should still work on 7.66.
 
 ; EOF

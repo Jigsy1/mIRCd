@@ -7,12 +7,20 @@ on *:dns:{
   while (%this.dns < $dns(0)) {
     inc %this.dns 1
     if ($hfind($mIRCd.dns,$dns(%this.dns),1,W).data != $null) {
-      var %this.result = $v1
-      mIRCd.sraw $v1 NOTICE $mIRCd.info($v1,nick) :*** Found your hostname
-      mIRCd.updateUser $v1 host $dns(%this.dns).addr
-      mIRCd.updateUser $v1 trueHost $dns(%this.dns).addr
-      if ($hget($mIRCd.dns,%this.result) != $null) { hdel $mIRCd.dns %this.result }
+      var %this.sock = $v1
+      mIRCd.sraw %this.sock NOTICE $mIRCd.info(%this.sock,nick) :*** Found your hostname
+      mIRCd.updateUser %this.sock host $dns(%this.dns).addr
+      mIRCd.updateUser %this.sock trueHost $dns(%this.dns).addr
+      mIRCd.updateUser %this.sock dnsChecked 1
+      if ($hget($mIRCd.dns,%this.sock) != $null) { hdel $mIRCd.dns %this.sock }
+      if ($mIRCd.info(%this.sock,identChecked) != $null) {
+        if ($mIRCd.info(%this.sock,passPing) != $null) {
+          $+(.timermIRCd.ping,%this.sock) off
+          mIRCd.raw %this.sock PING $+(:,$mIRCd.info(%this.sock,passPing))
+        }
+      }
     }
+    ; `-> If the DNS returns nothing, there's no way to update the socket with dnsChecked=1 because I don't know it.
   }
   haltdef
 }
@@ -45,13 +53,20 @@ on *:sockread:mIRCd.*:{
     var %mIRCd.ident.sockRead = $null
     sockread %mIRCd.ident.sockRead
     tokenize 32 %mIRCd.ident.sockRead
+
+    var %this.sock = $+(mIRCd.user.,$gettok($sockname,-1,46))
+    mIRCd.updateUser %this.sock identChecked 1
     if ($sockerr > 0) {
       mIRCd.destroyIdent $sockname
       return
     }
     tokenize 58 $3-
-    if ($3 != $null) { mIRCd.updateUser $+(mIRCd.user.,$gettok($sockname,-1,46)) ident $left($3,$mIRCd.userLen) }
+    if ($3 != $null) { mIRCd.updateUser %this.sock ident $left($3,$mIRCd.userLen) }
     mIRCd.destroyIdent $sockname
+    if ($mIRCd.info(%this.sock,dnsChecked) == $null) { return }
+    if ($mIRCd.info(%this.sock,passPing) == $null) { return }
+    $+(.timermIRCd.ping,%this.sock) off
+    mIRCd.raw %this.sock PING $+(:,$mIRCd.info(%this.sock,passPing))
     return
   }
   ; >-> Placeholder for anything server related in the future.
@@ -75,7 +90,7 @@ on *:sockread:mIRCd.*:{
       return
     }
     ; `-> Registered.
-    if (($is_shunMatch($mIRCd.fulladdr($sockname)) == $true) || ($is_shunMatch($mIRCd.trueaddr($sockname)) == $true)) {
+    if (($is_shunMatch($mIRCd.fulladdr($sockname)) == $true) || ($is_shunMatch($mIRCd.trueaddr($sockname)) == $true) || ($is_shunMatch($+(!R,$strip($mIRCd.info($sockname,realName)))) == $true)) {
       if ($istok($mIRCd.commands(2),$1,44) == $true) {
         mIRCd.doCommand $sockname $1-
         return
@@ -102,7 +117,10 @@ on *:sockread:mIRCd.*:{
 alias makeHost {
   ; $makeHost(<ip>)
 
-  return $+($gettok($regsubex($upper($hmac($sha512($1), $+($longip($1),:,$mIRCd(SALT)), sha512, 0)),/(.{8})/g,\1.),1-3,46),.IP)
+  var %this.base = $+($longip($1),:,$mIRCd(SALT))
+  if ($hget($mIRCd.temp,LOOSE_OBFUSCATION) == 1) { var %this.base = $+($ctime,:,%this.base) }
+  ; `-> Allow for loose obfuscation. This means that each host will be different for people on the same ip address.
+  return $+($gettok($regsubex($upper($hmac($sha512($1), %this.base, sha512, 0)),/(.{8})/g,\1.),1-3,46),.IP)
 }
 alias mIRCd.addWhoWas {
   ; /mIRCd.addWhoWas <sockname>
@@ -141,28 +159,33 @@ alias mIRCd.createUser {
   mIRCd.updateUser $1 isReg 0
   mIRCd.updateUser $1 thruSock $2
   mIRCd.updateUser $1 ip $sock($1).ip
-  ; `-> Yes, I know I can get the ip via $sock().ip, but when I recode /WHO, I want to make it easier on myself!
+  ; ¦-> Yes, I know I can get the ip via $sock().ip, but when I recode /WHO, I want to make it easier on myself!
+  ; `-> Also not the same as host since that gets modified by +x. (And trueHost should get DNS'd.)
   mIRCd.updateUser $1 host $sock($1).ip
   mIRCd.updateUser $1 trueHost $sock($1).ip
   if ($bool_fmt($mIRCd(DNS_USERS)) == $true) {
     if ((127.* !iswm $sock($1).ip) && (192.168.* !iswm $sock($1).ip)) {
+      ; `-> I'm still trying to decide if resolving localhost/LAN is a good or bad idea. (For now, I've made it so it won't look it up.)
       mIRCd.sraw $1 NOTICE * :*** Looking up your hostname...
       mIRCd.dnsUser $1 $sock($1).ip
     }
-    ; `-> I'm still trying to decide if resolving localhost/LAN is a good or bad idea. (For now, I've made it so it won't look it up.)
+    else { mIRCd.updateUser $1 dnsChecked 0 }
+    ; `-> A little hack for the local users.
   }
-  if ($bool_fmt($mIRCd(ACCESS_IDENT_SERVER)) == $true) {
-    mIRCd.sraw $1 NOTICE * :*** Checking ident...
-    var %this.sock = $+(mIRCd.ident.,$gettok($1,-1,46))
-    hadd -m $mIRCd.ident %this.sock $sock($1).port $+ , $gettok($2,-1,46)
-    sockopen %this.sock $sock($1).ip 113
-    /*
-    ; ,-> Unused code, but retained. (For now.)
-    var %this.command = sockopen %this.sock $sock($1).ip 113
-    if ($mIRCd(LOOKUP_DELAY) > 0) { $+(.timermIRCd.ident,%this.sock) -o 1 0 %this.command }
-    else { %this.command }
-    */
+  if ($bool_fmt($mIRCd(ACCESS_IDENT_SERVER)) == $false) {
+    mIRCd.updateUser $1 identChecked 0
+    return
   }
+  mIRCd.sraw $1 NOTICE * :*** Checking ident...
+  var %this.sock = $+(mIRCd.ident.,$gettok($1,-1,46))
+  hadd -m $mIRCd.ident %this.sock $sock($1).port $+ , $gettok($2,-1,46)
+  sockopen %this.sock $sock($1).ip 113
+  /*
+  ; ,-> Unused code, but retained. (For now.)
+  var %this.command = sockopen %this.sock $sock($1).ip 113
+  if ($mIRCd(LOOKUP_DELAY) > 0) { $+(.timermIRCd.ident,%this.sock) -o 1 0 %this.command }
+  else { %this.command }
+  */
 }
 alias mIRCd.delUserItem {
   ; /mIRCd.delUserItem <sockname> <item>
@@ -186,12 +209,18 @@ alias mIRCd.destroyUser {
   if ($hget($mIRCd.unknown,%this.sock) == $null) { mIRCd.serverNotice 16384 Client quit: $mIRCd.info(%this.sock,nick) $parenthesis($gettok(%this.fulladdr,2,33)) }
   ; `-> Temporarily store the (error), fulladdr and name of the socket.
   if ($mIRCd.info(%this.sock,chans) != $null) {
+    var %these.chans = $v1
     ; ¦-> The user is on channel(s). We need to display their quit to users who are in mutual channels.
     ; `-> It's probably quicker to check each user online than each channel one-by-one, then the users of those channels one-by-one.
     var %this.quit = $iif($2- != :,$decolonize($left($v1,$mIRCd(TOPICLEN))),$mIRCd.standardQuit)
     if (%this.error == $null) {
       if ($bool_fmt($mIRCd(PREFIX_QUIT)) == $true) { var %this.quit = Quit: %this.quit }
       ; `-> Just to stop people faking "Ping timeout" and other things; but only if PREFIX_QUIT=TRUE.
+      if ($count($regsubex($str(.,$numtok(%these.chans,44)),/./g,$iif(u isincs $mIRCd.info($gettok(%these.chans,\n,44),modes),1,0)),1) > 0) {
+        var %this.quit = $mIRCd.standardQuit
+        if ($bool_fmt($mIRCd(PREFIX_QUIT)) == $true) { var %this.quit = Quit: %this.quit }
+      }
+      ; `-> One of the channels they are in has "hide quits," so we need to default to the generic quit message.
     }
     var %this.loop = 0
     while (%this.loop < $hcount($mIRCd.users)) {

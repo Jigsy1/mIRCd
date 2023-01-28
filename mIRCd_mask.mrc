@@ -20,7 +20,7 @@ alias mIRCd.zlines { return mIRCd[Zlines] }
 ; IRCd Commands
 
 alias mIRCd_command_gline {
-  ; /mIRCd_command_gline <sockname> GLINE [<-|+#chan|user@host> <duration> :<reason>]
+  ; /mIRCd_command_gline <sockname> GLINE [<-|+!RrealName|#chan|user@host> <duration> :<reason>]
 
   if ($is_oper($1) == $false) {
     mIRCd.sraw $1 $mIRCd.reply(481,$mIRCd.info($1,nick))
@@ -118,7 +118,39 @@ alias mIRCd_command_gline {
     mIRCd.addPunishment $mIRCd.glines %this.trim $+($calc($ctime + $4),:) %this.reason
     return
   }
-  ; TODO: $RrealName
+  if ($left(%this.what,2) == !R) {
+    ; `-> G-line a user with a matching realName.
+    var %this.name = $trimStars($right(%this.what,-2))
+    if ($percentCheck(%this.name) > 25) {
+      ; `-> Mask too wide. (I'm only allowing <25% of wildcards in the realName.)
+      mIRCd.sraw $1 $mIRCd.reply(520,$mIRCd.info($1,nick),%this.name)
+      return
+    }
+    if ($is_glined(%this.name) == $true) {
+      var %this.data = $hget($mIRCd.glines,%this.name)
+      if ($gettok($left(%this.data,-1),1,32) > $calc($ctime + $4)) {
+        ; `-> Revised time is less than the previous time; remove the G-line.
+        recurse_gline $1 GLINE $+(-!R,%this.name) 1 $gettok(%this.data,2-,32)
+        return
+      }
+      mIRCd.serverNotice 512 $mIRCd.info($1,nick) resetting expiration time on GLINE for $+(!R,%this.name,$comma) expiring at $+($calc($ctime + $4),:) $gettok(%this.data,2-,32)
+      mIRCd.addPunishment $mIRCd.glines $+(!R,%this.name) $+($calc($ctime + $4),:) %this.reason
+      return
+    }
+    mIRCd.serverNotice 512 $mIRCd.info($1,nick) adding local GLINE for $+(!R,%this.name,$comma) expiring at $+($calc($ctime + $4),:) %this.reason
+    mIRCd.addPunishment $mIRCd.glines $+(!R,%this.name) $+($calc($ctime + $4),:) %this.reason
+    var %this.loop = $hcount($mIRCd.users)
+    while (%this.loop > 0) {
+      var %this.sock = $hget($mIRCd.users,%this.loop).item, %this.realName = $+(!R,$strip($mIRCd.info(%this.sock,realName)))
+      if ($is_glineMatch(%this.realName) == $true) {
+        mIRCd.serverNotice 512 G-line active for $mIRCd.info(%this.sock,nick) $parenthesis($gettok($mIRCd.fulladdr(%this.sock),2,33))
+        mIRCd.sraw %this.sock $mIRCd.reply(465,$mIRCd.info($1,nick),%this.reason)
+        mIRCd.errorUser %this.sock G-lined $parenthesis(%this.reason)
+      }
+      dec %this.loop 1
+    }
+    return
+  }
   ; ,-> user@host.
   var %this.mask = $gettok($makeMask(%this.what),2,33)
   if ($percentCheck($gettok(%this.mask,2,64)) > 0) {
@@ -133,8 +165,8 @@ alias mIRCd_command_gline {
       recurse_gline $1 GLINE $+(-,%this.mask) 1 $gettok(%this.data,2-,32)
       return
     }
-    mIRCd.serverNotice 512 $mIRCd.info($1,nick) resetting expiration time on GLINE for $+(%this.mask,$comma) expiring at $calc($calc($ctime + $4),:) $gettok(%this.data,2-,32)
-    mIRCd.addPunishment $hget($mIRCd.glines) %this.mask $calc($ctime + $4) $gettok(%this.data,2-,32)
+    mIRCd.serverNotice 512 $mIRCd.info($1,nick) resetting expiration time on GLINE for $+(%this.mask,$comma) expiring at $+($calc($ctime + $4),:) $gettok(%this.data,2-,32)
+    mIRCd.addPunishment $mIRCd.glines %this.mask $+($calc($ctime + $4),:) $gettok(%this.data,2-,32)
     return
   }
   mIRCd.serverNotice 512 $mIRCd.info($1,nick) adding local GLINE for $+(%this.mask,$comma) expiring at $+($calc($ctime + $4),:) %this.reason
@@ -151,7 +183,7 @@ alias mIRCd_command_gline {
   }
 }
 alias mIRCd_command_shun {
-  ; /mIRCd_command_shun <sockname> SHUN [<-|+user@host> <duration> :<reason>]
+  ; /mIRCd_command_shun <sockname> SHUN [<-|+!realName|user@host> <duration> :<reason>]
 
   if ($is_oper($1) == $false) {
     mIRCd.sraw $1 $mIRCd.reply(481,$mIRCd.info($1,nick))
@@ -163,8 +195,8 @@ alias mIRCd_command_shun {
     var %this.loop = 0
     while (%this.loop < $hcount($mIRCd.shuns)) {
       inc %this.loop 1
-      var %this.item = $hget($mIRCd.zlines,%this.loop).item
-      var %this.data = $hget($mIRCd.zlines,%this.item)
+      var %this.item = $hget($mIRCd.shuns,%this.loop).item
+      var %this.data = $hget($mIRCd.shuns,%this.item)
       mIRCd.sraw $1 $mIRCd.reply(290,$mIRCd.info($1,nick),%this.item,$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
     }
     mIRCd.sraw $1 $mIRCd.reply(291,$mIRCd.info($1,nick))
@@ -190,7 +222,37 @@ alias mIRCd_command_shun {
     return
   }
   ; ,-> +
-  ; TODO: $RrealName
+  if ($left(%this.what,2) == !R) {
+    ; `-> Shun a user with a matching realName.
+    var %this.name = $trimStars($right(%this.what,-2))
+    if ($percentCheck(%this.name) > 25) {
+      ; `-> Mask too wide. (I'm only allowing <25% of wildcards in the realName.)
+      mIRCd.sraw $1 $mIRCd.info(520,$mIRCd.info($1,nick),%this.name)
+      return
+    }
+    if ($is_shunned(%this.name) == $true) {
+      var %this.data = $hget($mIRCd.shuns,%this.name)
+      if ($gettok($left(%this.data,-1),1,32) > $calc($ctime + 4)) {
+        ; `-> Revised time is less than the previous time; remove the shun.
+        recurse_shun $1 SHUN (-!R,%this.name) 1 $gettok(%this.data,2-,32)
+        return
+      }
+      mIRCd.serverNotice 512 $mIRCd.info($1,nick) resetting expiration time on SHUN for $+(!R,%this.name,$comma) expiring at $+($calc($ctime + $4),:) $gettok(%this.data,2-,32)
+      mIRCd.addPunishment $mIRCd.shuns $+(!R,%this.name) $+($calc($ctime + $4),:) $gettok(%this.data,2-,32)
+      return
+    }
+    mIRCd.serverNotice 512 $mIRCd.info($1,nick) adding local SHUN for $+(!R,%this.name,$comma) expiring at $+($calc($ctime + $4),:) %this.reason
+    mIRCd.addPunishment $mIRCd.shuns $+(!R,%this.name) $+($calc($ctime + $4),:) %this.reason
+    var %this.loop = 0
+    while (%this.loop < $hcount($mIRCd.users)) {
+      inc %this.loop 1
+      var %this.sock = $hget($mIRCd.users,%this.loop).item, %this.realName = $+(!R,$strip($mIRCd.info(%this.sock,realName)))
+      if ($is_shunMatch(%this.realName) == $true) {
+        mIRCd.serverNotice 512 Shun active for $mIRCd.info(%this.sock,nick) $parenthesis($gettok($mIRCd.fulladdr(%this.sock),2,33))
+      }
+    }
+    return
+  }
   ; ,-> user@host
   var %this.mask = $gettok($makeMask(%this.what),2,33)
   if ($percentCheck($gettok(%this.mask,2,64)) > 0) {
@@ -224,8 +286,9 @@ alias mIRCd_command_silence {
   ; /mIRCd_command_silence <sockname> SILENCE [<nick>|<-|+n!u@h>]
 
   if (($pos(-+,$left($3,1)) == $null) || ($3 == $null)) {
-    ; ¦-> Show any silences (for a user). Note: Being able to see the silence(s) of other users when non-oper is not a bug.
-    ; `-> However, I am torn if a non-user should be able to see them or if I should make them user/oper only.
+    ; ¦-> Show any silences (for a user).
+    ; ¦-> NOTE: Being able to see the silence(s) of other users when non-oper is not a bug on some ircu IRCds. (UnderNet did change this, though.)
+    ; `-> However, I am torn if a non-user should be able to see them, or if I should make them self/oper only.
     var %this.sock = $1
     if ($getSockname($3) != $null) { var %this.sock = $v1 }
     if ($hcount($mIRCd.silence(%this.sock)) == 0) {

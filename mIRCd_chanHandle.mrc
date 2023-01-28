@@ -127,6 +127,10 @@ alias mIRCd_command_join {
       mIRCd.sraw $1 $mIRCd.reply(471,$mIRCd.info($1,nick),%this.name)
       continue
     }
+    if (($is_modeSet(%this.id,j).chan == $true) && ($sock($1).to <= $mIRCd.info(%this.id,joinThrottle))) {
+      mIRCd.sraw $1 $mIRCd.reply(469,$mIRCd.info($1,nick),%this.name,$calc($mIRCd.info(%this.id,joinThrottle) - $sock($1).to))
+      return
+    }
     if (($is_modeSet(%this.id,O).chan == $true) && ($is_oper($1) == $false)) {
       mIRCd.sraw $1 $mIRCd.reply(470,$mIRCd.info($1,nick),%this.name)
       continue
@@ -224,7 +228,7 @@ alias mIRCd_command_knock {
       mIRCd.sraw $1 $mIRCd.reply(597,$mIRCd.info($1,nick),$2,%this.name,$parenthesis(You're already on this channel))
       continue
     }
-    if ($is_open(%this.id) == $true) {
+    if ($is_open(%this.id,$1) == $true) {
       if (($is_secret(%this.id) == $true) && ($bool_fmt($mIRCd(DENY_SECRET)) == $true)) {
         mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),%this.knock)
         continue
@@ -340,10 +344,12 @@ alias mIRCd_command_part {
       mIRCd.sraw $1 $mIRCd.reply(442,$mIRCd.info($1,nick),%this.name)
       continue
     }
+    var %this.partMessage = $colonize($iif($4-,$v1))
+    if (u isincs $mIRCd.info(%this.id,modes)) { var %this.partMessage = $colonize($mIRCd.standardPart) }
     var %this.user = 0
     while (%this.user < $hcount($mIRCd.chanUsers(%this.id))) {
       inc %this.user 1
-      mIRCd.raw $hget($mIRCd.chanUsers(%this.id),%this.user).item $+(:,$mIRCd.fulladdr($1)) PART %this.name $colonize($iif($4-,$v1))
+      mIRCd.raw $hget($mIRCd.chanUsers(%this.id),%this.user).item $+(:,$mIRCd.fulladdr($1)) PART %this.name %this.partMessage
     }
     mIRCd.chanDelUser %this.id $1
   }
@@ -569,8 +575,7 @@ alias mIRCd.createChan {
   hadd -m $mIRCd.chans %this.id $1
   hadd -m $mIRCd.table(%this.id) name $1
   hadd -m $mIRCd.table(%this.id) createTime $ctime
-  hadd -m $mIRCd.table(%this.id) modes +nt
-  ; `-> NOTE: Hardcoded +nt. (For now, anyway.)
+  hadd -m $mIRCd.table(%this.id) modes $hget($mIRCd.temp,DEFAULT_CHANMODES)
   mIRCd.chanAddUser %this.id $2
 }
 alias mIRCd.delChanItem {
@@ -616,5 +621,6 @@ alias newChanID {
 ; Part Messages
 
 alias mIRCd.joinZero { return Left all channels. (User joined 0.) }
+alias mIRCd.standardPart { return Parted }
 
 ; EOF

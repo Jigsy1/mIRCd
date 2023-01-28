@@ -76,16 +76,22 @@ alias mIRCd_command_who {
           inc %this.uloop 1
           var %this.usock = $hget($mIRCd.users,%this.uloop).item
           if ($istok(%this.sockSeen,%this.usock,32) == $true) { continue }
-          if ($mIRCd.chanSeen(%this.chanSeen,%this.usock) > 0) { continue }
+          if (($mIRCd.chanSeen(%this.chanSeen,%this.usock) > 0) && ($mIRCd.chanSeen(%this.secret,%this.usock) == 0)) { continue }
           if (%this.target == chan) {
             if ($istok($mIRCd.info(%this.usock,chans),%this.id,44) == $false) { continue }
             if ($is_modeSet(%this.id,s).chan == $true) {
-              if (($is_on(%this.id,$1) == $false) && (%this.oper != 1)) { continue }
+              if (($is_on(%this.id,$1) == $false) && (%this.oper != 1)) {
+                if ($istok(%this.secret,%this.id,32) == $false) { var %this.secret = %this.secret %this.id }
+                continue
+              }
             }
           }
           if ($is_modeSet(%this.usock,i).nick == $true) {
             if (%this.item != $mIRCd.info(%this.usock,nick)) {
-              if (($is_mutual($1,%this.usock) == $false) && (%this.oper != 1)) { continue }
+              if (($is_mutual($1,%this.usock) == $false) && (%this.oper != 1)) {
+                if ($istok(%this.invisible,%this.usock,32) == $false) { var %this.invisible = %this.invisible %this.usock }
+                continue
+              }
             }
           }
           ; ,-> Match flags do not matter for channel(s).
@@ -130,7 +136,7 @@ alias mIRCd_command_who {
         if ((%this.nFlag == 1) && ($numtok(%this.who,44) == 1)) { continue }
         ; `-> Here's that specific flag check I mentioned before.
         var %this.usock = $getSockname(%this.item)
-        if ($mIRCd.chanSeen(%this.chanSeen,%this.usock) > 0) { continue }
+        if (($mIRCd.chanSeen(%this.chanSeen,%this.usock) > 0) && ($mIRCd.chanSeen(%this.secret,%this.usock) == 0) && ($istok(%this.invisible,%this.usock,32) == $false)) { continue }
         var %this.saw = %this.usock, %this.reply = $mIRCd.whoString(%this.string,$1,%this.usock)
         mIRCd.sraw $1 $mIRCd.reply(%this.numeric,$mIRCd.info($1,nick),%this.reply)
         if (%this.flag != 1) { var %this.flag = 1 }
@@ -207,6 +213,7 @@ alias mIRCd_command_who {
         var %this.item = $iif($gettok(%this.wild,%this.loop,32) != 0,$v1,*)
         var %this.uloop = 0
         while (%this.uloop < $hcount($mIRCd.users)) {
+          var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
           if (%this.saw != $null) { var %this.sockSeen = %this.sockSeen %this.saw, %this.saw = $null }
           inc %this.uloop 1
           var %this.usock = $hget($mIRCd.users,%this.uloop).item
@@ -306,11 +313,7 @@ alias mIRCd_command_who {
   mIRCd.updateUser $1 whoTime $ctime
 }
 ; ¦-> I'm not entirely proud of this code. I view it as incredibly inefficient. There has to be a better way of doing this...
-; ¦-> Also, I'm not going to lie, this does have bugs in it. For example a -s #chan and a +i user. /WHO #chan,user will not display the user
-; ¦-> even though it should, but doing /WHO user,#chan will show the user. (This is my own fault, I need to develop a better caching method.))
-; |-> Either that or who the channel user(s) rather than checking against everyone. (I thought it would be more efficient...)
-; ¦-> But, rather than backtrack through this code and give myself a massive amount of headaches - I've spend two days coding this - I'll redo
-; ¦-> The whole damn thing from scratch.
+; ¦-> Also, I'm not going to lie, this probably does have bugs in it.
 ; ¦
 ; `-> Also, further reading about WHOX: http://xise.nl/mirc/who.html
 

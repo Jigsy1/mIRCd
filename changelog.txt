@@ -1,33 +1,78 @@
+mIRCd[0.09hf6(Rev.2)][2021-2023] - 28/01/2023
+--------------------------------------------------
+1.  /WHO should now work correctly. Though I'm still unsure if it functions correctly like it should on other ircu IRCds.
+2.  Corrected two-year-old bugs in GLINE and SHUN.
+3.  Added !RrealName support to K-line, GLINE and SHUN.
+    However, due to $ being a somewhat special case when it comes to mIRC, I've had to use !R instead of $R.
+4.  Fixed a bug where /STATS s would not display the shun item, and /SHUN (no args) would not list any shuns because
+    I specified the wrong hash table.
+5.  Can now specify a DEFAULT_OPER_SNOMASK by adding DEFAULT_OPER_SNOMASK=<number> under the [Mechanics] in the mIRCd.ini.
+    Defaults to 17157.
+6.  Fixed a possible bug where SNOMASK was being overridden by doing /OPER if +s wasn't in the modes being added because
+    it had been set prior. (The user will now need to manually change their SNOMASK, basically.)
+7.  SNOMASK changes are now noted, when opering up for the first time or doing -s.
+8.  Can now specify the default modes for channels when they're created by adding DEFAULT_CHANMODES=<modes> to [Mechanics]
+    in mIRCd.ini. This only applies to modes without args, and defaults to +nt if not specified.
+9.  Can now specify the default modes for users when they connect to the IRCd by adding DEFAULT_USERMODES=<modes> to
+    [Mechanics] in the mIRCd.ini. (With some exceptions, like +o or +X.)
+10. /CLEARMODE now removes +c.
+11. Updated mIRCd_modeParse.mrc to tell the user if a channel mode doesn't exist. (Already existed for user modes.)
+    This should allow users to remove modes they don't want parsing from $mIRCd.chanModes and $mIRCd.userModes.
+12. Can now specify if you want Halfop (%) support enabled by adding HALFOP=TRUE or HALFOP=FALSE to [Features] in the mIRCd.ini.
+    Defaults to FALSE.
+13. Can now specify if you want Persistant Channel support (+P) by adding PERSISTANT_CHANNELS=TRUE or PERSISTANT_CHANNELS=FALSE
+    to [Features] in mIRCd.ini. Defaults to FALSE.
+14. Can now specify if you want Oper Override support enabled (+X) by adding OPER_OVERRIDE=TRUE or OPER_OVERRIDE=FALSE to
+    [Features] in mIRCd.ini. Defaults to FALSE.
+15. Added an option to allow loose obfuscation of hosts when a user +x. What this means that whenever people on the same
+    ip addresses do +x, each of their hosts will be different rather than the same.
+    This can be enabled by adding LOOSE_OBFUSCATION=TRUE to [Features] in the mIRCd.ini.
+16. Added channel mode +u to hide part/quit messages from other users.
+17. Added chan mode +j <N>. This prevents users who have been connected to the IRCd for less than N second(s) from joining.
+18. Added in /PRIVMSG $* and /NOTICE $* support, however, this is not without it's issues due to mIRC and $ being a
+    special case.
+    On an ircu IRCd, you can /msg $*,$*.tld,$nameOfSer*,nick and it will message all of those.
+    However, with this, it only does the first, everything after the $* will be dropped.
+    E.g. $*,nick will only message $* and completely skip the nick.
+
+    This isn't an issue when you're not an oper though, it'll still process normally.
+19. This means that GNOTICE has been deprecated. However, it has been retained in the codebase as a backup. (Though not callable.)
+20. Updated the code that the connection goes through a little faster if ident/dns is finished with.
+21. Can now call the information window (@mIRCd) from the Menubar.
+22. Updated WHO.help and WHO_FLAGS.help to explain what flags are.
+23. Other minor changes. (debugUser.mrc, example K-lines, other help files, etc.)
+
+
 mIRCd[0.09hf5(Rev.2)][2021-2023] - 27/01/2023
 --------------------------------------------------
-1. You can now limit the amount of users on the IRCd by using MAX_USERS=<number> under [Server] in the mIRCd.ini.
-   Those connecting via localhost (127.*) and LAN (192.168.*) are not subject to this restriction.
-2. You can now deny external connections to the IRCd by using DENY_EXTERNAL_CONNECTIONS=TRUE under [Mechanics] in the mIRCd.ini.
-   Those connecting via localhost (127.*) and LAN (192.168.*) are not subject to this restriction.
-3. Fixed a bugs regarding oper override:
+1.  You can now limit the amount of users on the IRCd by using MAX_USERS=<number> under [Server] in the mIRCd.ini.
+    Those connecting via localhost (127.*) and LAN (192.168.*) are not subject to this restriction.
+2.  You can now deny external connections to the IRCd by using DENY_EXTERNAL_CONNECTIONS=TRUE under [Mechanics] in the mIRCd.ini.
+    Those connecting via localhost (127.*) and LAN (192.168.*) are not subject to this restriction.
+3.  Fixed bugs regarding oper override:
 
-   * Opers can now /INVITE, /KICK, change /MODEs and the /TOPIC when not on the channel.
-   * Since I apparently forgot to code it in two years ago, opers can now walk past +i, +k, etc.
+    * Opers can now /INVITE, /KICK, change /MODEs and the /TOPIC when not on the channel.
+    * Since I apparently forgot to code it in two years ago, opers can now walk past +i, +k, etc.
 
-4. Oper override now trumps +K and +Y. (Though since they could just past the modes, why would they need to use /KNOCK?)
-5. Fixed a bug in KNOCK where I specified %this.nick instead of %this.knock, meaning the channel name didn't show.
-6. Users should now at least see the server notice when DIE and RESTART are issued.
-7. WHOWAS cache cleaning will start on the next hour from when you started the IRCd.
-   E.g. If, for example, you start the IRCd at 21:47, the cleaning timer will start at 22:00.
-8. Added /WHO. (WHOX)
+4.  Oper override now trumps +K and +Y. (Though since they could just past the modes, why would they need to use /KNOCK?)
+5.  Fixed a bug in KNOCK where I specified %this.nick instead of %this.knock, meaning the channel name didn't show.
+6.  Users should now at least see the server notice when DIE and RESTART are issued.
+7.  WHOWAS cache cleaning will start on the next hour from when you started the IRCd.
+    E.g. If, for example, you start the IRCd at 21:47, the cleaning timer will start at 22:00.
+8.  Added /WHO. (WHOX)
 
-   I'm not going to lie, there are a couple of bugs with it. For example, a channel that's not +s and a user who is +i,
-   the user who is +i is on the channel and you do /WHO #chan,user. You will get no results even though you should for the nick.
+    I'm not going to lie, there are a couple of bugs with it. For example, a channel that's not +s and a user who is +i,
+    the user who is +i is on the channel and you do /WHO #chan,user. You will get no results even though you should for the nick.
 
-   But if you do /WHO user,#chan you'll see the user. (You can /WHO on +i users if you know their nick.)
+    But if you do /WHO user,#chan you'll see the user. (You can /WHO on +i users if you know their nick.)
 
-   This is my own fault with the way I've coded it. But rather than chase down even more bugs - I've spent two
-   solid days on this already - I've decided to just okay it for now and I'll eventually try and redo it at some point
-   in time.
+    This is my own fault with the way I've coded it. But rather than chase down even more bugs - I've spent two
+    solid days on this already - I've decided to just okay it for now and I'll eventually try and redo it at some point
+    in time.
 
-   Other than that, everything else works as it should. /WHO #chan,nick, /WHO * r :*, /WHO * %nr, etc.
+    Other than that, everything else works as it should. /WHO #chan,nick, /WHO * r :*, /WHO * %nr, etc.
 
-9. You can throttle the use of WHO by adding WHO_THROTTLE=<number> under [Mechanics] in the mIRCd.
+9.  You can throttle the use of WHO by adding WHO_THROTTLE=<number> under [Mechanics] in the mIRCd.
 10. Other major and minor bug fixes/tweaks.
 
 
@@ -51,13 +96,13 @@ mIRCd[0.09hf3(Rev.2)][2021] - 11/01/2023:
 
 mIRCd[0.09hf2(Rev.2)][2021] - 30/07/2022:
 ---------------------------------------------
-1. Fixed a typo in mIRCd.mrc
-2. Corrected the final line in SNOMASK.help
-3. Added root to nicks.403
-4. Corrected (not -i or -k) to (not set as +i or +k) in KNOCK.help
-5. Updated example K-lines
-6. Updated CHANMODES.help and USERMODES.help to clarify a couple of things better
-7. Removed some unused code from mIRCd_connHandle.mrc
+1. Fixed a typo in mIRCd.mrc.
+2. Corrected the final line in SNOMASK.help.
+3. Added root to nicks.403.
+4. Corrected (not -i or -k) to (not set as +i or +k) in KNOCK.help.
+5. Updated example K-lines.
+6. Updated CHANMODES.help and USERMODES.help to clarify a couple of things better.
+7. Removed some unused code from mIRCd_connHandle.mrc.
 
 mIRCd[0.09(Rev.2)][2021] - 19/07/2021:
 ---------------------------------------------

@@ -1,6 +1,6 @@
 ; mIRCd_msgHandle.mrc
 ;
-; This script contains the following commands: GNOTICE, NOTICE, PRIVMSG, WALLCHOPS, WALLHOPS, WALLOPS, WALLUSERS, WALLVOICES
+; This script contains the following commands: GNOTICE(deprecated) NOTICE, PRIVMSG, WALLCHOPS, WALLHOPS, WALLOPS, WALLUSERS, WALLVOICES
 
 alias mIRCd_command_gnotice {
   ; /mIRCd_command_gnotice <sockname> GNOTICE <message>
@@ -21,7 +21,8 @@ alias mIRCd_command_gnotice {
   }
 }
 ; ¦-> This was called GLOBAL, but I had to rename it to GNOTICE because "GLOBAL" is a restricted term in mIRC. (It wouldn't attempt to read GLOBAL.help when doing /HELP.)
-; `-> Anyway, this exists due to the fact the server doesn't support /msg or /notice $* <msg> to all users until I code it in; So, I've added this command to compensate... for now.
+; ¦-> Anyway, this existed due to the fact the server didn't support /msg or /notice $* <msg> to all users until I coded it in. (This is deprecated and
+; `-> cannot be called, but retained just incase.)
 alias mIRCd_command_notice {
   ; /mIRCd_command_notice <sockname> NOTICE <target[,target,target,...]> :<message>
 
@@ -180,6 +181,29 @@ alias mIRCd.parseMsg {
     }
     ; ,-> The target is a user?
     if ($is_exists(%this.target).nick == $false) {
+      if ($left(%this.target,1) == $chr(36)) {
+        ; ¦-> Send a message to everybody online. $* would send a message to everyone, $*.localhost would send a message to everyone on a
+        ; ¦-> server ending in *.localhost, $*.org would send a message to everyone on a server ending in *.org, etc.
+        ; ¦-> And yes, /msg $*,*.localhost is allowed. $*,$* would follow the "no previous targets" restriction, but $*,$*.localhost 
+        ; ¦-> are viewed as two different targets. However, that doesn't seem to work on this. It drops everything after the first.
+        ; ¦-> So /msg $*,$*.localhost,Jigsy would drop $*.localhost and Jigsy. I'm guessing this is something mIRC related.
+        if ($is_oper($1) == $false) {
+          mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.target)
+          continue
+        }
+        var %this.server = $right(%this.target,-1)
+        if (%this.server !iswm $hget($mIRCd.temp,SERVER_NAME)) {
+          mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.target)
+          continue
+        }
+        var %this.loop = 0
+        while (%this.loop < $hcount($mIRCd.users)) {
+          inc %this.loop 1
+          var %this.globalSock = $hget($mIRCd.users,%this.loop).item
+          mIRCd.raw %this.globalSock $+(:,$mIRCd.fulladdr($1)) $upper($2) %this.target $colonize(%this.message)
+        }
+        continue
+      }
       mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.target)
       continue
     }

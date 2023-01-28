@@ -93,10 +93,10 @@ alias mIRCd_command_list {
       if (($is_private(%this.id) == $true) || ($is_secret(%this.id) == $true)) {
         if (%this.OnChan != 1) { continue }
       }
-      var %this.modes = $mIRCd.info(%this.id,modes), %this.modeItem = g gagTime,l limit,k key
+      var %this.modes = $mIRCd.info(%this.id,modes), %this.modeItem = g gagTime,j joinThrottle,l limit,k key
       var %this.key = $iif($is_oper($1) == $false && $is_on(%this.id,$1) == $false,*,$mIRCd.info(%this.id,key))
       ; >-> Key needs to appear as * if they're not an oper or not on the channel.
-      var %this.modeArgs = $regsubex(%this.modes,/(.)/g,$iif($poscs(glk,\t) != $null,$+($iif(\t === k,%this.key,$mIRCd.info(%this.id,$gettok($matchtok(%this.modeItem,\t,1,44),2,32))),$chr(32))))
+      var %this.modeArgs = $regsubex(%this.modes,/(.)/g,$iif($poscs(gjlk,\t) != $null,$+($iif(\t === k,%this.key,$mIRCd.info(%this.id,$gettok($matchtokcs(%this.modeItem,$+(\t,$chr(32)),1,44),2,32))),$chr(32))))
       var %this.modeString = $bracket(%this.modes $iif(%this.ModeArgs != $null,$v1))
       if (H isincs %this.modes) {
         if (%this.onChan != 1) { var %this.modeString = $null }
@@ -226,7 +226,7 @@ alias mIRCd_command_stats {
       inc %this.loop 1
       var %this.item = $hget($mIRCd.shuns,%this.loop).item
       var %this.data = $hget($mIRCd.shuns,%this.item)
-      mIRCd.sraw $1 $mIRCd.reply(290,$mIRCd.info($1,nick),$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
+      mIRCd.sraw $1 $mIRCd.reply(290,$mIRCd.info($1,nick),%this.item,$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
     }
   }
   if ($3 === u) {

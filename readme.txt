@@ -1,4 +1,4 @@
-mIRCd v0.09hf5 (Revision 2) - by Jigsy (https://github.com/Jigsy1/mIRCd)
+mIRCd v0.09hf6 (Revision 2) - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ---------------------------------------------------------------------------
 
 Files included in this release:
@@ -12,7 +12,7 @@ Files included in this release:
 * notes\*.txt		 - Contains some general information. (E.g. Reserved modes, etc.)
 * mIRCd.motd		 - This is your MOTD file. Feel free to change it. (Note: mIRC doesn't like excessive spaces for ASCII art.)
 * mIRCd.mrc/mIRCd_*.mrc	 - These are the core of the IRCd. (You will need all of them loaded.)
-* *.bat files		 - Quick and dirty way of doing things. (Such as terminating the IRCd, etc.)
+* *.bat files		 - A quick and dirty way of doing things. (Such as terminating the IRCd, etc.)
 
 Note: The *.bat files will not work without the following: http://xise.nl/mirc/sigmirc.zip
 
@@ -40,7 +40,7 @@ Setting up mIRCd:
 6. Start the server by doing: /mIRCd.start
    You can also do this via the Menubar, /mIRCd.gui or START.bat.
 
-7. Connect to the server via: /server localhost 6667
+7. Connect to the server via: /server localhost 6667 (Or via /server 127.0.0.1 6667 if "localhost" isn't defined by HOSTS.)
    Or, if you're running this on another LAN machine: /server your.lan.ip 6667
    If you wish to get other people to connect - depending on firewall/router rules - it'll be: /server your.public.ip 6667
 
@@ -50,6 +50,10 @@ You can also do this via the Menubar, /mIRCd.gui or DIE.bat.
 If you wish to unload the scripts, do /unload -rs "P:\ath\to\mIRCd.mrc" or via the editor.
 This should unload all the remaining scripts for you. (If it doesn't, unload all of them - mIRCd_*.mrc - one-by-one.)
 
-Note: Unloading the script should also terminate the IRCd and unload memory for you.
+Note: Unloading the script should also terminate the IRCd and unload memory for you. If for some reason it doesn't:
+
+1. Stop all timers by doing: /timermIRCd.* off
+2. Close the socks by doing: /sockclose mIRCd.*
+3. Free the memory by doing: /hfree -w mIRCd*
 
 ; EOF

@@ -140,8 +140,10 @@ alias mIRCd_command_pong {
     mIRCd.sraw $1 $mIRCd.reply(513,%this.current,$mIRCd.info($1,passPing))
     return
   }
-  if ($is_klineMatch($mIRCd.fulladdr($1)) == $true) {
+  var %this.realName = $+(!R,$strip($mIRCd.info($1,realName)))
+  if (($is_klineMatch($mIRCd.fulladdr($1)) == $true) || ($is_klineMatch(%this.realName) == $true)) {
     var %this.match = $hget($mIRCd.klines,$hfind($mIRCd.klines,$mIRCd.fulladdr($1),1,W))
+    if ($is_klineMatch(%this.realName) == $true) { var %this.match = $hget($mIRCd.klines,$hfind($mIRCd.klines,%this.realName,1,W)) }
     mIRCd.sraw $1 $mIRCd.reply(465,%this.current,%this.match)
     $+(.timermIRCd.kline,$1) -o 1 0 mIRCd.errorUser $1 K-lined $parenthesis(%this.match)
     return
@@ -152,8 +154,9 @@ alias mIRCd_command_pong {
     $+(.timermIRCd.zline,$1) -o 1 0 mIRCd.errorUser $1 Z-lined $parenthesis(%this.match)
     return
   }
-  if ($is_glineMatch($mIRCd.fulladdr($1)) == $true) {
+  if (($is_glineMatch($mIRCd.fulladdr($1)) == $true) || ($is_glineMatch(%this.realName) == $true)) {
     var %this.match = $gettok($hget($mIRCd.glines,$hfind($mIRCd.glines,$mIRCd.fulladdr($1),1,W)),2-,32)
+    if ($is_glineMatch(%this.realName) == $true) { var %this.match = $gettok($hget($mIRCd.glines,$hfind($mIRCd.glines,%this.realName,1,W)),2-,32) }
     mIRCd.sraw $1 $mIRCd.reply(465,%this.current,%this.match)
     $+(.timermIRCd.gline,$1) -o 1 0 mIRCd.errorUser $1 G-lined $parenthesis(%this.match)
     return
@@ -285,10 +288,11 @@ alias mIRCd.welcome {
   mIRCd.updateUser $1 isReg 1
   ; `-> The user is now officially registered with the IRCd! (Yay!)
   hdel $mIRCd.unknown $1
+  mIRCd.delUserItem $1 dnsChecked
+  mIRCd.delUserItem $1 identChecked
   mIRCd.delUserItem $1 passPing
   ; `-> No longer needed.
   mIRCd.updateUser $1 lastPing $ctime
-  mIRCd.updateUser $1 modes +
   mIRCd.updateUser $1 snoMask $mIRCd(DEFAULT_SNOMASK)
   if ($calc($hcount($mIRCd.users) - $hcount($mIRCd.unknown)) > $hget($mIRCd.temp,highCount)) { hadd -m $mIRCd.temp highCount $v1 }
   ; `-> TBC: Does the highCount include connecting users?
@@ -299,13 +303,25 @@ alias mIRCd.welcome {
   mIRCd.raw005 $1
   mIRCd_command_lusers $1
   mIRCd_command_motd $1
+  if ($hget($mIRCd.temp,DEFAULT_USERMODES) == +) {
+    mIRCd.updateUser $1 modes +
+    return
+  }
+  var %these.modes = $hget($mIRCd.temp,DEFAULT_USERMODES)
+  mIRCd.updateUser $1 modes %these.modes
+  mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) MODE $mIRCd.info($1,nick) $+(:,%these.modes)
+  if (x isincs %these.modes) { mIRCd.hostQuit $1 }
+  if (i isincs %these.modes) { hadd -m $mIRCd.invisible $1 $ctime }
+  if (o isincs %these.modes) { hadd -m $mIRCd.opersOnline $1 $ctime }
+  ; `-> I'm only adding this one on the off chance somebody totally ignored my warning and removed o from the forbidden list.
 }
 alias mIRCd.raw005 {
   ; /mIRCd.raw005 <sockname>
 
   if ($hcount($mIRCd.targMax) > 0) { var %this.targmax = $+(TARGMAX=,$sorttok($left($regsubex($str(.,$hget($mIRCd.targMax,0).item),/./g,$iif(TARGMAX_* iswm $hget($mIRCd.targMax,\n).item && $hget($mIRCd.targMax,\n).data isnum 1-,$+($gettok($hget($mIRCd.targMax,\n).item,2,95),:,$iif($hget($mIRCd.targMax,\n).data != $null,$v1,$null),$comma))),-1),44,a)) }
   ; `-> Prep. TARGMAX=... first. Send it as the last part of RPL_ISUPPORT last too because of the length(?).
-  var %this.list = $+(AWAYLEN=,$mIRCd(AWAYLEN)) CASEMAPPING=ascii $+(CHANNELLEN=,$mIRCd(MAXCHANNELLEN)) $+(CHANMODES=,$mIRCd.chanModesSupport) CHANTYPES=# DEAF=d $+(KEYLEN=,$mIRCd(KEYLEN)) $+(KICKLEN=,$mIRCd(KICKLEN)) $iif($istok($mIRCd.commands(1),KNOCK,44) == $true,KNOCK) $+(MAXBANS=,$mIRCd(MAXBANS)) $+(MAXCHANNELS=,$mIRCd(MAXCHANNELS)) $iif($istok($mIRCd.commands(1),MAP,44) == $true,MAP) $+(MAXLIST=b:,$mIRCd(MAXBANS)) $+(MAXNICKLEN=,$mIRCd(MAXNICKLEN)) $iif($mIRCd(MAXTARGETS) != $null,$+(MAXTARGETS=,$mIRCd(MAXTARGETS))) $+(MODES=,$mIRCd(MODESPL)) NAMESX $+(NETWORK=,$mIRCd(NETWORK_NAME)) $+(NICKLEN=,$mIRCd(MAXNICKLEN)) PREFIX=(ohv)@%+ $+(SILENCE=,$mIRCd(MAXSILENCE)) SAFELIST STATUSMSG=@%+ $+(TOPICLEN=,$mIRCd(TOPICLEN)) UHNAMES $iif($istok($mIRCd.commands(1),USERIP,44) == $true,USERIP) $+(USERLEN=,$mIRCd.userLen) $iif($istok($mIRCd.commands(1),WALLCHOPS,44) == $true,WALLCHOPS) $iif($istok($mIRCd.commands(1),WALLVOICES,44) == $true,WALLVOICES) $iif($istok($mIRCd.commands(1),WHO,44) == $true,WHOX) $iif(%this.targmax != $null,$v1)
+  var %this.prefix = (o $+ $iif($hget($mIRCd.temp,HALFOP) == 1,h) $+ v)@ $+ $iif($hget($mIRCd.temp,HALFOP) == 1,$chr(37)) $+ +
+  var %this.list = $+(AWAYLEN=,$mIRCd(AWAYLEN)) CASEMAPPING=ascii $+(CHANNELLEN=,$mIRCd(MAXCHANNELLEN)) $+(CHANMODES=,$mIRCd.chanModesSupport) CHANTYPES=# DEAF=d $+(KEYLEN=,$mIRCd(KEYLEN)) $+(KICKLEN=,$mIRCd(KICKLEN)) $iif($istok($mIRCd.commands(1),KNOCK,44) == $true,KNOCK) $+(MAXBANS=,$mIRCd(MAXBANS)) $+(MAXCHANNELS=,$mIRCd(MAXCHANNELS)) $iif($istok($mIRCd.commands(1),MAP,44) == $true,MAP) $+(MAXLIST=b:,$mIRCd(MAXBANS)) $+(MAXNICKLEN=,$mIRCd(MAXNICKLEN)) $iif($mIRCd(MAXTARGETS) != $null,$+(MAXTARGETS=,$mIRCd(MAXTARGETS))) $+(MODES=,$mIRCd(MODESPL)) NAMESX $+(NETWORK=,$mIRCd(NETWORK_NAME)) $+(NICKLEN=,$mIRCd(MAXNICKLEN)) $+(PREFIX=,%this.prefix) $+(SILENCE=,$mIRCd(MAXSILENCE)) SAFELIST $+(STATUSMSG=,$gettok(%this.prefix,2,41)) $+(TOPICLEN=,$mIRCd(TOPICLEN)) UHNAMES $iif($istok($mIRCd.commands(1),USERIP,44) == $true,USERIP) $+(USERLEN=,$mIRCd.userLen) $iif($istok($mIRCd.commands(1),WALLCHOPS,44) == $true,WALLCHOPS) $iif($istok($mIRCd.commands(1),WALLVOICES,44) == $true,WALLVOICES) $iif($istok($mIRCd.commands(1),WHO,44) == $true,WHOX) $iif(%this.targmax != $null,$v1)
   ; ¦-> I'm not 100% sure on if my CASEMAPPING=... is ascii or rfc1459. I've opted for ascii for now. (Make an issue on Github and let me know if it's wrong.)
   ; `-> Anything else? Reference: https://defs.ircdocs.horse/defs/isupport.html
   var %this.loop = 0, %this.string = $null
@@ -325,7 +341,11 @@ alias mIRCd.registerUser {
 
   mIRCd.updateUser $1 passPing $base($rand(0,999999999999),10,10,12)
   var %this.command = mIRCd.raw $1 PING $+(:,$mIRCd.info($1,passPing))
-  if ($mIRCd(LOOKUP_DELAY) != $null) { $+(.timermIRCd.ping,$1) -o 1 $v1 %this.command }
+  if ($mIRCd(LOOKUP_DELAY) isnum 1-) {
+    var %this.delay = $v1
+    if (($bool_fmt($mIRCd(DNS_USERS)) == $false) && ($bool_fmt($mIRCd(ACCESS_IDENT_SERVER)) == $false)) { var %this.delay = 1 }
+    $+(.timermIRCd.ping,$1) -o 1 %this.delay %this.command
+  }
   else { %this.command }
   ; `-> ?: [ [ %this.command ] ]
 }
