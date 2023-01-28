@@ -1,4 +1,6 @@
-﻿Everyone:
+﻿<thisCommand>
+
+Everyone:
 ----------
 c - Blocks any incoming messages containing colors only. Bold, underline, etc. will still be visible.
 d - Deaf. The user will not see any messages in a channel.

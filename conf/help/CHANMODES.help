@@ -1,10 +1,13 @@
-﻿c - Blocks any incoming messages containing colors only. Bold, underline, etc. will still be visible.
+﻿<thisCommand>
+
+c - Blocks any incoming messages containing colors only. Bold, underline, etc. will still be visible.
 i - Invite only. You cannot join unless someone /INVITEs you.
 m - Moderated. Only voices or above may change their nick or talk.
 n - No external messages. User must be on the channel in order to talk.
 p - Private. Channel will not appear in /LIST. (Excluding opers.)
 s - Secret*. Does not appear in /LIST, /WHOIS replies, etc. (Excluding opers.)
 t - Only (h)ops may change the topic.
+u - Part/quit messages are hidden from users in the channel.
 y - Anybody can use the /INVITE command.
 C - /CTCP is not allowed.
 H - Hide channel mode(s) from appearing in list. (Excluding opers.)
@@ -19,6 +22,7 @@ Modes that require args:
 b - Banned. User cannot join the channel. They may not also change nicks or talk, unless voice or above. (+b n!u@h ...)
 g - Gagged. Users must be a member of a channel for X seconds before being able to talk. (+g 60)
 h - Halfop (%). Can do everything an op can do except (de)op or (de)hop users. (+h <thisNick> ...)
+j - New connection throttle. Users must be connected to the IRCd for X seconds before being able to join. (+j 60)
 k - A key is required to join the channel. Done via: /JOIN #chan passw0rd!1 (+k passw0rd!1)
 l - The channel is limited to X users. (+l 100)
 o - Op (@). Can change modes, the topic, kick others, etc. (+o <thisNick> ...)
@@ -32,7 +36,7 @@ P - Persistent. The channel will not be deleted after the last user has left.
 Footnotes:
 ----------
 1. When unsetting a key (/MODE #chan -k), you must supply the key in order to unset it.
-2. However, you do not need to do this when unsetting a gag time or limit.
+2. However, you do not need to do this when unsetting a gag time, join throttle or limit.
 
 *The existence of the channel can be revealed by certain commands - E.g. trying to /KICK when not on the channel.
 However, if you set DENY_SECRET=TRUE in the config, it will vehemently deny that the channel exists.

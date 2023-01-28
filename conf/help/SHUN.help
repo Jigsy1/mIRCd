@@ -1,4 +1,4 @@
-﻿<thisCommand> [<-|+user@host> <duration> <reason>]
+﻿<thisCommand> [<-|+!RrealName|user@host> <duration> <reason>]
 
 Will prevent a user from doing anything on the network with the exception of: ADMIN, PING, PONG and QUIT
 
@@ -11,8 +11,10 @@ Example(s):
 /<thisCommand>
 /<thisCommand> -*@8.8.8.8 1 Removing
 /<thisCommand> +*@127.0.0.1 3600 Take a timeout.
+/<thisCommand> +!RBob*Johnson 3600 Take a timeout.
 
 Footnotes:
 ----------
 1. The duration cannot be zero, even when removing.
 2. @host masks cannot contain wildcards. user@ may contain wildcards.
+3. With real names, wildcards are allowed, but they are subject to an incredibly strict limit. (Less than 25%.)

@@ -1,12 +1,53 @@
-<thisCommand> [<mask>] [matchflags][%includeflags] [:search]
+<thisCommand> <terms[,...]> [matchflags][%includeflags] [:search]
 
 This will display a list of user(s), either online, in a channel, which match certain masks.
 
+This will not work on channels which are +s, or if the user is +i in a channel which is not mutual.
+However, you can /<thisCommand> a user directly who is +i if you know their nick.
+
+If you specify matchflags, any users with relevant terms will be displayed.
+
+If you specify %includeflags, the IRCd will only return that information in the output.
+
+If you specify a :search, the terms you specified will be ignored.
+
+Matchflags:
+---------------
+h/H - Match terms to hostname. (In the case of IRC operators, their true host.)
+i/I - Match terms to ip. (Will only work for IRC operators if the user is +x.)
+n/N - Match terms to nick.
+o/O - Match opers.
+r/R - Match terms to realname. (Will not work if their nick has spaces.)
+u/U - Match terms to ident/user.
+
+Defaults are: hnu
+
+%includeflags (numeric 354):
+-------------------------
+c/C - Include a channel in the reply.
+d/D - Include the hopcount in the reply.
+f/F - Include flags in the reply. (See also: WHO_FLAGS)
+h/H - Include the hostname in the reply.
+i/I - Include the ip in the reply.
+l/L - Include the idle time in the reply.
+n/N - Include the nick in the reply.
+r/R - Include the realname in the reply.
+s/S - Include the server in the reply.
+u/U - Include the ident/user in the reply.
+
+Defaults (numeric 352) are: cuhsnfdr
+
+Note: If the channel is +s or the user is +i or +n, this will appear as an * unless the command
+is being used by the user themselves or by an IRC operator.
+
 Example(s):
 ---------------
-<thisCommand> WHO #<thisNetwork>,<thisNick>
-<thisCommand> WHO #Opers o
-<thisCommand> WHO * i :255.255.255.255
-<thisCommand> WHO * r :Spambot*
+/<thisCommand> #<thisNetwork>,<thisNick>
+/<thisCommand> #Opers o
+/<thisCommand> * i :255.255.255.255
+/<thisCommand> #<thisNetwork> r :/MSG ChanServ SHOWCOMMANDS
+/<thisCommand> Jigsy n%cnr
 
-See also: http://xise.nl/mirc/who.html
+Further information about WHO can be viewed at http://xise.nl/mirc/who.html
+
+See also: WHO_FLAGS
