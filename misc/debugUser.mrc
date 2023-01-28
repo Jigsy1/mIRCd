@@ -18,11 +18,11 @@ on *:sockread:debugUser:{
   sockread %debugUser.sockRead
   tokenize 32 %debugUser.sockRead
 
-  if ($window($debugUser.window) != $null) { echo -ci2t "Info text" $v1 [R]: $sockname <- $1- }
   if ($sockerr > 0) {
     if ($window($debugUser.window) != $null) { echo -ci2t "Info text" $v1 [E]: $sockname error }
     return
   }
+  if ($window($debugUser.window) != $null) { echo -ci2t "Info text" $v1 [R]: $sockname <- $1- }
   if ($1 == PING) { debugUser.raw PONG $2- }
 }
 
