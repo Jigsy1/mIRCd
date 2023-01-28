@@ -16,7 +16,6 @@ Please consult readme.txt on how to get it running. -Jigsy
 
 
 ##### Things I would at least like to try to do some day:
-* Finish some of the commands. ($RealName with /GLINE)
 * Server linking. Though given the nature of this, it's going to require me to rescript the entire IRCd from scratch. (Rev.3)
 
 ###### Screenshots
