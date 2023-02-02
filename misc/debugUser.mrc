@@ -2,6 +2,10 @@
 ;
 ; Simple socket user for debugging purposes. Connect via: /sockopen debugUser <server ip> <server port>
 
+menu Menubar {
+  .&Debug User
+  ..$iif($window($debugUser.window) != $null,$style(2)) Information Window:{ window -ek0n $debugUser.window }
+}
 on *:sockclose:debugUser:{
   if ($window($debugUser.window) != $null) { echo -ci2t "Info text" $v1 [C]: $sockname closed }
 }
@@ -32,7 +36,7 @@ alias -l debugUser.nick { return Debugger }
 alias debugUser.raw {
   ; /debugUser.raw <args>
 
-  if ($window($debugUser.window) != $null) { echo -ci2t "Info text" $v1 [W]: $sockname -> $1- }
+  if ($window($debugUser.window) != $null) { echo -ci2t "Info text" $v1 [W]: debugUser -> $1- }
   if ($sock(debugUser) != $null) { sockwrite -nt debugUser $1- }
 }
 alias -l debugUser.window { return @debugUser }
