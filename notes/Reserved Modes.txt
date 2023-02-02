@@ -2,10 +2,10 @@
 
 Chanmodes:
 ----------
+a - Admin on non ircu IRCds.
 e - Ban exemption for n!u@h.
-d - Auditorium mode set by server when -D, but hidden users are still in the channel.
+q - Owner on non ircu IRCds or quiet on other non ircu IRCds. (n!u@h)
 r - Only registered users can join the channel.
-D - Auditorium mode. Users will not show up in /NAMES until they talk.
 I - Invite exemption for n!u@h.
 M - Only registered users may talk.
 Q - Quiet. (n!u@h)
@@ -15,8 +15,8 @@ Usermodes:
 ----------
 h - User has a fakehost. (This is a hidden mode.)
 r - User is registered. (This is a hidden mode. Cannot be unset.)
-B - Bot.
 R - Only registered users can message you.
+W - Web clients.
 Z - User is connected via SSL. (Cannot be unset.)
 
 Deprecated usermodes:

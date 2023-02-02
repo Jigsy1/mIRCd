@@ -1,0 +1,31 @@
+The following commands are missing from the IRCd.
+
+Misc:
+-----
+CNOTICE		(Reason: mIRCd has no "Excess Flood" coded in until I decided to code it.)
+CPRIVMSG	(Reason: Ditto.)
+PROTO		(Reason: I've never been able to figure out what this command is actually supposed to do.)
+
+Server linking:
+---------------
+ACCOUNT
+BURST
+DESTRUCT
+DESYNCH
+CONNECT
+CREATE		(Note: This is actually sent via P10 when a user makes a channel.)
+END_OF_BURST
+EOB_ACK
+JUPE
+RPING
+RPONG
+SERVER
+SQUIT
+TRACE
+
+Ones I can add, but haven't (as of yet):
+----------------------------------------
+PASS
+SETHOST		(Goes in conjunction with mode +h, which has an arg...)
+SETTIME		(Note: Testing this on bircd, I could set the clock back to 1995.
+		       Though there has to be a cut off point, surely?)

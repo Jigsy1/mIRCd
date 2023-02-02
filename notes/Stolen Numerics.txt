@@ -2,14 +2,17 @@ The following were not part of s_err.c in the ircu source code, so I've stolen t
 They are obviously not binding to real IRCds.
 
 ERR_JOINTHROTTLECHAN	= 469: <nick> :Cannot join channel (+j) (New connection throttle: Try again in <secs> second(s).)
-ERR_CANNOTSENDTOUSER	= 599: <nick> :Cannot send to user
-ERR_INVITEDISALLOWED	= 598: <chan> :INVITE not allowed (+Y)
-ERR_CANTKNOCK		= 597: <chan> :<string>
-ERR_NOSUCHZLINE		= 596: <input> :No such zline
-ERR_NOTANIP		= 595: <input> :Not a valid ip address
+ERR_ACCEPTLISTFULL	= 510: <mask> :Your accept list is full
 ERR_NOSUCHSHUN		= 594: <input> :No such shun
+ERR_NOTANIP		= 595: <input> :Not a valid ip address
+ERR_NOSUCHZLINE		= 596: <input> :No such zline
+ERR_CANTKNOCK		= 597: <chan> :<string>
+ERR_INVITEDISALLOWED	= 598: <chan> :INVITE not allowed (+Y)
+ERR_CANNOTSENDTOUSER	= 599: <nick> :Cannot send to user
 
-RPL_ENDOFZLIST		= 293: :End of Z-line List
-RPL_ZLIST		= 292: Z <ip> <expire time> +ol :<reason>
-RPL_ENDOFSLIST		= 291: :End of Shun List
+RPL_ACCEPTLIST		= 161: <nick> :<mask>
+RPL_ENDOFACCEPTLIST	= 162: <nick> :End of accept list
 RPL_SLIST		= 290: S <mask> <expire time> +ol :<reason>
+RPL_ENDOFSLIST		= 291: :End of Shun List
+RPL_ZLIST		= 292: Z <ip> <expire time> +ol :<reason>
+RPL_ENDOFZLIST		= 293: :End of Z-line List

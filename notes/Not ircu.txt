@@ -1,10 +1,12 @@
 The following commands are generally not part of ircu based IRCds, but I have included them because of their usefulness.
 
+* ACCEPT	(Only for use in +m.)
 * KNOCK
-* SHUN
+* SHUN		(Well, this one sort of is.)
 * ZLINE
 
-Also added the following due to the fact that /msg or /notice $* doesn't work because I haven't coded it in.
+Also added the following - now deprecated - due to the fact that /msg or /notice $* didn't work because I hadn't
+coded it in.
 
 * GNOTICE
 
