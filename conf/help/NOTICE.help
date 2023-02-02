@@ -1,0 +1,8 @@
+﻿<thisCommand> <target[,target[,target,...]> :<message>
+
+Will send a notice to the specified target(s).
+
+Example(s):
+---------------
+/<thisCommand> #chan1,#chan2 :Sup?
+/<thisCommand> <thisNick> :Help!

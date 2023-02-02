@@ -1,0 +1,7 @@
+﻿<thisCommand> :<arg>
+
+Will ping the server letting it know you are still active, and to check if the server is still active.
+
+Example(s):
+---------------
+/<thisCommand> :Hello!

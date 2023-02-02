@@ -1,0 +1,13 @@
+﻿<thisCommand> [<-|+nick!user@host>]
+
+Will add or remove a nick!user@host to/from your accept list, limiting who can /msg you directly.
+
+If no nick!user@host is specified, all accepts are listed.
+
+All accepts are cleared upon disconnection.
+
+Example(s):
+---------------
+/<thisCommand>
+/<thisCommand> +Bob!*@*
+/<thisCommand> -Alice!*@*

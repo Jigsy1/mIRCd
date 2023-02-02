@@ -1,0 +1,11 @@
+﻿<thisCommand> <0|#chan[,#chan,#chan,...]> <key[,key,key,...]>
+
+Allows a user to join channel(s). If a key is set on the channel, it can be joined by specifiying the key after.
+
+Joining 0 will cause the user to part all channels they are currently on.
+
+Example(s):
+---------------
+/<thisCommand> 0
+/<thisCommand> #<thisNetwork>
+/<thisCommand> #Secret thisKey

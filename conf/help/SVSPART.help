@@ -1,0 +1,5 @@
+<thisCommand> <nick> <#chan>
+
+Will force a user to leave a channel.
+
+Note: This command can only be used by IRC operators.

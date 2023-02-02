@@ -1,0 +1,14 @@
+﻿<thisCommand> [section]
+
+This will rehash altered IRCd information into memory.
+
+If a certain section is specified, that will be re-loaded.
+
+The sections are as follow(s): klines, nicks, raws, server, mechanics, features, admin, targets, opers
+
+Note: This command can only be used by IRC operators.
+
+Example(s):
+---------------
+/<thisCommand>
+/<thisCommand> klines

@@ -1,0 +1,11 @@
+﻿<thisCommand> <#chan|nick> <modes> [<args>]
+
+Allows the user to change any modes on a channel or on themselves.
+
+Example(s):
+---------------
+/<thisCommand> #Opers +sOP
+/<thisCommand> #<thisNetwork> +o-v <thisNick> Alice
+/<thisCommand> <thisNick> +inxI
+
+See also: CHANMODES, USERMODES

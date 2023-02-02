@@ -1,0 +1,5 @@
+﻿<thisCommand> <flag>
+
+Will return a list of information relating to the flag specified.
+
+Note: At present, the only flags that are supported are g/G, m/M, o/O, p/P, s/S, u, U and z/Z.

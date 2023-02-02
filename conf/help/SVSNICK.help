@@ -1,0 +1,5 @@
+<thisCommand> <nick> <new nick>
+
+Will forcefully rename a user to a new nick.
+
+Note: This command can only be used by IRC operators.
