@@ -1,6 +1,6 @@
 ; mIRCd_chanHandle.mrc
 ;
-; This script contains the following commands: INVITE, JOIN, KICK, KNOCK, NAMES, PART, SVSJOIN, SVSPART, TOPIC
+; This script contains the following command(s): INVITE, JOIN, KICK, KNOCK, NAMES, PART, SVSJOIN, SVSPART, TOPIC
 
 alias mIRCd_command_invite {
   ; /mIRCd_command_invite <sockname> INVITE [<nick> <#chan>]
@@ -182,7 +182,7 @@ alias mIRCd_command_kick {
     inc %this.nick 1
     var %this.nickname = $gettok(%this.kicks,%this.nick,44), %this.kickSock = $getSockname(%this.nickname)
     if (%this.kickSock == $null) {
-      mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.nickmame)
+      mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.nickname)
       continue
     }
     if ($is_on(%this.id,%this.kickSock) == $false) {
@@ -197,9 +197,18 @@ alias mIRCd_command_kick {
     while (%this.kick < $hcount($mIRCd.chanUsers(%this.id))) {
       inc %this.kick 1
       var %this.sock = $hget($mIRCd.chanUsers(%this.id),%this.kick).item
+      if ($gettok($hget($mIRCd.chanUsers(%this.id),%this.kickSock),2,32) == 1) {
+        if (%this.sock != %this.kickSock) {
+          mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr(%this.kickSock)) JOIN %this.name
+          var %this.d = 1
+        }
+      }
       mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) KICK %this.name %this.nickname $colonize($iif($5- != $null,$left($v1,$mIRCd(KICKLEN)),%this.nickname)))
     }
     mIRCd.chanDelUser %this.id %this.kickSock
+    if (%this.d == 1) {
+      if ($is_modeSet(%this.id,d).chan == $true) { mIRCd.dCheck %this.id }
+    }
   }
 }
 alias mIRCd_command_knock {
@@ -269,12 +278,19 @@ alias mIRCd_command_knock {
 }
 alias mIRCd_command_names {
   ; /mIRCd_command_names <sockname> NAMES [-d] <#chan[,#chan,#chan,...]>
-  ;
-  ; Note: -d is for auditorium mode; but it is not used here or accounted for (yet).
 
   if ($3 == $null) {
     mIRCd.raw $1 $mIRCd.reply(366,$mIRCd.info($1,nick),*)
     return
+  }
+  if ($3 == -d) {
+    var %this.d = $iif(d isincs $mIRCd.chanModes && D isincs $mIRCd.chanModes,1,0)
+    if ($4 == $null) {
+      mIRCd.raw $1 $mIRCd.reply(366,$mIRCd.info($1,nick),*)
+      return
+    }
+    tokenize 32 $1 $2 $4
+    ; `-> It's easier (read as: hackier) to set a flag and retokenize the string.
   }
   var %this.names = $3
   if ($hget($mIRCd.targMax,TARGMAX_NAMES) isnum 1-) { var %this.names = $deltok(%this.names,$+($calc($v1 + 1),-),44) }
@@ -297,18 +313,39 @@ alias mIRCd_command_names {
     var %this.user = 0, %this.string = $null
     while (%this.user < $hcount($mIRCd.chanUsers(%this.id))) {
       inc %this.user 1
-      var %this.sock = $hget($mIRCd.chanUsers(%this.id),%this.user).item
+      var %this.sock = $hget($mIRCd.chanUsers(%this.id),%this.user).item, %this.sockState = $gettok($hget($mIRCd.chanUsers(%this.id),%this.user).data,2,32)
       if (%this.offChan == 1) {
-        if (($is_modeSet(%this.sock,i).nick == $true) && (%this.sock != $1) || ($is_oper($1) == $false)) { continue }
+        if (($is_modeSet(%this.sock,i).nick == $true) && (%this.sock != $1)) {
+          if ($is_oper($1) == $false) { continue }
+        }
+        ; `-> I did notice on bircd that /NAMES -d #chan when oper doesn't show invisible users. (Though I believe that might be a bug.)
       }
-      var %this.string = $+($mIRCd.namesStatus(%this.id,%this.sock),$mIRCd.fulladdr(%this.sock)) %this.string
+      var %this.userState = $mIRCd.namesStatus(%this.id,%this.sock)
+      if (%this.d == 1) {
+        if (%this.sockState != 1) { continue }
+        if (%this.sock == $1) { continue }
+        goto processNamesString
+      }
+      if ($is_modeSet(%this.id,D).chan == $true) {
+        if (%this.sockState == 1) {
+          if (%this.sock != $1) { continue }
+        }
+      }
+      if ($is_modeSet(%this.id,d).chan == $true) {
+        if (%this.sockState == 1) {
+          if (%this.sock != $1) { continue }
+        }
+        ; `-> Ignore those still invisible.
+      }
+      :processNamesString
+      var %this.string = $+(%this.userState,$mIRCd.fulladdr(%this.sock)) %this.string
       if ($numtok(%this.string,32) == 8) {
         ; `-> I've opted for a hardcoded eight here. After eight users are in the string, send the line to the user.
-        mIRCd.sraw $1 $mIRCd.reply(353,$mIRCd.info($1,nick),%this.flag,%this.name,%this.string)
+        mIRCd.sraw $1 $mIRCd.reply($iif(%this.d == 1,355,353),$mIRCd.info($1,nick),%this.flag,%this.name,%this.string)
         var %this.string = $null
       }
     }
-    if (%this.string != $null) { mIRCd.sraw $1 $mIRCd.reply(353,$mIRCd.info($1,nick),%this.flag,%this.name,%this.string) }
+    if (%this.string != $null) { mIRCd.sraw $1 $mIRCd.reply($iif(%this.d == 1,355,353),$mIRCd.info($1,nick),%this.flag,%this.name,%this.string) }
     :processNames
     mIRCd.sraw $1 $mIRCd.reply(366,$mIRCd.info($1,nick),$iif($iif($is_secret(%this.id) == $true && $is_on(%this.id,$1) == $false,%this.chan,%this.name) != $null,$v1,%this.chan))
     if (%this.offChan == 1) { var %this.offChan = 0 }
@@ -345,11 +382,13 @@ alias mIRCd_command_part {
       continue
     }
     var %this.partMessage = $colonize($iif($4-,$v1))
-    if (u isincs $mIRCd.info(%this.id,modes)) { var %this.partMessage = $colonize($mIRCd.standardPart) }
-    var %this.user = 0
-    while (%this.user < $hcount($mIRCd.chanUsers(%this.id))) {
-      inc %this.user 1
-      mIRCd.raw $hget($mIRCd.chanUsers(%this.id),%this.user).item $+(:,$mIRCd.fulladdr($1)) PART %this.name %this.partMessage
+    if (u isincs $mIRCd.info(%this.id,modes)) { var %this.partMessage = $+(:,$mIRCd.standardPart) }
+    if ($gettok($hget($mIRCd.chanUsers(%this.id),$1),2,32) == 0) {
+      var %this.user = 0
+      while (%this.user < $hcount($mIRCd.chanUsers(%this.id))) {
+        inc %this.user 1
+        mIRCd.raw $hget($mIRCd.chanUsers(%this.id),%this.user).item $+(:,$mIRCd.fulladdr($1)) PART %this.name %this.partMessage
+      }
     }
     mIRCd.chanDelUser %this.id $1
   }
@@ -493,10 +532,21 @@ alias mIRCd_command_topic {
       mIRCd.updateChan %this.id topicBy $mIRCd.fulladdr($1)
       mIRCd.updateChan %this.id topicTime $ctime
     }
-    var %this.show = 0
+    var %this.show = 0, %this.changeState = 0
     while (%this.show < $hcount($mIRCd.chanUsers(%this.id))) {
       inc %this.show 1
-      mIRCd.raw $hget($mIRCd.chanUsers(%this.id),%this.show).item $+(:,$mIRCd.fulladdr($1)) TOPIC %this.name $+(:,$mIRCd.info(%this.id,topic))
+      var %this.sock = $hget($mIRCd.chanUsers(%this.id),%this.show).item
+      if ($gettok($hget($mIRCd.chanUsers(%this.id),$1),2,32) == 1) {
+        if (%this.sock != $1) {
+          mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) JOIN %this.name
+          var %this.changeState = 1
+        }
+      }
+      mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) TOPIC %this.name $+(:,$mIRCd.info(%this.id,topic))
+    }
+    if (%this.changeState == 1) {
+      mIRCd.updateChanUser %this.id $1 0 2
+      if ($is_modeSet(%this.id,d).chan == $true) { mIRCd.dCheck %this.id }
     }
     if (%this.flag != $null) { var %this.flag = 0 }
   }
@@ -515,6 +565,14 @@ alias is_mutual {
   var %this.first = $mIRCd.info($1,chans), %this.second = $mIRCd.info($2,chans)
   return $iif($count($regsubex($str(.,$numtok(%this.first,44)),/./g,$iif($istok(%this.second,$gettok(%this.first,\n,44),44) == $true,1,0)),1) > 0,$true,$false)
 }
+alias is_mutualHidden {
+  ; $is_mutualHidden(<sockname using /NICK or /QUIT>,<sockname>)
+
+  var %this.sock = $1
+  var %this.first = $mIRCd.info($1,chans), %this.second = $mIRCd.info($2,chans)
+  var %this.mutual = $regsubex($str(.,$numtok(%this.first,44)),/./g,$iif($istok(%this.second,$gettok(%this.first,\n,44),44) == $true,$+($gettok(%this.first,\n,44),$comma)))
+  return $iif($count($regsubex($str(.,$numtok(%this.mutual,44)),/./g,$gettok($hget($mIRCd.chanUsers($gettok(%this.mutual,\n,44)),%this.sock),2,32)),0) > 0,$false,$true)
+}
 alias is_on {
   ; $in_on(<chan ID>,<sockname>)
 
@@ -530,14 +588,17 @@ alias mIRCd.chanAddUser {
 
   var %this.id = $1, %this.name = $mIRCd.info(%this.id,name)
   var %this.users = $hcount($mIRCd.chanUsers(%this.id))
-  hadd -m $mIRCd.chanUsers(%this.id) $2 $ctime 0 $iif(%this.users > 0,0,1) 0 0
-  ; ¦-> Explaination of everything here-^: <time joined> <delayed join> <op> <hop> <voice>
-  ; `-> <delayed join> isn't used (yet), but I've accounted for it regardless.
+  hadd -m $mIRCd.chanUsers(%this.id) $2 $ctime $iif(%this.users > 0 && $is_modeSet(%this.id,D).chan == $true,1,0) $iif(%this.users > 0,0,1) 0 0
+  ; `-> Explaination of everything here-^: <time joined> <hidden via +D> <op> <hop> <voice>
   mIRCd.updateUser $2 chans $+(%this.id,$comma,$mIRCd.info($2,chans))
   var %this.loop = 0
   while (%this.loop < $hcount($mIRCd.chanUsers(%this.id))) {
     inc %this.loop 1
-    mIRCd.raw $hget($mIRCd.chanUsers(%this.id),%this.loop).item $+(:,$mIRCd.fulladdr($2)) JOIN %this.name
+    var %this.sock = $hget($mIRCd.chanUsers(%this.id),%this.loop).item
+    if ($is_modeSet(%this.id,D).chan == $true) {
+      if (%this.sock != $2) { continue }
+    }
+    mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($2)) JOIN %this.name
   }
   if ($mIRCd.info(%this.id,topic) != $null) {
     ; `-> If a topic exists, send it. It must be sent _BEFORE_ NAMES.

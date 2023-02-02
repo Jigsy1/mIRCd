@@ -1,6 +1,6 @@
 ; mIRCd_miscOper.mrc
 ;
-; This script contains the following commands: DIE, GET, REHASH, RESTART
+; This script contains the following command(s): DIE, GET, REHASH, RESTART
 
 alias mIRCd_command_die {
   ; /mIRCd_command_die <sockname> DIE [<password>]
@@ -21,7 +21,7 @@ alias mIRCd_command_die {
   }
   ; ,-> No password is required.
   hadd -m $mIRCd.temp DIE $mIRCd.info($1,nick)
-  mIRCd.die
+  .mIRCd.die
 }
 alias mIRCd_command_get {
   ; /mIRCd_command_get <sockname> GET [item]
@@ -50,7 +50,7 @@ alias mIRCd_command_rehash {
   }
   hadd -m $mIRCd.temp REHASH $1
   ; `-> Store the sockname, not the nick. (There's a numeric reply we need to do.)
-  mIRCd.rehash $iif($3 != $null,$v1)
+  .mIRCd.rehash $iif($3 != $null,$v1)
 }
 alias mIRCd_command_restart {
   ; /mIRCd_command_restart <sockname> RESTART [<password>]
@@ -71,7 +71,7 @@ alias mIRCd_command_restart {
   }
   ; ,-> No password is required.
   hadd -m $mIRCd.temp RESTART $mIRCd.info($1,nick)
-  mIRCd.restart
+  .mIRCd.restart
 }
 
 ; Commands and Functions

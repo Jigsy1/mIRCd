@@ -1,12 +1,12 @@
 ; mIRCd_miscInfo.mrc
 ;
-; This script contains the following commands: ADMIN, HASH, INFO, LINKS, MAP, TIME
+; This script contains the following command(s): ADMIN, HASH, INFO, LINKS, MAP, TIME
 
 alias mIRCd_command_admin {
   ; /mIRCd_command_admin <sockname> ADMIN
 
   if ($mIRCd(ADMIN_LOC1) == $null) {
-    ; `-> The first line of ADMIN (LOC1) _is_ required.
+    ; `-> NOTE: The first line of ADMIN (LOC1) *is* required.
     mIRCd.sraw $1 $mIRCd.reply(423,$mIRCd.info($1,nick))
     return
   }
@@ -14,7 +14,7 @@ alias mIRCd_command_admin {
   mIRCd.sraw $1 $mIRCd.reply(257,$mIRCd.info($1,nick),$mIRCd(ADMIN_LOC1))
   if ($mIRCd(ADMIN_LOC2) != $null) { mIRCd.sraw $1 $mIRCd.reply(258,$mIRCd.info($1,nick),$mIRCd(ADMIN_LOC2)) }
   if ($mIRCd(ADMIN_EMAIL) != $null) { mIRCd.sraw $1 $mIRCd.reply(259,$mIRCd.info($1,nick),$mIRCd(ADMIN_EMAIL)) }
-  ; `-> LOC2 and EMAIL are entirely optional.
+  ; `-> ADMIN (LOC2) and ADMIN (EMAIL) are entirely optional, however.
 }
 alias mIRCd_command_hash {
   ; /mIRCd_command_hash <sockname> HASH
@@ -47,6 +47,7 @@ alias mIRCd_command_map {
   ; /mIRCd_command_map <sockname> MAP
 
   mIRCd.sraw $1 $mIRCd.reply(015,$mIRCd.info($1,nick),$hget($mIRCd.temp,SERVER_NAME),$hcount($mIRCd.users))
+  ; >-> NOTE: 016 = RPL_MOREMAP
   mIRCd.sraw $1 $mIRCd.reply(017,$mIRCd.info($1,nick))
 }
 ; `-> re: LINKS/MAP, this is it for now!

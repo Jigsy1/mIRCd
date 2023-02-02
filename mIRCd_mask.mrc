@@ -1,6 +1,6 @@
 ; mIRCd_mask.mrc
 ;
-; This script contains the following commands: GLINE, SHUN, SILENCE, ZLINE
+; This script contains the following command(s): ACCEPT, GLINE, SHUN, SILENCE, ZLINE
 
 on *:signal:mIRCd_timeCheck:{
   if (($hcount($mIRCd.glines) == 0) && ($hcount($mIRCd.shuns) == 0) && ($hcount($mIRCd.zlines) == 0)) { return }
@@ -19,6 +19,54 @@ alias mIRCd.zlines { return mIRCd[Zlines] }
 
 ; IRCd Commands
 
+alias mIRCd_command_accept {
+  ; /mIRCd_command_accept <sockname> ACCEPT [<nick>|<-|+n!u@h>]
+
+  if (($pos(-+,$left($3,1)) == $null) || ($3 == $null)) {
+    ; ¦-> Show any silences (for a user).
+    ; `-> Please see the note under /mIRCd_command_silence.
+    var %this.sock = $1
+    if ($getSockname($3) != $null) { var %this.sock = $v1 }
+    if ($hcount($mIRCd.accept(%this.sock)) == 0) {
+      mIRCd.sraw $1 $mIRCd.reply(162,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick))
+      return
+    }
+    var %this.loop = 0
+    while (%this.loop < $hcount($mIRCd.accept(%this.sock))) {
+      inc %this.loop 1
+      var %this.mask = $hget($mIRCd.accept(%this.sock),%this.loop).item
+      mIRCd.sraw $1 $mIRCd.reply(161,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick),%this.mask)
+    }
+    mIRCd.sraw $1 $mIRCd.reply(162,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick))
+    return
+  }
+  var %this.flag = $left($3,1), %this.mask = $makeMask($right($3,-1))
+  if (%this.flag == -) {
+    if ($hfind($mIRCd.accept($1),%this.mask,0,w) == 0) { return }
+    var %this.loop = $hfind($mIRCd.accept($1),%this.mask,0,w)
+    while (%this.loop > 0) {
+      mIRCd.delAccept $1 $hfind($mIRCd.accept($1),%this.mask,%this.loop,w).item
+      dec %this.loop 1
+    }
+    mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) ACCEPT $3
+    return
+  }
+  ; ,-> Treat everything else as an addition.
+  if ($hcount($mIRCd.accept($1)) >= $mIRCd(MAXACCEPT)) {
+    if ((%this.flag == +) && ($is_accepted($1,%this.mask) == $false)) {
+      mIRCd.sraw $1 $mIRCd.reply(510,$mIRCd.reply($1,nick),%this.mask)
+      return
+    }
+    ; `-> Unless setting the accept will clear up the list in some way.
+  }
+  var %this.acceptNumber = $hfind($mIRCd.accept($1),%this.mask,0,w)
+  while (%this.acceptNumber > 0) {
+    mIRCd.delAccept $1 $hfind($mIRCd.accept($1),%this.mask,%this.acceptNumber,w).item
+    dec %this.acceptNumber 1
+  }
+  mIRCd.addAccept $1 %this.mask
+  mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) ACCEPT $3
+}
 alias mIRCd_command_gline {
   ; /mIRCd_command_gline <sockname> GLINE [<-|+!RrealName|#chan|user@host> <duration> :<reason>]
 
@@ -309,20 +357,25 @@ alias mIRCd_command_silence {
     if ($hfind($mIRCd.silence($1),%this.mask,0,w) == 0) { return }
     var %this.loop = $hfind($mIRCd.silence($1),%this.mask,0,w)
     while (%this.loop > 0) {
-      var %this.mask = $hfind($mIRCd.silence($1),%this.mask,%this.loop,w).item
-      mIRCd.delSilence $1 %this.mask
+      mIRCd.delSilence $1 $hfind($mIRCd.silence($1),%this.mask,%this.loop,w).item
       dec %this.loop 1
     }
     mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) SILENCE $3
     return
   }
   ; ,-> Treat everything else as an addition.
-  if ($is_silenced($1,%this.mask) == $true) { return }
   if ($hcount($mIRCd.silence($1)) >= $mIRCd(MAXSILENCE)) {
-    mIRCd.sraw $1 $mIRCd.reply(511,$mIRCd.info($1,nick),%this.mask)
-    return
+    if ((%this.flag == +) && ($is_silenced($1,%this.mask) == $false)) {
+      mIRCd.sraw $1 $mIRCd.reply(511,$mIRCd.info($1,nick),%this.mask)
+      return
+    }
+    ; `-> Unless setting the silence will clear up the list in some way.
   }
-  ; TODO: +*!*@* should trump everything like -.
+  var %this.silenceNumber = $hfind($mIRCd.silence($1),%this.mask,0,w)
+  while (%this.silenceNumber > 0) {
+    mIRCd.delSilence $1 $hfind($mIRCd.silence($1),%this.mask,%this.silenceNumber,w).item
+    dec %this.silenceNumber 1
+  }
   mIRCd.addSilence $1 %this.mask
   mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) SILENCE $3
 }
@@ -402,6 +455,16 @@ alias gettokn {
   var %c = \x $+ $base($3,10,16,2)
   returnex $remove($gettok($regsubex($1,/(?<=^| %c )(?=$| %c )/gx,$lf),$2,$3),$lf)
 }
+alias is_accepted {
+  ; $is_accepted(<sockname>,<mask>)
+
+  return $iif($hfind($mIRCd.accept($1),$2,0,w).item > 0,$true,$false)
+}
+alias is_acceptMatch {
+  ; $is_acceptMatch(<sockname>,<fulladdr?>)
+
+  return $iif($hfind($mIRCd.accept($1),$2,0,W).item > 0,$true,$false)
+}
 alias is_banMatch {
   ; $is_banMatch(<chan ID>,<fulladdr?>)
 
@@ -479,6 +542,11 @@ alias makeMask {
   return $trimStars($+($iif($gettokn($1,1,33) != $null,$v1,*),!,$gettokn($1,2,33)))
 }
 ; `-> v0.5. (It works, but I'm not entirely happy with this.)
+alias mIRCd.addAccept {
+  ; /mIRCd.addAccept <sockname> <mask>
+
+  hadd -m $mIRCd.accept($1) $2 $ctime
+}
 alias mIRCd.addSilence {
   ; /mIRCd.addSilence <sockname> <mask>
 
@@ -488,6 +556,13 @@ alias mIRCd.addPunishment {
   ; /mIRCd.addPunishment <table> <#chan|ip|user@host> <expire time> <reason>
 
   hadd -m $1 $2 $3 $4-
+}
+alias mIRCd.delAccept {
+  ; /mIRCd.delAccept <sockname> <mask>
+
+  hdel $mIRCd.accept($1) $2
+  if ($hcount($mIRCd.accept($1)) == 0) { hfree $mIRCd.accept($1) }
+  ; `-> Free the empty table.
 }
 alias mIRCd.deletePunishment {
   ; /mIRCd.deletePunishment <table> <item>

@@ -1,6 +1,6 @@
 ; mIRCd_whoHandle.mrc - This is not perfect...
 ;
-; This script contains the following commands: WHO
+; This script contains the following command(s): WHO
 
 alias mIRCd_command_who {
   ; /mIRCd_command_who <sockname> WHO <terms[,...]> [matchflags][%includeflags] [:search]

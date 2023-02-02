@@ -4,18 +4,20 @@
 
 dialog mIRCd {
   title "mIRCd - [/mIRCd.gui]"
-  size -1 -1 89 96
+  size -1 -1 89 109
   option dbu
 
   box "", 1, 3 0 84 68
-  button "&LOAD", 2, 6 4 77 10
-  button "&START", 3, 6 17 77 9
-  box "", 4, 3 26 84 4
-  button "&DIE", 5, 6 32 77 9
-  button "RE&HASH", 6, 6 44 77 9
-  button "&RESTART", 7, 6 55 77 9
-  edit "", 8, 3 69 84 8, disable
-  button "&Close", 9, 49 84 37 9, default ok
+  button "&LOAD", 2, 6 4 77 9
+  button "&START", 3, 6 16 77 8
+  box "", 4, 3 25 84 4
+  button "&DIE", 5, 6 32 77 8
+  button "RE&HASH", 6, 6 44 77 8
+  button "&RESTART", 7, 6 54 77 8
+  box "", 8, 3 64 84 17
+  button "&MKPASSWD", 9, 6 69 77 8
+  edit "", 10, 3 83 84 8, disable
+  button "&Close", 11, 49 98 37 8, default ok
 }
 on *:dialog:mIRCd:*:*:{
   if ($devent == close) {
@@ -26,7 +28,7 @@ on *:dialog:mIRCd:*:*:{
     if ($hget($mIRCd.temp,startTime) != $null) {
       $+(.timer,$mIRCd.guiTimer) -o 0 1 mIRCd.updateUptime
     }
-    else { did -o $dname 8 1 Uptime: N/A }
+    else { did -o $dname 10 1 Uptime: N/A }
   }
   if ($devent == sclick) {
     if ($did == 2) { mIRCd.load }
@@ -39,12 +41,15 @@ on *:dialog:mIRCd:*:*:{
     }
     if ($did == 5) {
       mIRCd.die
-      if ($sock(mIRCd.*,0) == 0) { did -o $dname 3 1 &START }
       if ($timer($mIRCd.guiTimer) != $null) { $+(.timer,$mIRCd.guiTimer) off }
-      did -o $dname 8 1 N/A
+      if ($sock(mIRCd.*,0) > 0) {
+        did -o $dname 10 1 N/A
+        did -o $dname 3 1 &START
+      }
     }
     if ($did == 6) { mIRCd.rehash }
     if ($did == 7) { mIRCd.restart }
+    if ($did == 9) { write -c $qt($scriptdirmkpasswd.txt) $mIRCd.encryptPass($input(Enter a password:,p,Enter a password)) }
   }
 }
 alias mIRCd.gui {
@@ -52,6 +57,6 @@ alias mIRCd.gui {
 }
 alias -l mIRCd.guiName { return mIRCd }
 alias -l mIRCd.guiTimer { return mIRCd.guiUptime }
-alias -l mIRCd.updateUptime { did -o $mIRCd.guiName 8 1 Uptime: $duration($calc($ctime - $hget($mIRCd.temp,startTime)),3) }
+alias -l mIRCd.updateUptime { did -o $mIRCd.guiName 10 1 Uptime: $duration($calc($ctime - $hget($mIRCd.temp,startTime)),3) }
 
 ; EOF

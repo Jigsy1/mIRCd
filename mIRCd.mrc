@@ -1,4 +1,4 @@
-; mIRCd v0.09hf6 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+; mIRCd v0.09hf7 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm (Jurrasic Park)
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
@@ -6,12 +6,13 @@
 menu Menubar {
   &mIRCd
   .&LOAD:{ mIRCd.load }
-  .$iif($sock(mIRCd.*,0) > 0,&START $parenthesis(already running),&START):{ mIRCd.start }
+  .$iif($sock(mIRCd.*,0) > 0,$style(2) &START $parenthesis(already running),&START):{ mIRCd.start }
   .-
-  .$iif($sock(mIRCd.*,0) > 0,&DIE,&DIE $parenthesis(not running)):{ mIRCd.die }
-  .$iif($sock(mIRCd.*,0) > 0,RE&HASH,RE&HASH $parenthesis(not running)):{ mIRCd.rehash }
-  .$iif($sock(mIRCd.*,0) > 0,&RESTART,&RESTART $parenthesis(not running)):{ mIRCd.restart }
+  .$iif($sock(mIRCd.*,0) > 0,&DIE,$style(2) &DIE $parenthesis(not running)):{ mIRCd.die }
+  .$iif($sock(mIRCd.*,0) > 0,RE&HASH,RE&HASH):{ mIRCd.rehash }
+  .$iif($sock(mIRCd.*,0) > 0,&RESTART,$style(2) &RESTART $parenthesis(not running)):{ mIRCd.restart }
   .-
+  .&MKPASSWD:{ write -c $qt($scriptdirmkpasswd.txt) $mIRCd.encryptPass($input(Enter a password:,p,Enter a password)) }
   .$iif($window($mIRCd.window) != $null,$style(2)) &Information Window:{ window -ek0n $mIRCd.window }
 }
 on *:load:{
@@ -31,6 +32,7 @@ on *:unload:{ mIRCd.unload }
 
 ; Hash Tables
 
+alias mIRCd.accept { return $+(mIRCd[,$1,][Accept]) }
 alias mIRCd.badNicks { return mIRCd[badNicks] }
 alias mIRCd.chans { return mIRCd[Chans] }
 alias mIRCd.chanBans { return $+(mIRCd[,$1,][Bans]) }
@@ -87,7 +89,7 @@ alias mIRCd { return $hget($mIRCd.main,$1) }
 alias mIRCd.commands {
   if ($1 == 0) { return NICK,PONG,POST,QUIT,USER }
   ; `-> Not registered with the IRCd. No other commands other than these five are permitted.
-  if ($1 == 1) { return ADMIN,AWAY,CLEARMODE,CLOSE,DIE,ERROR,GET,GLINE,HASH,HELP,INFO,INVITE,ISON,JOIN,KICK,KILL,KNOCK,LINKS,LIST,LUSERS,MAP,MKPASSWD,MODE,MOTD,NAMES,NICK,NOTICE,OPER,OPMODE,PART,PING,PONG,POST,PRIVMSG,PROTOCTL,QUIT,REHASH,RESTART,SHUN,SILENCE,STATS,SVSJOIN,SVSNICK,SVSPART,TIME,TOPIC,USER,USERHOST,USERIP,VERSION,WALLCHOPS,WALLHOPS,WALLOPS,WALLUSERS,WALLVOICES,WHO,WHOWAS,WHOIS,ZLINE }
+  if ($1 == 1) { return ACCEPT,ADMIN,AWAY,CLEARMODE,CLOSE,DIE,ERROR,GET,GLINE,HASH,HELP,INFO,INVITE,ISON,JOIN,KICK,KILL,KNOCK,LINKS,LIST,LUSERS,MAP,MKPASSWD,MODE,MOTD,NAMES,NICK,NOTICE,OPER,OPMODE,PART,PING,PONG,POST,PRIVMSG,PROTOCTL,QUIT,REHASH,RESTART,SHUN,SILENCE,STATS,SVSJOIN,SVSNICK,SVSPART,TIME,TOPIC,USER,USERHOST,USERIP,VERSION,WALLCHOPS,WALLHOPS,WALLOPS,WALLUSERS,WALLVOICES,WHO,WHOWAS,WHOIS,ZLINE }
   ; `-> Registered with the IRCd.
   else { return ADMIN,PING,PONG,QUIT }
   ; `-> The user is shunned. No other commands other than these four are permitted.
@@ -125,7 +127,7 @@ alias mIRCd.rehash {
     mIRCd.echo /mIRCd.rehash: cannot rehash config due to errors; fix them first, then try again
     return
   }
-  mIRCd.serverNotice 1 $iif($hget($mIRCd.temp,REHASH) != $null,$mIRCd.info($v1,nick),Admin) is rehashing Server config file
+  if ($sock(mIRCd.user.*,0) > 0) { mIRCd.serverNotice 1 $iif($hget($mIRCd.temp,REHASH) != $null,$mIRCd.info($v1,nick),Admin) is rehashing Server config file }
   if ($hget($mIRCd.temp,REHASH) != $null) {
     mIRCd.sraw $v1 $mIRCd.reply(382,$mIRCd.info($v1,nick),$gettok($noqt($mIRCd.fileConf),-1,92))
     hdel $mIRCd.temp REHASH
@@ -288,12 +290,15 @@ alias mIRCd.start {
     if ($hget($mIRCd.temp,highCount) == $null) { hadd -m $mIRCd.temp highCount 0 }
     if ($hget($mIRCd.temp,totalCount) == $null) { hadd -m $mIRCd.temp totalCount 0 }
     ; `-> The last two are for stats tracking only.
-    if ($hget($mIRCd.temp,DEFAULT_CHANMODES) == $null) { hadd -m $mIRCd.temp DEFAULT_CHANMODES $iif($mIRCd.makeDefaultModes($mIRCd(DEFAULT_CHANMODES)).chan != $null,$v1,$mIRCd.defaultChanModes) }
-    if ($hget($mIRCd.temp,DEFAULT_USERMODES) == $null) { hadd -m $mIRCd.temp DEFAULT_USERMODES $mIRCd.makeDefaultModes($mIRCd(DEFAULT_USERMODES)).nick }
+    if ($hget($mIRCd.temp,AUDITORIUM_MODE) == $null) { hadd -m $mIRCd.temp AUDITORIUM_MODE $iif($bool_fmt($mIRCd(AUDITORIUM_MODE)) == $true,1,0) }
+    if ($hget($mIRCd.temp,BOT_SUPPORT) == $null) { hadd -m $mIRCd.temp BOT_SUPPORT $iif($bool_fmt($mIRCd(BOT_SUPPORT)) == $true,1,0) }
     if ($hget($mIRCd.temp,HALFOP) == $null) { hadd -m $mIRCd.temp HALFOP $iif($bool_fmt($mIRCd(HALFOP)) == $true,1,0) }
     if ($hget($mIRCd.temp,LOOSE_OBFUSCATION) == $null) { hadd -m $mIRCd.temp LOOSE_OBFUSCATION $iif($bool_fmt($mIRCd(LOOSE_OBFUSCATION)) == $true,1,0) }
     if ($hget($mIRCd.temp,OPER_OVERRIDE) == $null) { hadd -m $mIRCd.temp OPER_OVERRIDE $iif($bool_fmt($mIRCd(OPER_OVERRIDE)) == $true,1,0) }
     if ($hget($mIRCd.temp,PERSISTANT_CHANNELS) == $null) { hadd -m $mIRCd.temp PERSISTANT_CHANNELS $iif($bool_fmt($mIRCd(PERSISTANT_CHANNELS)) == $true,1,0) }
+    if ($hget($mIRCd.temp,WHOIS_PARANOIA) == $null) { hadd -m $mIRCd.temp WHOIS_PARANOIA $iif($bool_fmt($mIRCd(WHOIS_PARANOIA)) == $true,1,0) }
+    if ($hget($mIRCd.temp,DEFAULT_CHANMODES) == $null) { hadd -m $mIRCd.temp DEFAULT_CHANMODES $iif($mIRCd.makeDefaultModes($mIRCd(DEFAULT_CHANMODES)).chan != $null,$v1,$mIRCd.defaultChanModes) }
+    if ($hget($mIRCd.temp,DEFAULT_USERMODES) == $null) { hadd -m $mIRCd.temp DEFAULT_USERMODES $mIRCd.makeDefaultModes($mIRCd(DEFAULT_USERMODES)).nick }
     if ($hget($mIRCd.temp,SALT) == $null) { hadd -m $mIRCd.temp SALT $mIRCd(SALT) }
     if ($hget($mIRCd.temp,SERVER_NAME) == $null) { hadd -m $mIRCd.temp SERVER_NAME $mIRCd(SERVER_NAME) }
     ; `-> WARNING!: These may not be modified when the IRCd is already running.
@@ -317,7 +322,7 @@ alias mIRCd.unload {
   scon -r if ( $!script( $* ) ) { .unload -rs $!qt( $* ) }
   ; `-> A quick and dirty loop.
 }
-alias mIRCd.version { return mIRCd[0.09hf6(Rev.2)][2021-2023] }
+alias mIRCd.version { return mIRCd[0.09hf7(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 alias -l nextHour { return $+($asctime($calc($ctime + 3600),HH),:00) }
 alias -l requiredVersion { return 7.66 }

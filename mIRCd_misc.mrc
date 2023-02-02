@@ -1,6 +1,6 @@
 ; mIRCd_misc.mrc
 ;
-; This script contains the following commands: AWAY, HELP, ISON, LIST, LUSERS, MKPASSWD, MOTD, PROTOCTL, STATS, USERHOST, USERIP, VERSION,
+; This script contains the following command(s): AWAY, HELP, ISON, LIST, LUSERS, MKPASSWD, MOTD, PROTOCTL, STATS, USERHOST, USERIP, VERSION,
 ;   WHOWAS, WHOIS
 
 on *:signal:mIRCd_cleanWhoWas:{ mIRCd.cleanWhoWas }
@@ -150,7 +150,7 @@ alias mIRCd_command_motd {
   mIRCd.sraw $1 $mIRCd.reply(376,$mIRCd.info($1,nick))
 }
 alias mIRCd_command_protoctl {
-  ; /mIRCd_command_protoctl <sockname> PROTOCTL <uhnames|namesx>
+  ; /mIRCd_command_protoctl <sockname> PROTOCTL <uhnames|namesx|?> [?]
 
   if ($3 == $null) {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
@@ -390,6 +390,7 @@ alias mIRCd_command_whois {
     if ($is_modeSet(%this.sock,o).nick == $true) { mIRCd.sraw $1 $mIRCd.reply(313,$mIRCd.info($1,nick),%this.nick) }
     if ($is_modeSet(%this.sock,k).nick == $true) { mIRCd.sraw $1 $mIRCd.reply(310,$mIRCd.info($1,nick),%this.nick) }
     if ($is_modeSet(%this.sock,D).nick == $true) { mIRCd.sraw $1 $mIRCd.reply(316,$mIRCd.info($1,nick),%this.nick) }
+    if ($is_modeSet(%this.sock,B).nick == $true) { mIRCd.sraw $1 $mIRCd.reply(336,$mIRCd.info($1,nick),%this.nick) }
     if ($mIRCd.info(%this.sock,away) != $null) { mIRCd.sraw $1 $mIRCd.reply(301,$mIRCd.info($1,nick),%this.nick,$v1) }
     if ($is_modeSet(%this.sock,I).nick == $true) {
       if (($is_oper($1) != $true) || ($1 != %this.sock)) { goto skipIdle }

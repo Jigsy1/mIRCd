@@ -1,3 +1,36 @@
+mIRCd[0.09hf7(Rev.2)][2021-2023] - 02/02/2023
+--------------------------------------------------
+1.  DEFAULT_CHANMODES and DEFAULT_USERMODES are now parsed after making sure specific modes have been enabled.
+2.  Certain Menu items are now grayed out depending on if the IRCd is running or not.
+3.  Although there was absolutely no reason for me to do so, added usermode +B (bot). It does absolutely nothing.
+4.  Can specify if you want bot support (even though it does nothing) enabled by adding BOT_SUPPORT=TRUE or BOT_SUPPORT=FALSE
+    to [Features] in mIRCd.ini. Defaults to FALSE.
+5.  Added usermode +m which prevents users from messaging you if they aren't on your /ACCEPT list.
+6.  Added /ACCEPT. It works in the same manner as /SILENCE.
+7.  More extended silence wildcard masks (E.g. *!*@* vs. *!*@127.0.0.1) now trump older masks. (Same also applies to /ACCEPT.)
+8.  Fixed a possible bug that existed within /SILENCE when removing a mask.
+9.  Made it so that DNS/Ident don't update their respective values if the user is already connected to the IRCd as it is
+    too late by then.
+10. RPL_ISUPPORT (005) now includes USERMODES=<modes>.
+11. Added channel nmode +D (+d). Anyone who joins a channel when +D will not be shown unless the user changes the topic,
+    gets kicked, receives hop/op/voice, or speaks.
+    If you try to set -D when there are hidden users still in the channel, +d will be set automatically as polarity.
+    Only the server can remove +d, which will be done when there are no hidden users left. (Though setting +D removes it too.)
+12. Can specify if you want Auditorium mode support enabled by adding AUDITORIUM_MODE=TRUE or AUDITORIUM_MODE=FALSE to
+    [Features] in mIRCd.ini. Defaults to FALSE.
+13. Fixed a bug in /MODE. Doing +hov <nick> will now use the users actual nick rather than the token the user specified
+    due to a NAMES glitch when using Auditorium mode. (They would show up like jIGSy, rather than Jigsy until refreshed.)
+14. Fixed a bug where users who are +i wouldn't show in /NAMES to opers.
+15. Fixed a bug in usermode +x where the "Changing host" quit message was being truncated to just "host."
+16. Changed LOOSE_OBFUSCATION to use a randomly generated 32 character string rather than a timestamp.
+17. Can now specify if you want /WHOIS paranoia enabled (+W) by adding WHOIS_PARANOIA=TRUE or WHOIS_PARANOIA=FALSE to
+    [Features] in mIRCd.ini. Defaults to FALSE.
+18. Ping timeout now displays the amount of second(s).
+19. Can now MKPASSWD via the Menubar and /mIRCd.gui. This will output into mkpasswd.txt rather than echo in the window.
+20. WHO_THROTTLE is now under [Features], not [Mechanics]. (Though this won't have any difference either way.)
+21. Other minor changes. (mIRCd, mIRCd.ini, etc.)
+
+
 mIRCd[0.09hf6(Rev.2)][2021-2023] - 28/01/2023
 --------------------------------------------------
 1.  /WHO should now work correctly. Though I'm still unsure if it functions correctly like it should on other ircu IRCds.
@@ -37,7 +70,7 @@ mIRCd[0.09hf6(Rev.2)][2021-2023] - 28/01/2023
 
     This isn't an issue when you're not an oper though, it'll still process normally.
 19. This means that GNOTICE has been deprecated. However, it has been retained in the codebase as a backup. (Though not callable.)
-20. Updated the code that the connection goes through a little faster if ident/dns is finished with.
+20. Updated the code that the connection goes through a little faster if DNS/Ident is finished with.
 21. Can now call the information window (@mIRCd) from the Menubar.
 22. Updated WHO.help and WHO_FLAGS.help to explain what flags are.
 23. Other minor changes. (debugUser.mrc, example K-lines, other help files, etc.)
@@ -103,6 +136,7 @@ mIRCd[0.09hf2(Rev.2)][2021] - 30/07/2022:
 5. Updated example K-lines.
 6. Updated CHANMODES.help and USERMODES.help to clarify a couple of things better.
 7. Removed some unused code from mIRCd_connHandle.mrc.
+
 
 mIRCd[0.09(Rev.2)][2021] - 19/07/2021:
 ---------------------------------------------

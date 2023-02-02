@@ -1,4 +1,4 @@
-mIRCd v0.09hf6 (Revision 2) - by Jigsy (https://github.com/Jigsy1/mIRCd)
+mIRCd v0.09hf7 (Revision 2) - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ---------------------------------------------------------------------------
 
 Files included in this release:
@@ -29,8 +29,9 @@ Setting up mIRCd:
    You can also do this via the Menubar, /mIRCd.gui or by LOAD.bat.
 
 4. Generate a password for your Oper account, by doing: /mIRCd.mkpasswd password
-   You can also do /raw MKPASSWD password when connected to the server, or via MKPASSWD.bat which will dump a sha512
-   hash into a file called mkpasswd.txt. (Copy that into mIRCd.ini.)
+   You can also do /raw MKPASSWD password when connected to the server, or via the Menubar, /mIRCd.gui or MKPASSWD.bat
+   which will dump a salted sha512 hash into a file called mkpasswd.txt.
+   Copy that into mIRCd.ini under [Opers] next to an account name.
 
 *!*!* WARNING(!): It is strongly recommended also setting separate passwords for /DIE and /RESTART *!*!*
 
@@ -50,7 +51,7 @@ You can also do this via the Menubar, /mIRCd.gui or DIE.bat.
 If you wish to unload the scripts, do /unload -rs "P:\ath\to\mIRCd.mrc" or via the editor.
 This should unload all the remaining scripts for you. (If it doesn't, unload all of them - mIRCd_*.mrc - one-by-one.)
 
-Note: Unloading the script should also terminate the IRCd and unload memory for you. If for some reason it doesn't:
+Note: Unloading the script should also terminate the IRCd and unload memory for you. If, for some reason it doesn't:
 
 1. Stop all timers by doing: /timermIRCd.* off
 2. Close the socks by doing: /sockclose mIRCd.*

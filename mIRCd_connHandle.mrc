@@ -9,14 +9,16 @@ on *:dns:{
     if ($hfind($mIRCd.dns,$dns(%this.dns),1,W).data != $null) {
       var %this.sock = $v1
       mIRCd.sraw %this.sock NOTICE $mIRCd.info(%this.sock,nick) :*** Found your hostname
-      mIRCd.updateUser %this.sock host $dns(%this.dns).addr
-      mIRCd.updateUser %this.sock trueHost $dns(%this.dns).addr
-      mIRCd.updateUser %this.sock dnsChecked 1
-      if ($hget($mIRCd.dns,%this.sock) != $null) { hdel $mIRCd.dns %this.sock }
-      if ($mIRCd.info(%this.sock,identChecked) != $null) {
-        if ($mIRCd.info(%this.sock,passPing) != $null) {
-          $+(.timermIRCd.ping,%this.sock) off
-          mIRCd.raw %this.sock PING $+(:,$mIRCd.info(%this.sock,passPing))
+      if ($mIRCd.info(%this.sock,isReg) == 0) {
+        mIRCd.updateUser %this.sock host $dns(%this.dns).addr
+        mIRCd.updateUser %this.sock trueHost $dns(%this.dns).addr
+        mIRCd.updateUser %this.sock dnsChecked 1
+        if ($hget($mIRCd.dns,%this.sock) != $null) { hdel $mIRCd.dns %this.sock }
+        if ($mIRCd.info(%this.sock,identChecked) != $null) {
+          if ($mIRCd.info(%this.sock,passPing) != $null) {
+            $+(.timermIRCd.ping,%this.sock) off
+            mIRCd.raw %this.sock PING $+(:,$mIRCd.info(%this.sock,passPing))
+          }
         }
       }
     }
@@ -60,9 +62,10 @@ on *:sockread:mIRCd.*:{
       mIRCd.destroyIdent $sockname
       return
     }
-    tokenize 58 $3-
-    if ($3 != $null) { mIRCd.updateUser %this.sock ident $left($3,$mIRCd.userLen) }
     mIRCd.destroyIdent $sockname
+    tokenize 58 $3-
+    if ($mIRCd.info(%this.sock,isReg) == 1) { return }
+    if ($3 != $null) { mIRCd.updateUser %this.sock ident $left($3,$mIRCd.userLen) }
     if ($mIRCd.info(%this.sock,dnsChecked) == $null) { return }
     if ($mIRCd.info(%this.sock,passPing) == $null) { return }
     $+(.timermIRCd.ping,%this.sock) off
@@ -118,7 +121,7 @@ alias makeHost {
   ; $makeHost(<ip>)
 
   var %this.base = $+($longip($1),:,$mIRCd(SALT))
-  if ($hget($mIRCd.temp,LOOSE_OBFUSCATION) == 1) { var %this.base = $+($ctime,:,%this.base) }
+  if ($hget($mIRCd.temp,LOOSE_OBFUSCATION) == 1) { var %this.base = $+($regsubex($str(.,32),/./g,$gettok($rand(a,z) $rand(0,9) $rand(A,Z),$rand(1,3),32)),:,%this.base) }
   ; `-> Allow for loose obfuscation. This means that each host will be different for people on the same ip address.
   return $+($gettok($regsubex($upper($hmac($sha512($1), %this.base, sha512, 0)),/(.{8})/g,\1.),1-3,46),.IP)
 }
@@ -226,7 +229,7 @@ alias mIRCd.destroyUser {
     while (%this.loop < $hcount($mIRCd.users)) {
       inc %this.loop 1
       var %this.otherSock = $hget($mIRCd.users,%this.loop).item
-      if ($is_mutual(%this.sock,%this.otherSock) == $true) { mIRCd.raw %this.otherSock $+(:,%this.fulladdr) QUIT $+(:,%this.quit) }
+      if ($is_mutualHidden(%this.sock,%this.otherSock) == $false) { mIRCd.raw %this.otherSock $+(:,%this.fulladdr) QUIT $+(:,%this.quit) }
     }
     ; ,-> Now delete them from the channel users.
     var %this.chan = 0, %this.chans = $mIRCd.info(%this.sock,chans)
@@ -241,6 +244,7 @@ alias mIRCd.destroyUser {
   ; `-> Again, fiddle with /LUSERS numbers.
   if ($hget($mIRCd.unknown,%this.sock) != $null) { hdel $mIRCd.unknown %this.sock }
   if ($hget($mIRCd.users,%this.sock) != $null) { hdel $mIRCd.users %this.sock }
+  if ($hget($mIRCd.accept(%this.sock)) != $null) { hfree $mIRCd.accept(%this.sock) }
   if ($hget($mIRCd.silence(%this.sock)) != $null) { hfree $mIRCd.silence(%this.sock) }
   if ($hget($mIRCd.table(%this.sock)) != $null) { hfree $mIRCd.table(%this.sock) }
   if ($timer($+(mIRCd.ping,%this.sock)) != $null) { $+(.timermIRCd.ping,%this.sock) off }
@@ -287,7 +291,9 @@ alias mIRCd.hostQuit {
     inc %this.loop 1
     var %this.sock = $hget($mIRCd.users,%this.loop).item
     if ($is_mutual($1,%this.sock) == $false) { continue }
-    if ($1 != %this.sock) { mIRCd.raw %this.sock $+(:,%this.fulladdr) QUIT $colonize($mIRCd.hostChange) }
+    if ($1 != %this.sock) {
+      if ($is_mutualHidden($1,%this.sock) == $false) { mIRCd.raw %this.sock $+(:,%this.fulladdr) QUIT $+(:,$mIRCd.hostChange) }
+    }
   }
   var %this.chan = 0
   while (%this.chan < $numtok($mIRCd.info($1,chans),44)) {
@@ -300,8 +306,10 @@ alias mIRCd.hostQuit {
       inc %this.user 1
       var %this.chanSock = $hget($mIRCd.chanUsers(%this.id),%this.user).item
       if ($1 != %this.chanSock) {
-        mIRCd.raw %this.chanSock $+(:,%this.newaddr) JOIN $mIRCd.info(%this.id,name)
-        if (%this.status != $null) { mIRCd.sraw %this.chanSock MODE $mIRCd.info(%this.id,name) $+(+,%this.status) $str($+($mIRCd.info($1,nick),$chr(32)),$len(%this.status)) }
+        if ($is_mutualHidden($1,%this.sock) == $false) {
+          mIRCd.raw %this.chanSock $+(:,%this.newaddr) JOIN $mIRCd.info(%this.id,name)
+          if (%this.status != $null) { mIRCd.sraw %this.chanSock MODE $mIRCd.info(%this.id,name) $+(+,%this.status) $str($+($mIRCd.info($1,nick),$chr(32)),$len(%this.status)) }
+        }
       }
     }
   }
@@ -333,8 +341,9 @@ alias mIRCd.pingUsers {
       continue
     }
     if ($calc($ctime - $mIRCd.info(%this.sock,lastPing)) >= $mIRCd(PING_TIMEOUT_DURATION)) {
+      var %this.timeout = $v1 second(s)
       ; `-> Make sure to check the current timestamp vs. their last ping timestamp and then "Ping timeout" user(s).
-      if ($mIRCd.info(%this.sock,isReg) == 1) { mIRCd.errorUser %this.sock $mIRCd.pingTimeout }
+      if ($mIRCd.info(%this.sock,isReg) == 1) { mIRCd.errorUser %this.sock $mIRCd.pingTimeout($parenthesis(%this.timeout)) }
       ; `-> Ignore connecting user(s), they have their own routine.
       continue
     }
@@ -360,7 +369,7 @@ alias mIRCd.userLen { return 10 }
 
 alias mIRCd.closeConnection { return Closed unknown connection(s) }
 alias mIRCd.hostChange { return Changing host }
-alias mIRCd.pingTimeout { return Ping timeout }
+alias mIRCd.pingTimeout { return Ping timeout $iif($1- != $null,$v1) }
 alias mIRCd.socketClosed { return Remote socket closed the connection }
 alias mIRCd.socketError { return Socket error }
 alias mIRCd.registrationTimeout { return Registration timeout }

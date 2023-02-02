@@ -1,6 +1,6 @@
 ; mIRCd_msgHandle.mrc
 ;
-; This script contains the following commands: GNOTICE(deprecated) NOTICE, PRIVMSG, WALLCHOPS, WALLHOPS, WALLOPS, WALLUSERS, WALLVOICES
+; This script contains the following command(s): GNOTICE(deprecated) NOTICE, PRIVMSG, WALLCHOPS, WALLHOPS, WALLOPS, WALLUSERS, WALLVOICES
 
 alias mIRCd_command_gnotice {
   ; /mIRCd_command_gnotice <sockname> GNOTICE <message>
@@ -166,16 +166,24 @@ alias mIRCd.parseMsg {
       }
       if ($is_modeSet(%this.id,S).chan == $true) { var %this.message = $strip(%this.message) }
       :parsePublic
-      var %this.userLoop = 0
+      var %this.userLoop = 0, %this.changeState = 0
       while (%this.userLoop < $hcount($mIRCd.chanUsers(%this.id))) {
         inc %this.userLoop 1
         var %this.sock = $hget($mIRCd.chanUsers(%this.id),%this.userLoop).item
         if (%this.sock == $1) { continue }
-        if ($is_silenceMatch(%this.sock,$mIRCd.fulladdr($1)) == $true) { continue }
+        if ($gettok($hget($mIRCd.chanUsers(%this.id),$1),2,32) == 1) {
+          mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) JOIN $mIRCd.info(%this.id,name)
+          var %this.changeState = 1
+        }
         if ($is_modeSet(%this.sock,d).nick == $true) { continue }
         ; `-> +d(eaf) users live up to their name.
+        if ($is_silenceMatch(%this.sock,$mIRCd.fulladdr($1)) == $true) { continue }
         mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) $upper($2) %this.name $colonize(%this.message)
         ; `-> We don't need to see our own message. We see it when we send it.
+      }
+      if (%this.changeState == 1) {
+        mIRCd.updateChanUser %this.id $1 0 2
+        if ($is_modeSet(%this.id,d).chan == $true) { mIRCd.dCheck %this.id }
       }
       continue
     }
@@ -196,6 +204,7 @@ alias mIRCd.parseMsg {
           mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.target)
           continue
         }
+        ; >-> I really need to fix this section.
         var %this.loop = 0
         while (%this.loop < $hcount($mIRCd.users)) {
           inc %this.loop 1
@@ -218,6 +227,14 @@ alias mIRCd.parseMsg {
     if (($is_modeSet(%this.sock,D).nick == $true) && ($is_oper($1) == $false)) {
       mIRCd.sraw $1 $mIRCd.reply(487,$mIRCd.info($1,nick),%this.nick)
       continue
+    }
+    if ($is_modeSet(%this.sock,m).nick == $true) {
+      if (($is_acceptMatch(%this.sock,$mIRCd.fulladdr($1)) == $false) || ($is_acceptMatch(%this.sock,$mIRCd.ipaddr($1)) == $false) || ($is_acceptMatch(%this.sock,$mIRCd.trueaddr($1)) == $false)) {
+        if ($is_oper($1) == $false) {
+          mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user denies messages from those not on their /ACCEPT list (+m))
+          continue
+        }
+      }
     }
     if (($is_modeSet(%this.sock,M).nick == $true) && ($is_mutual(%this.sock,$1) == $false)) {
       if ($is_oper($1) == $false) {

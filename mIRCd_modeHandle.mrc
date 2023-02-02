@@ -1,6 +1,6 @@
 ; mIRCd_modeHandle.mrc
 ;
-; This script contains the following commands: CLEARMODE, MODE, OPER, OPMODE
+; This script contains the following command(s): CLEARMODE, MODE, OPER, OPMODE
 
 alias mIRCd_command_clearmode {
   ; /mIRCd_command_clearmode <sockname> CLEARMODE <#chan> [<modestring>]
@@ -77,6 +77,11 @@ alias mIRCd_command_clearmode {
       }
       goto cleanupModes
     }
+    if ($poscs(dD,%this.char) != $null) {
+      ; `-> Do nothing with +d. We'll handle that later?
+      if (%this.char === D) { var %this.bigModeD = 1 }
+      goto cleanupModes
+    }
     if ($poscs(cgijklmnpstyCNOKPSTY,%this.char) != $null) {
       if ($is_modeSet(%this.id,%this.char).chan == $false) { goto cleanupModes }
       mIRCd.updateChan %this.id modes $removecs($mIRCd.info(%this.id,modes),%this.char)
@@ -93,7 +98,7 @@ alias mIRCd_command_clearmode {
     ; `-> Deal with the string.
     if ($calc($len(%this.minus) - 1) >= $mIRCd(MODESPL)) {
       ; `-> One more full burst!
-      ; mIRCd.modeTell $1 OPMODE %this.id + %this.minus 0 ¦ %this.argMinus
+      ; mIRCd.modeTell $1 CLEARMODE %this.id + %this.minus 0 ¦ %this.argMinus
       var %mIRCd.showNumber = 0
       while (%mIRCd.showNumber < $hcount($mIRCd.chanUsers(%this.id))) {
         inc %mIRCd.showNumber 1
@@ -114,6 +119,25 @@ alias mIRCd_command_clearmode {
   }
   if (%this.destruct == 1) {
     if ($hcount($mIRCd.chanUsers(%this.id)) == 0) { mIRCd.destroyChan %this.id }
+  }
+  if (%this.bigModeD == 1) {
+    if ($mIRCd.info(%this.id,name) == $null) { return }
+    ; `-> Make sure the channel exists first.
+    if (D !isincs $mIRCd.info(%this.id,modes)) { return }
+    var %this.plus = +, %this.minus = -D
+    mIRCd.updateChan %this.id modes $removecs($mIRCd.info(%this.id,modes),D)
+    if (d !isincs $mIRCd.info(%this.id,modes)) {
+      var %this.loop = 0
+      while (%this.loop < $hcount($mIRCd.chanUsers(%this.id))) {
+        inc %this.loop 1
+        if ($gettok($hget($mIRCd.chanUsers(%this.id),%this.loop).data,2,32) == 1) {
+          var %this.plus = +d
+          mIRCd.updateChan %this.id modes $+($mIRCd.info(%this.id,modes),d)
+          break
+        }
+      }
+    }
+    mIRCd.modeTell $1 $2 %this.id %this.plus %this.minus
   }
 }
 alias mIRCd_command_mode {
@@ -232,8 +256,9 @@ alias is_voice {
   var %this.id = $1
   return $bool_fmt($gettok($hget($mIRCd.chanUsers(%this.id),$2),5,32))
 }
-alias mIRCd.chanModes { return $+(bcg,$iif($hget($mIRCd.temp,HALFOP) == 1,h),ijklmnopstuvyCHNOK,$iif($hget($mIRCd.temp,PERSISTANT_CHANNELS) == 1,P),STY) $+(bg,$iif($hget($mIRCd.temp,HALFOP) == 1,h),jklov) }
-alias mIRCd.chanModesSupport { return b,k,gjl, $+ $+(cimnpstuyCHNOK,$iif($hget($mIRCd.temp,PERSISTANT_CHANNELS) == 1,P),STY) }
+; ,-> NOTE: I need find a better way to "make" these two lines.
+alias mIRCd.chanModes { return $+(bc,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,d),g,$iif($hget($mIRCd.temp,HALFOP) == 1,h),ijklmnopstuvyC,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,D),HNOK,$iif($hget($mIRCd.temp,PERSISTANT_CHANNELS) == 1,P),STY) $+(bg,$iif($hget($mIRCd.temp,HALFOP) == 1,h),jklov) }
+alias mIRCd.chanModesSupport { return b,k,gjl, $+ $+(c,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,d),imnpstuy,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,D),CHNOK,$iif($hget($mIRCd.temp,PERSISTANT_CHANNELS) == 1,P),STY) }
 ; `-> RPL_ISUPPORT. If you remove a mode from chanModes, just remember to _CAREFULLY_ remove it from here, too.
 alias -l mIRCd.defaultChanModes { return nt }
 ; `-> These are the fallback modes for the function right at the bottom of the script. (No need for the + here, we'll deal with that.)
@@ -311,7 +336,7 @@ alias -l mIRCd.parseMode {
           }
           continue
         }
-        if ($poscs(dgiknoswxCDIMWX,%this.char) != $null) {
+        if ($poscs(dgikmnoswxBCDIMWX,%this.char) != $null) {
           if (%this.flag == -) {
             if ((%this.isSet == $false) || (%this.char === x)) { continue }
             ; `-> +x may not be unset.
@@ -615,7 +640,7 @@ alias -l mIRCd.parseMode {
           }
           mIRCd.updateChanUser %this.id %this.target 0 $calc($poscs(ohv,%this.char) + 2)
           var %this.minus = $+(%this.minus,%this.char)
-          var %this.minusToken = $+(%this.char,:,%this.token)
+          var %this.minusToken = $+(%this.char,:,$mIRCd.info(%this.target,nick))
           var %this.argMinus = %this.argMinus %this.minusToken
           if ($istokcs(%this.argPlus,%this.minusToken,32) == $true) {
             var %this.argPlus = $remtokcs(%this.argPlus,%this.MinusToken,1,32)
@@ -627,13 +652,27 @@ alias -l mIRCd.parseMode {
         if ($is_chanStatus(%this.id,%this.target,%this.char) == $true) { goto cleanupModes }
         mIRCd.updateChanUser %this.id %this.target 1 $calc($poscs(ohv,%this.char) + 2)
         var %this.plus = $+(%this.plus,%this.char)
-        var %this.plusToken = $+(%this.char,:,%this.token)
+        var %this.plusToken = $+(%this.char,:,$mIRCd.info(%this.target,nick))
         var %this.argPlus = %this.argPlus %this.plusToken
         if ($istokcs(%this.argMinus,%this.plusToken,32) == $true) {
           var %this.argMinus = $remtokcs(%this.argMinus,%this.plusToken,1,32)
           var %this.minus = $remove($remtok($regsubex(%this.minus,/(.)/g,$+(\t,.)),%this.char,1,46),.)
         }
         goto cleanupModes
+      }
+      if ($poscs(dD,%this.char) != $null) {
+        if (%this.flag == -) {
+          if (%this.char === d) { goto cleanupModes }
+          ; `-> Only let the server set -d. (Assuming the user doesn't +D in that time.)
+          var %this.bigModeD = 0
+          goto cleanupModes
+        }
+        ; ,-> +
+        if (%this.char === d) { goto cleanupModes }
+        ; `-> Cannot set +d conventionally. It's a special case.
+        var %this.bigModeD = 1
+        goto cleanupModes
+        ; `-> This whole section is a special case and will be done last.
       }
       if ($poscs(imntuyCHNKOPTY,%this.char) != $null) {
         if ($poscs(OP,%this.char) != $null) {
@@ -706,6 +745,9 @@ alias -l mIRCd.parseMode {
     :cleanupModes
     ; `-> Deal with the string.
     if ($calc(($len(%this.minus) + $len(%this.plus)) - 2) >= $mIRCd(MODESPL)) {
+      if (($is_modeSet(%this.id,d).chan == $true) || ($is_modeSet(%this.id,D).chan == $true)) { mIRCd.hiddenCheck %this.id %this.argPlus }
+      ; `-> We need to unhide any hidden users if +d/+D.
+      var %this.hiddenCheck = $result
       mIRCd.modeTell $1 $2 %this.id %this.plus %this.minus $iif(%this.argPlus != $null,$v1,0) ¦ $iif(%this.argMinus != $null,$v1,0)
       if (P isincs %this.minus) { inc %this.destruct 1 }
       if (P isincs %this.plus) { dec %this.destruct 1 }
@@ -714,6 +756,9 @@ alias -l mIRCd.parseMode {
   }
   if ($calc(($len(%this.minus) + $len(%this.plus)) - 2) > 0) {
     ; `-> Leftovers.
+    if (($is_modeSet(%this.id,d).chan == $true) || ($is_modeSet(%this.id,D).chan == $true)) { mIRCd.hiddenCheck %this.id %this.argPlus }
+    ; `-> We need to unhide any hidden users if +d/+D.
+    var %this.hiddenCheck = $result
     mIRCd.modeTell $1 $2 %this.id %this.plus %this.minus $iif(%this.argPlus != $null,$v1,0) ¦ $iif(%this.argMinus != $null,$v1,0)
     if (P isincs %this.minus) { inc %this.destruct 1 }
     if (P isincs %this.plus) { dec %this.destruct 1 }
@@ -722,9 +767,84 @@ alias -l mIRCd.parseMode {
     if ($hcount($mIRCd.chanUsers(%this.id)) == 0) { mIRCd.destroyChan %this.id }
     ; `-> Destroy the channel if officially -P.
   }
+  ; ,-> Due to the nature of this one, we have to do it last.
+  if (%this.bigModeD == 1) {
+    if ($mIRCd.info(%this.id,name) == $null) { return }
+    ; `-> Make sure the channel exists first.
+    if (D isincs $mIRCd.info(%this.id,modes)) { return }
+    var %this.plus = +D, %this.minus = -
+    mIRCd.updateChan %this.id modes $+($mIRCd.info(%this.id,modes),D)
+    if (d isincs $mIRCd.info(%this.id,modes)) {
+      var %this.minus = -d
+      mIRCd.updateChan %this.id modes $removecs($mIRCd.info(%this.id,modes),d)
+    }
+    mIRCd.modeTell $1 $2 %this.id %this.plus %this.minus
+    return
+  }
+  if (%this.bigModeD == 0) {
+    if ($mIRCd.info(%this.id,name) == $null) { return }
+    ; `-> Make sure the channel exists first.
+    if (D !isincs $mIRCd.info(%this.id,modes)) { return }
+    var %this.plus = +, %this.minus = -D
+    mIRCd.updateChan %this.id modes $removecs($mIRCd.info(%this.id,modes),D)
+    if (d !isincs $mIRCd.info(%this.id,modes)) {
+      var %this.loop = 0
+      while (%this.loop < $hcount($mIRCd.chanUsers(%this.id))) {
+        inc %this.loop 1
+        if ($gettok($hget($mIRCd.chanUsers(%this.id),%this.loop).data,2,32) == 1) {
+          var %this.plus = +d
+          mIRCd.updateChan %this.id modes $+($mIRCd.info(%this.id,modes),d)
+          break
+        }
+      }
+    }
+    mIRCd.modeTell $1 $2 %this.id %this.plus %this.minus
+    return
+  }
+  if (%this.hiddenCheck == CHECK_LOWERCASE_D) {
+    if (($is_modeSet(%this.id,D).chan == $false) && ($is_modeSet(%this.id,d).chan == $true)) { mIRCd.dCheck %this.id }
+  }
 }
 ; ¦-> We're done! This is quite literally one of the biggest pains in the ass out of the entire codebase! (Hey, at least it works!)
 ; `-> 27/01/2023: I stand corrected. /WHO now officially takes the crown throne. Compared to that, this was a cakewalk.
+alias mIRCd.dCheck {
+  ; /mIRCd.dCheck <chan id>
+
+  if ($is_modeSet($1,d).chan == $false) { return }
+  ; `-> I know we check this before we call this command anyway, but consider this a failsafe.
+  var %this.loop = 0
+  while (%this.loop < $hcount($mIRCd.chanUsers($1))) {
+    inc %this.loop 1
+    if ($gettok($hget($mIRCd.chanUsers($1),%this.loop).data,2,32) == 1) { return }
+  }
+  var %this.plus = +, %this.minus = -d
+  mIRCd.updateChan $1 modes $removecs($mIRCd.info($1,modes),d)
+  mIRCd.modeTell mIRCd.user.0 OPMODE $1 %this.plus %this.minus
+  ; `-> mIRCd.user.0 isn't (read as: shouldn't be) a real sockname. So we'll just spoof a server OPMODE change.
+}
+alias mIRCd.hiddenCheck {
+  ; /mIRCd.hiddenCheck <chan id> <args for plus mode>
+
+  if ($2- == $null) { return }
+  var %this.loop = 0
+  while (%this.loop < $numtok($2-,32)) {
+    inc %this.loop 1
+    var %this.token = $gettok($2-,%this.loop,32)
+    if ($poscs(hov,$gettok(%this.token,1,58)) == $null) { continue }
+    var %this.stateSock = $getSockname($gettok(%this.token,2,58))
+    if ($gettok($hget($mIRCd.chanUsers($1),%this.stateSock),2,32) == 0) { continue }
+    var %this.users = 0
+    while (%this.users < $hcount($mIRCd.chanUsers($1))) {
+      inc %this.users 1
+      var %this.joinSock = $hget($mIRCd.chanUsers($1),%this.users).item
+      if (%this.stateSock == %this.joinSock) { continue }
+      mIRCd.raw %this.joinSock $+(:,$mIRCd.fulladdr(%this.stateSock)) JOIN $mIRCd.info($1,name)
+      if ($is_modeSet($1,d).chan == $true) { var %this.d = 1 }
+    }
+    mIRCd.updateChanUser $1 %this.stateSock 0 2
+  }
+  if (%this.d == 1) { return CHECK_LOWERCASE_D }
+}
 alias mIRCd.makeDefaultModes {
   ; $mIRCd.makeDefaultModes(<input>)[.chan|user]
 
@@ -735,11 +855,12 @@ alias mIRCd.makeDefaultModes {
     var %this.modesLeft = $removecs(%this.modes, [ %this.modeArgsSplit ] )
     if (%this.modesLeft == $null) { return +nt }
     ; ,-> Sadly, I have to loop this instead of using a regex hack.
-    var %this.loop = 0, %these.polars = pscS, %this.polar = p s,s p,c S,S c
+    var %this.loop = 0, %these.polars = pscS, %this.polar = p s,s p,c S,S c, %this.forbidden = d
     while (%this.loop < $len(%this.input)) {
       inc %this.loop = 1
       var %this.char = $mid(%this.input,%this.loop,1)
       if (%this.char !isincs %this.modesLeft) { continue }
+      if (%this.char isincs %this.forbidden) { continue }
       if (%this.char isincs %these.polars) {
         var %this.polarChar = $regsubex($str(.,$matchtokcs(%this.polar,%this.char,0,44)),/./g,$iif($gettok($matchtokcs(%this.polar,%this.char,\n,44),1,32) === %this.char,$gettok($matchtokcs(%this.polar,%this.char,\n,44),2,32)))
         if ((%this.polarChar isincs %this.lower) || (%this.polarChar isincs %this.upper)) { continue } 
@@ -778,6 +899,9 @@ alias -l mIRCd.modeTell {
   ;
   ; ¦ is the separator.
 
+  var %this.fulladdr = $hget($mIRCd.temp,SERVER_NAME)
+  ; `-> Pretend this is mIRCd.user.0 because I need a sockname even if there isn't one. (It won't get used, anyway.)
+  if ($1 != mIRCd.user.0) { var %this.fulladdr = $mIRCd.fulladdr($1) }
   if ($4 != +) { var %this.string = $v1 }
   if ($5 != -) { var %this.string = $+(%this.string,$v1) }
   if ($gettok($gettok($1-,6-,32),1,166) != 0) { var %this.string = %this.string $regsubex($str(.,$numtok($v1,32)),/./g,$+($gettok($gettok($v1,\n,32),2-,58),$chr(32))) }
@@ -785,7 +909,7 @@ alias -l mIRCd.modeTell {
   var %this.push = 0
   while (%this.push < $hcount($mIRCd.chanUsers($3))) {
     inc %this.push 1
-    mIRCd.raw $hget($mIRCd.chanUsers($3),%this.push).item $+(:,$iif($2 == OPMODE,$hget($mIRCd.temp,SERVER_NAME),$mIRCd.fulladdr($1))) MODE $mIRCd.info($3,name) %this.string
+    mIRCd.raw $hget($mIRCd.chanUsers($3),%this.push).item $+(:,$iif($2 == CLEARMODE || $2 == OPMODE,$hget($mIRCd.temp,SERVER_NAME),%this.fulladdr)) MODE $mIRCd.info($3,name) %this.string
   }
 }
-alias mIRCd.userModes { return $+(cdgiknoswxCDIMSW,$iif($hget($mIRCd.temp,OPER_OVERRIDE) == 1,X)) }
+alias mIRCd.userModes { return $+(cdgikmnoswx,$iif($hget($mIRCd.temp,BOT_SUPPORT) == 1,B),CDIMS,$iif($hget($mIRCd.temp,WHOIS_PARANOIA) == 1,W),$iif($hget($mIRCd.temp,OPER_OVERRIDE) == 1,X)) }
