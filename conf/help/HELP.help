@@ -1,3 +1,0 @@
-﻿<thisCommand> [command]
-
-Returns help available for a command. If no command is specified, all available commands are listed.

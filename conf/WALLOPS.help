@@ -1,5 +1,0 @@
-﻿<thisCommand> :<message>
-
-This will send a message to all IRC operators online who are usermode +w.
-
-Note: This command can only be used by IRC operators.

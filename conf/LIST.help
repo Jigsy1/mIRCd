@@ -1,5 +1,0 @@
-﻿<thisCommand> [STOP]
-
-Will list all channels on the network assuming they're not set to +p(rivate) or +s(ecret).
-
-To stop a listing in progress, use: /<thisCommand> STOP

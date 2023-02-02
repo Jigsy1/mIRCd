@@ -1,5 +1,0 @@
-﻿<thisCommand> <client> :<reason>
-
-This will disconnect a user from the network with the specified reason.
-
-Note: This command can only be used by IRC operators.

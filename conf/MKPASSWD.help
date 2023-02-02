@@ -1,3 +1,0 @@
-﻿<thisCommand> <text>
-
-Encrypts a string of text to a sha512 hash to be used in oper passwords or the DIE and RESTART password.

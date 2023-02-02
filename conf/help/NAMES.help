@@ -1,5 +1,0 @@
-﻿<thisCommand> <#chan[,#chan,#chan,...]>
-
-This will return a list of users currently on a channel in n!u@h form, along with status they might have.
-
-E.g. /<thisCommand> #<thisNetwork>

@@ -1,8 +1,0 @@
-﻿<thisCommand> <nick [nick nick ...]>
-
-Will return a list of five n!u@i.
-
-Example(s):
----------------
-/<thisCommand> Bob
-/<thisCommand> Alice <thisNick>

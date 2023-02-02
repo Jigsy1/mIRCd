@@ -1,5 +1,0 @@
-﻿<thisCommand> [:]<nick>
-
-This will change your nick to a new nick.
-
-E.g. /<thisCommand> <thisUser>^

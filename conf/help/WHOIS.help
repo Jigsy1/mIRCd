@@ -1,3 +1,0 @@
-﻿<thisCommand> <nick[,nick,nick,...]>
-
-Will return information about a user such as their "real name," what channels they are on, if they're away, etc.

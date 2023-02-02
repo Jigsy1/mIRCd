@@ -1,8 +1,0 @@
-﻿<thisCommand> <#chan> <nick[,nick,nick,...]> :[reason]
-
-Will kick out any specified user(s) from the channel.
-
-Example(s):
----------------
-/<thisCommand> #<thisNetwork> <thisNick> :
-/<thisCommand> #<thisNetwork> Spambot1,Spambot2 :Go spam elsewhere!
