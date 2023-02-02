@@ -1,0 +1,23 @@
+﻿<thisCommand>
+
+With usermode +s, you can specify a divisible number afterwards for extended server notice information.
+
+However, this can only be set when you are already usermode +s.
+
+This is the only usermode which allows an arg, and can only be used by IRC operators.
+
+For example, /MODE <thisNick> +s 512 will display GLINES, SHUNS and ZLINES.
+
+Setting 516 (4+512) will display oper KILLS + GLINES, SHUNS and ZLINES.
+
+The breakdown is as follows and more or less adheres to UnderNet standards.
+
+1 - Stolen for specific information, such as DIE, REHASH and RESTART.
+4 - Oper KILL notices.
+256 - HACK(4) notices from CLEARMODE or OPMODE.
+512 - GLINE, SHUN and ZLINE information.
+16384 - Client connects/disconnects.
+
+The following are not used in this IRCd: 2, 8, 16, 32, 64, 128, 1024, 2048, 4096, 8192, 32768
+
+Setting +s 0 (or lower) or +s 65537 (or higher) will unset +s.

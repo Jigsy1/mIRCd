@@ -1,0 +1,26 @@
+﻿<thisCommand> [<-|+!RrealName|#chan|user@host> <duration> <reason>]
+
+This command can be used to ban a user from the network.
+
+It can also be used to ban a channel from being used by making the server kick everyone out of it.
+
+If no args are specified, a list of G-lines are shown. (The same can be done by doing /STATS g.)
+
+Note: This command can only be used by IRC operators.
+
+Example(s):
+---------------
+/<thisCommand>
+/<thisCommand> -*@8.8.8.8 1 Removing
+/<thisCommand> +*@127.0.0.1 3600 Take a timeout.
+/<thisCommand> +#ShadyChannel 31536000 We don't tolerate that here!
+/<thisCommand> +!R*sub7*Trojan* 31536000 You're infected with a Trojan.
+
+Footnotes:
+----------
+1. The duration cannot be zero, even when removing. In which case just specify 1.
+2. @host masks cannot contain wildcards. user@ may contain wildcards.
+3. With channels, wildcards are allowed, but they are subject to an incredibly strict limit. (Less than 10%.)
+4. If a channel with a large amount of wildcards already exists, it will be not be subject to this limit.
+5. With real names, wildcards are allowed, but they are subject to an incredibly strict limit. (Less than 25%.)
+6. IRC operators are also removed from the channel. They also cannot join the channel once it has been G-lined.

@@ -1,0 +1,17 @@
+﻿<thisCommand> [<-|+ip> <duration> <reason>]
+
+Will ban a user from the network based on their ip address.
+
+If no args are specified, a list of Z-lines are shown. (The same can be done by doing /STATS z.)
+
+Note: This command can only be used by IRC operators.
+
+Example(s):
+---------------
+/<thisCommand>
+/<thisCommand> -8.8.8.8 1 Removing
+/<thisCommand> +127.0.0.1 3600 Take a timeout.
+
+Footnotes:
+----------
+1. The duration cannot be zero, even when removing.

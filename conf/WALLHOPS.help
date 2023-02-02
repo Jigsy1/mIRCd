@@ -1,0 +1,3 @@
+﻿<thisCommand> <#chan> <message>
+
+This will send a message to all the users on the channel who are hops or ops.

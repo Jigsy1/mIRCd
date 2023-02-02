@@ -1,0 +1,4 @@
+<thisCommand> <nick[,nick,nick,...]>
+
+Will return information about a user who was connected to the server, such as their nick, user@host,
+their "real name," and the time they signed on originally.

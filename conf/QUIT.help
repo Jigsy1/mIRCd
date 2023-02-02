@@ -1,0 +1,8 @@
+﻿<thisCommand> :[message]
+
+Will disconnect you from the server.
+
+Example(s):
+---------------
+/<thisCommand> :
+/<thisCommand> :Later! o/

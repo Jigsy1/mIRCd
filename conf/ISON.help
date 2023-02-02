@@ -1,0 +1,7 @@
+﻿<thisCommand> <nick [nick nick ...]>
+
+Returns a list of users currently online.
+
+Example(s):
+---------------
+/<thisCommand> <thisNick> ChanServ MemoServ NickServ OperServ

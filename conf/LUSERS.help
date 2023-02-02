@@ -1,0 +1,3 @@
+﻿<thisCommand>
+
+Returns stats about the server, such as user(s) online, oper(s), channel(s), etc.
