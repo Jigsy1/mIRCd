@@ -3,13 +3,15 @@ An IRCd written in mIRC Scripting Language (mSL) and more or less based on ircu 
 
 This is not meant to be used as a proper IRCd since there's far better alternatives for that. (Like *actual* IRCds.)
 
-I mainly did this for my own personal amusement.
+I mainly did this for my own personal amusement/as a pet project.
 
 
 ## Limitations:
 * This could be used by nefarious actors to phish NickServ/Oper passwords, so end users should be wary of this
 * No SSL/TLS support (/socklisten doesn't support these)
 * Not IRCv3 compliant (though I personally don't consider this to be a bad thing as IRC conversation is supposed to be ephemeral)
+* No flood protection such as Excess Flood
+* Sockets have a max size they can send data (Interestingly, this new limitation didn't exist in mIRC 6.35 ¬_¬)
 * Some commands are missing: anything related to server linking (ACCOUNT, BURST, JUPE, etc.)
 
 Please consult readme.txt on how to get it running. -Jigsy
