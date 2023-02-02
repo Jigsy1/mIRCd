@@ -12,7 +12,7 @@ mIRCd[0.09hf7(Rev.2)][2021-2023] - 02/02/2023
 9.  Made it so that DNS/Ident don't update their respective values if the user is already connected to the IRCd as it is
     too late by then.
 10. RPL_ISUPPORT (005) now includes USERMODES=<modes>.
-11. Added channel nmode +D (+d). Anyone who joins a channel when +D will not be shown unless the user changes the topic,
+11. Added channel mode +D (+d). Anyone who joins a channel when +D will not be shown unless the user changes the topic,
     gets kicked, receives hop/op/voice, or speaks.
     If you try to set -D when there are hidden users still in the channel, +d will be set automatically as polarity.
     Only the server can remove +d, which will be done when there are no hidden users left. (Though setting +D removes it too.)
