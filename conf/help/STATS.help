@@ -2,4 +2,6 @@
 
 Will return a list of information relating to the flag specified.
 
-Note: At present, the only flags that are supported are g/G, m/M, o/O, p/P, s/S, u, U and z/Z.
+Note: At present, the only flags that are supported are g/G, k/K, m/M, o/O, p/P, s, S, u, U and z/Z.
+
+See also: STATS_FLAGS

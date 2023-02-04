@@ -4,6 +4,7 @@ Everyone:
 ----------
 c - Blocks any incoming messages containing colors only. Bold, underline, etc. will still be visible.
 d - Deaf. The user will not see any messages in a channel.
+h - Fakehost. Set via /SETHOST <fakehost> <password> or +h <fakehost> <password>. (This is a hidden mode.)
 i - Invisible. Will not appear in /NAMES unless you're on the same channel.
 m - Deny messages from users who are not on your /ACCEPT list. (Excluding opers.)
 n - Hide channels from other user(s) from your /WHOIS. (Excluding opers.)

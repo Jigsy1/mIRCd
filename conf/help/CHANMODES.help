@@ -28,13 +28,14 @@ k - A key is required to join the channel. Done via: /JOIN #chan passw0rd!1 (+k 
 l - The channel is limited to X users. (+l 100)
 o - Op (@). Can change modes, the topic, kick others, etc. (+o <thisNick> ...)
 v - Voice (+). Can talk when +b or +m, bypass other restrictions such as +S. (+v <thisNick> ...)
+B - Bandwidth saving. Users who have been idle for more than N seconds will not see channel messages. (+B 3600)
 
 Can only be set by IRC operators:
 -----------------------------------
 O - Only IRC operators can join.
 P - Persistent. The channel will not be deleted after the last user has left.
 
-Can not be set via conventional means:
+Can not be (un)set via conventional means:
 ----------------------------------------
 d - Auditorium mode. Will be set if you try to remove +D from a channel still containing hidden users.
     Will be unset either by the server when the last hidden user has been unhidden, or if you +D again.

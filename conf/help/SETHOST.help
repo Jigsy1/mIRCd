@@ -1,0 +1,13 @@
+<thisCommand> <fakehost> <password>
+
+Set a fakehost using an already configured S:line.
+
+The same can be done by doing /MODE <thisNick> +h <fakehost> <password>.
+
+To unset it, simply /mode <thisNick> -h.
+
+Examples:
+---------------
+/<thisCommand> Number.One.Admin thisPassword
+/MODE <thisNick> +h Number.One.Admin thisPassword
+/MODE <thisNick> -h

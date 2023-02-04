@@ -1,0 +1,14 @@
+<thisCommand>
+
+g/G - Lists all G-lines currently active on the server.
+k/K - Lists all K-lines currently active on the server.
+m/M - Lists the available commands and how many times they have been used.
+o/O - Lists all O:lines. (Oper accounts.)
+p/P - Lists all connectable ports to the server.
+s - Lists all shuns currently active on the server.
+S - Lists all S:lines. (Fakehosts.)
+u - Shows the uptime and stats of the server.
+U - Lists all prohibited nicks.
+z/Z - Lists all Z-lines currently active on the server.
+
+See also: STATS

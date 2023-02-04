@@ -1,0 +1,7 @@
+<thisCommand> [<:>][<password>]
+
+Send a password to the IRCd when logging on in order to be allowed to connect.
+
+If the password is incorrect, the user will be rejected.
+
+Note: This must be sent before NICK and USER.

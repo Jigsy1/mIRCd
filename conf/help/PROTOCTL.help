@@ -1,0 +1,8 @@
+<thisCommand> <NAMESX|UHNAMES> [boolean value]
+
+Set preferences for /NAMES output.
+
+NAMESX requests that all modes set on a user be shown, whilst UHNAMES requests that the full
+nick!user@host be displayed.
+
+If you wish to change these at any time, please do: /<thisCommand> NAMESX 0 or 1 or /<thisCommand> UHNAMES 0 or 1
