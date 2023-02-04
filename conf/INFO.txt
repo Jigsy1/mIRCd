@@ -4,7 +4,7 @@ An IRCd written in mIRC Scripting Language (mSL) and more or less based on ircu
 IRCds.
 
 My Magnum Opus. Originally scripted in July 2021 in just under 30 days!
-With (minor) fixes here and there in 2022/2023.
+With (minor) updates here and there in 2022/2023.
 
 Thanks to...
 

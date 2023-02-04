@@ -28,6 +28,8 @@ $3 $4 * * :
 $3 :End of /STATS report
 221
 $3
+229
+S $3
 242
 :Server Up $3-
 243
@@ -270,6 +272,8 @@ $3 :No such gline
 $3 :Bad expire time
 520
 $3 :Mask is too wide
+551
+$3 :sethost not found
 594
 $3 :No such shun
 595
