@@ -1,28 +1,7 @@
 ; mIRCd_msgHandle.mrc
 ;
-; This script contains the following command(s): GNOTICE(deprecated) NOTICE, PRIVMSG, WALLCHOPS, WALLHOPS, WALLOPS, WALLUSERS, WALLVOICES
+; This script contains the following command(s): NOTICE, PRIVMSG, WALLCHOPS, WALLHOPS, WALLOPS, WALLUSERS, WALLVOICES
 
-alias mIRCd_command_gnotice {
-  ; /mIRCd_command_gnotice <sockname> GNOTICE <message>
-
-  if ($is_oper($1) == $false) {
-    mIRCd.sraw $1 $mIRCd.reply(481,$mIRCd.info($1,nick))
-    return
-  }
-  if (($3- == :) || ($3- == $null)) {
-    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
-    return
-  }
-  var %this.loop = 0
-  while (%this.loop < $hcount($mIRCd.users)) {
-    inc %this.loop 1
-    var %this.sock = $hget($mIRCd.users,%this.loop).item
-    mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) NOTICE $mIRCd.info(%this.sock,nick) $+(:,$bracket(Global Notice),:) $3-
-  }
-}
-; ¦-> This was called GLOBAL, but I had to rename it to GNOTICE because "GLOBAL" is a restricted term in mIRC. (It wouldn't attempt to read GLOBAL.help when doing /HELP.)
-; ¦-> Anyway, this existed due to the fact the server didn't support /msg or /notice $* <msg> to all users until I coded it in. (This is deprecated and
-; `-> cannot be called, but retained just incase.)
 alias mIRCd_command_notice {
   ; /mIRCd_command_notice <sockname> NOTICE <target[,target,target,...]> :<message>
 
@@ -160,7 +139,7 @@ alias mIRCd.parseMsg {
         mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (Channel is moderated (+m))
         continue
       }
-      if (($is_modeSet(%this.id,g).chan == $true) && ($calc($ctime - $gettok($hget($mIRCd.chanUsers(%this.id),$1),1,32)) < $mIRCd.info(%this.id,gagTime))) {
+      if (($is_modeSet(%this.id,g).chan == $true) && ($calc($ctime - $gettok($hget($mIRCd.chanUsers(%this.id),$1),1,32)) <= $mIRCd.info(%this.id,gagTime))) {
         mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (Gagged: Please wait $calc($mIRCd.info(%this.id,gagTime) - $calc($ctime - $gettok($hget($mIRCd.chanUsers(%this.id),$1),1,32))) seconds (+g))
         continue
       }
@@ -171,6 +150,7 @@ alias mIRCd.parseMsg {
         inc %this.userLoop 1
         var %this.sock = $hget($mIRCd.chanUsers(%this.id),%this.userLoop).item
         if (%this.sock == $1) { continue }
+        ; `-> We don't need to see our own message. We see it when we send it.
         if ($gettok($hget($mIRCd.chanUsers(%this.id),$1),2,32) == 1) {
           mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) JOIN $mIRCd.info(%this.id,name)
           var %this.changeState = 1
@@ -178,8 +158,11 @@ alias mIRCd.parseMsg {
         if ($is_modeSet(%this.sock,d).nick == $true) { continue }
         ; `-> +d(eaf) users live up to their name.
         if ($is_silenceMatch(%this.sock,$mIRCd.fulladdr($1)) == $true) { continue }
+        ; `-> Note to self: The lack of ipaddr and trueaddr is not a bug. (Although if anyone raises this as an issue on Github, change it.)
+        if ($is_modeSet(%this.id,B).chan == $true) {
+          if ($iif($mIRCd.info(%this.sock,idleTime) != $null,$calc($ctime - $v1),$sock(%this.sock).to) >= $mIRCd.info(%this.id,bandwidth)) { continue }
+        }
         mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) $upper($2) %this.name $colonize(%this.message)
-        ; `-> We don't need to see our own message. We see it when we send it.
       }
       if (%this.changeState == 1) {
         mIRCd.updateChanUser %this.id $1 0 2
@@ -195,6 +178,8 @@ alias mIRCd.parseMsg {
         ; ¦-> And yes, /msg $*,*.localhost is allowed. $*,$* would follow the "no previous targets" restriction, but $*,$*.localhost 
         ; ¦-> are viewed as two different targets. However, that doesn't seem to work on this. It drops everything after the first.
         ; ¦-> So /msg $*,$*.localhost,Jigsy would drop $*.localhost and Jigsy. I'm guessing this is something mIRC related.
+        ; ¦
+        ; `-> I'll see if I can find some way to fix this, though... (No promises!)
         if ($is_oper($1) == $false) {
           mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.target)
           continue
@@ -204,7 +189,6 @@ alias mIRCd.parseMsg {
           mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.target)
           continue
         }
-        ; >-> I really need to fix this section.
         var %this.loop = 0
         while (%this.loop < $hcount($mIRCd.users)) {
           inc %this.loop 1

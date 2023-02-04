@@ -1,3 +1,39 @@
+mIRCd[0.09hf8(Rev.2)][2021-2023] - 04/02/2023
+--------------------------------------------------
+1.  The check for channel mode -d now occurs after the KICK command has parsed, rather than after each nick specified.
+2.  Commands are now finally stored in separate hash tables rather than a long, comma separated list in mIRCd.mrc.
+3.  G-lines and Shuns should now check against nick!user@ip.
+4.  Can now add local Shuns and Z-lines in the same manner as K-lines. (mIRCd.shuns and mIRCd.zlines respectively.)
+5.  Active, matching shuns of users who have just successfully registered with the IRCd are now announced. (SNOMASK=512)
+6.  Can now password the server by adding CONNECTION_PASS=<encrypted password with mkpasswd>.
+    Those connecting via localhost (127.*) and LAN (192.168.*) are not subject to this restriction.
+7.  Added the PASS command. This must be sent by users *BEFORE* NICK and USER.
+8.  Added channel mode +B <N>. This will avoid parsing messages to users in channels who have been idle on the server
+    for >=N seconds. (Bandwidth saving mode.)
+    This can be enabled by adding BANDWIDTH_MODE=TRUE or BANDWIDTH_MODE=FALSE to [Features] in mIRCd.ini. Defaults to FALSE.
+9.  You can now specify channels to have users automatically JOIN on connection. This can be done by adding:
+    AUTOJOIN_CHANS=#comma,#separated,#channels to [Features] in the mIRCd.ini.
+    This still falls in the limits of TARGMAX_JOIN, MAXCHANNELS and MAXCHANNELLEN.
+10. The true address of connecting/disconnecting users is now shown instead of the obfuscated address.
+11. Corrected a possible bug in setting SNOMASK.
+12. PROTOCTL is now hidden from /HELP. (It's still usable, just hidden.)
+13. Added S:line support. (Aka. User mode +h or /SETHOST.)
+    Doing either /SETHOST <S:line> <password> or /mode <you> +h <S:line> <password> will change your @host into the
+    specified S:line, assuming it is part of mIRCd.slines. Doing /MODE <you> -h will restore your host to the original host.
+    This can be enabled by adding SLINE_SUPPORT=TRUE or SLINE_SUPPORT=FALSE to [Features] in mIRCd.ini. Defaults to FALSE.
+14. Code for /GNOTICE (now deprecated) removed and placed into it's own separate file. (mIRCd_gnotice.mrc)
+15. Failed SVSJOINs into banned channels now sends a server wallops. (Cannot be disabled in order to prevent abuse.)
+16. Users attempting to join banned channels now sends a server wallops. This can be enabled by adding WALLOPS_BAD_JOINS=TRUE
+    or WALLOPS_BAD_JOINS=FALSE to [Mechanics] in mIRCd.ini. Defaults to FALSE.
+17. /NAMES now takes settings for PROTOCTL NAMESX and UHNAMES into consideration. The user can override these any time by
+    sending a boolean value as part of the command. (Which isn't protocol, but...) E.g. /PROTOCTL NAMESX 0
+18. Can now deny channels from being made except by IRC operators by adding DENY_CHANNEL_CREATION=TRUE or DENY_CHANNEL_CREATION=FALSE
+    to [Mechanics] in mIRCd.ini. Defaults to FALSE.
+19. Can now prevent new channels from having ops by adding OPLESS_CHANS=1 or OPLESS_CHANS=2 to [Mechanics] in mIRCd.ini.
+    Meaining: 0 = Disabled, 1 = Everybody, 2 = Non-opers.
+20. Other changes.
+
+
 mIRCd[0.09hf7(Rev.2)][2021-2023] - 02/02/2023
 --------------------------------------------------
 1.  DEFAULT_CHANMODES and DEFAULT_USERMODES are now parsed after making sure specific modes have been enabled.
@@ -62,7 +98,7 @@ mIRCd[0.09hf6(Rev.2)][2021-2023] - 28/01/2023
     This can be enabled by adding LOOSE_OBFUSCATION=TRUE to [Features] in the mIRCd.ini.
 16. Added channel mode +u to hide part/quit messages from other users.
 17. Added chan mode +j <N>. This prevents users who have been connected to the IRCd for less than N second(s) from joining.
-18. Added in /PRIVMSG $* and /NOTICE $* support, however, this is not without it's issues due to mIRC and $ being a
+18. Added in /PRIVMSG $* and /NOTICE $* support, however, this is not without its issues due to mIRC and $ being a
     special case.
     On an ircu IRCd, you can /msg $*,$*.tld,$nameOfSer*,nick and it will message all of those.
     However, with this, it only does the first, everything after the $* will be dropped.

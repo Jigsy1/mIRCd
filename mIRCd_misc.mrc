@@ -20,7 +20,7 @@ alias mIRCd_command_help {
 
   if ($3 == $null) {
     var %this.sock = $1
-    tokenize 44 $mIRCd.commands(1)
+    tokenize 44 $remtok($sorttok($left($regsubex($str(.,$hget($mIRCd.commands(1),0).data),/./g,$+($hget($mIRCd.commands(1),\n).data,$comma)),-1),44),PROTOCTL,1,44)
     scon -r mIRCd.sraw %this.sock NOTICE $mIRCd.info(%this.sock,nick) $!+(:, $* )
     ; `-> A quick and dirty loop.
     return
@@ -93,10 +93,10 @@ alias mIRCd_command_list {
       if (($is_private(%this.id) == $true) || ($is_secret(%this.id) == $true)) {
         if (%this.OnChan != 1) { continue }
       }
-      var %this.modes = $mIRCd.info(%this.id,modes), %this.modeItem = g gagTime,j joinThrottle,l limit,k key
-      var %this.key = $iif($is_oper($1) == $false && $is_on(%this.id,$1) == $false,*,$mIRCd.info(%this.id,key))
-      ; >-> Key needs to appear as * if they're not an oper or not on the channel.
-      var %this.modeArgs = $regsubex(%this.modes,/(.)/g,$iif($poscs(gjlk,\t) != $null,$+($iif(\t === k,%this.key,$mIRCd.info(%this.id,$gettok($matchtokcs(%this.modeItem,$+(\t,$chr(32)),1,44),2,32))),$chr(32))))
+      var %this.modes = $mIRCd.info(%this.id,modes), %this.modeItem = B bandwidth,g gagTime,j joinThrottle,l limit,k key
+      var %this.key = $iif(%this.onChan == 1,$mIRCd.info(%this.id,key),*)
+      ; `-> Key needs to appear as * if they're not an oper or not on the channel.
+      var %this.modeArgs = $regsubex(%this.modes,/(.)/g,$iif($poscs(Bgjlk,\t) != $null,$+($iif(\t === k,%this.key,$mIRCd.info(%this.id,$gettok($matchtokcs(%this.modeItem,$+(\t,$chr(32)),1,44),2,32))),$chr(32))))
       var %this.modeString = $bracket(%this.modes $iif(%this.ModeArgs != $null,$v1))
       if (H isincs %this.modes) {
         if (%this.onChan != 1) { var %this.modeString = $null }
@@ -150,17 +150,19 @@ alias mIRCd_command_motd {
   mIRCd.sraw $1 $mIRCd.reply(376,$mIRCd.info($1,nick))
 }
 alias mIRCd_command_protoctl {
-  ; /mIRCd_command_protoctl <sockname> PROTOCTL <uhnames|namesx|?> [?]
+  ; /mIRCd_command_protoctl <sockname> PROTOCTL <uhnames|namesx> [boolean value]
+  ;
+  ; [boolean value] isn't part of the protocol, but I've adapted it here for flexibility.
 
   if ($3 == $null) {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
   }
-  if (($3 == NAMESX) && ($mIRCd.info($1,NAMESX) == $null)) { mIRCd.updateUser $1 NAMESX 1 }
-  if (($3 == UHNAMES) && ($mIRCd.info($1,UHNAMES) == $null)) { mIRCd.updateUser $1 UHNAMES 1 }
+  if ($3 == NAMESX) { mIRCd.updateUser $1 NAMESX $iif($4 != $null,$iif($bool_fmt($4) == $true,1,0),1) }
+  if ($3 == UHNAMES) { mIRCd.updateUser $1 UHNAMES $iif($4 != $null,$iif($bool_fmt($4) == $true,1,0),1) }
 }
 ; ¦-> If the client does these, it means they want NAMESX (@%+nick) and UHNAMES (n!u@h) in /NAMES replies.
-; `-> We'll set them in their hash table, but we don't do anything with them for now.
+; `-> mIRCd now takes this into consideration. They can update these at any time. (Defaults to TRUE.)
 alias mIRCd_command_stats {
   ; /mIRCd_command_stats <sockname> STATS <flag>
 
@@ -197,9 +199,9 @@ alias mIRCd_command_stats {
   if ($3 == m) {
     ; `-> Ditto.
     var %this.loop = 0
-    while (%this.loop < $numtok($mIRCd.commands(1),44)) {
+    while (%this.loop < $hget($mIRCd.commands(1),0).data) {
       inc %this.loop 1
-      var %this.command = $gettok($mIRCd.commands(1),%this.loop,44), %this.data = $iif($hget($mIRCd.mStats,%this.command) != $null,$v1,0)
+      var %this.command = $hget($mIRCd.commands(1),%this.loop).data, %this.data = $iif($hget($mIRCd.mStats,%this.command) != $null,$v1,0)
       mIRCd.sraw $1 $mIRCd.reply(212,$mIRCd.info($1,nick),%this.command,%this.data)
     }
   }
@@ -219,14 +221,30 @@ alias mIRCd_command_stats {
     ; ¦-> A quick and dirty loop.
     ; `-> I also believe the final * on the raw reply - which should actually be a number here - is the amount of clients on that port?
   }
-  if ($3 == s) {
-    ; `-> Ditto for s/S.
+  if ($3 === s) {
+    ; `-> Note: This _MUST_ now be lowercase.
     var %this.loop = 0
     while (%this.loop < $hcount($mIRCd.shuns)) {
       inc %this.loop 1
       var %this.item = $hget($mIRCd.shuns,%this.loop).item
       var %this.data = $hget($mIRCd.shuns,%this.item)
       mIRCd.sraw $1 $mIRCd.reply(290,$mIRCd.info($1,nick),%this.item,$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
+    }
+    if ($hcount($mIRCd.local(Shuns)) > 0) {
+      var %this.loop = 0
+      while (%this.loop < $hcount($mIRCd.local(Shuns))) {
+        inc %this.loop 1
+        var %this.item = $hget($mIRCd.local(Shuns),%this.loop).item
+        mIRCd.sraw $1 $mIRCd.reply(290,$mIRCd.info($1,nick),%this.item,N/A,$hget($mIRCd.local(Shuns),%this.item))
+      }
+    }
+  }
+  if ($3 === S) {
+    ; `-> _Uppercase_!
+    var %this.loop 0
+    while (%this.loop < $hcount($mIRCd.slines)) {
+      inc %this.loop 1
+      mIRCd.sraw $1 $mIRCd.reply(229,$mIRCd.info($1,nick),$hget($mIRCd.slines,%this.loop).item)
     }
   }
   if ($3 === u) {
@@ -253,6 +271,14 @@ alias mIRCd_command_stats {
       var %this.item = $hget($mIRCd.zlines,%this.loop).item
       var %this.data = $hget($mIRCd.zlines,%this.item)
       mIRCd.sraw $1 $mIRCd.reply(292,$mIRCd.info($1,nick),%this.item,$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
+    }
+    if ($hcount($mIRCd.local(Zlines)) > 0) {
+      var %this.loop = 0
+      while (%this.loop < $hcount($mIRCd.local(Zlines))) {
+        inc %this.loop 1
+        var %this.item = $hget($mIRCd.local(Zlines),%this.loop).item
+        mIRCd.sraw $1 $mIRCd.reply(292,$mIRCd.info($1,nick),%this.item,N/A,$hget($mIRCd.local(Zlines),%this.item))
+      }
     }
   }
   mIRCd.sraw %this.sock $mIRCd.reply(219,$mIRCd.info(%this.sock,nick),%this.flag)
@@ -395,7 +421,7 @@ alias mIRCd_command_whois {
     if ($is_modeSet(%this.sock,I).nick == $true) {
       if (($is_oper($1) != $true) || ($1 != %this.sock)) { goto skipIdle }
     }
-    mIRCd.sraw $1 $mIRCd.reply(317,$mIRCd.info($1,nick),%this.nick,$iif($mIRCd.info(%this.sock,idleTime),$calc($ctime - $v1),$sock(%this.sock).to),$calc($ctime - $sock(%this.sock).to))
+    mIRCd.sraw $1 $mIRCd.reply(317,$mIRCd.info($1,nick),%this.nick,$iif($mIRCd.info(%this.sock,idleTime) != $null,$calc($ctime - $v1),$sock(%this.sock).to),$calc($ctime - $sock(%this.sock).to))
     :skipIdle
   }
   mIRCd.sraw $1 $mIRCd.reply(318,$mIRCd.info($1,nick),$3)

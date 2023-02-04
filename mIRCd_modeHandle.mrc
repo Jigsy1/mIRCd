@@ -1,6 +1,12 @@
 ; mIRCd_modeHandle.mrc
 ;
-; This script contains the following command(s): CLEARMODE, MODE, OPER, OPMODE
+; This script contains the following command(s): CLEARMODE, MODE, OPER, OPMODE, SETHOST
+
+; Hash Tables
+
+alias mIRCd.slines { return mIRCd[Slines] }
+
+; IRCd Commands
 
 alias mIRCd_command_clearmode {
   ; /mIRCd_command_clearmode <sockname> CLEARMODE <#chan> [<modestring>]
@@ -82,7 +88,7 @@ alias mIRCd_command_clearmode {
       if (%this.char === D) { var %this.bigModeD = 1 }
       goto cleanupModes
     }
-    if ($poscs(cgijklmnpstyCNOKPSTY,%this.char) != $null) {
+    if ($poscs(cgijklmnpstyCBNOKPSTY,%this.char) != $null) {
       if ($is_modeSet(%this.id,%this.char).chan == $false) { goto cleanupModes }
       mIRCd.updateChan %this.id modes $removecs($mIRCd.info(%this.id,modes),%this.char)
       var %this.minus = $+(%this.minus,%this.char)
@@ -93,6 +99,7 @@ alias mIRCd_command_clearmode {
       if (%this.char === g) { mIRCd.delChanItem %this.id gagTime }
       if (%this.char === j) { mIRCd.delChanItem %this.id joinThrottle }
       if (%this.char === l) { mIRCd.delChanItem %this.id limit }
+      if (%this.char === B) { mIRCd.delChanItem %this.id bandwidth }
     }
     :cleanupModes
     ; `-> Deal with the string.
@@ -189,6 +196,34 @@ alias mIRCd_command_opmode {
   if ($3- != $null) { mIRCd.serverNotice 256 HACK(4): $mIRCd.info($1,nick) $upper($2) $3- }
   mIRCd.parseMode $1-
 }
+alias mIRCd_command_sethost {
+  ; /mIRCd_command_sethost <sockname> SETHOST <fakehost> <password>
+
+  if ($hget($mIRCd.temp,SLINE_SUPPORT) == 0) {
+    ; `-> It's either this, or an annoying way of deleting and readding the command each time the flag gets toggled.
+    mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :*** Notice -- $upper($2) is disabled.
+    return
+  }
+  if ($4 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  if ($hget($mIRCd.slines,$3) == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(551,$mIRCd.info($1,nick),$3)
+    return
+  }
+  if ($mIRCd.encryptPass($4) !== $hget($mIRCd.slines,$3)) {
+    ; `-> !== because of "magic hashes."
+    mIRCd.sraw $1 $mIRCd.reply(551,$mIRCd.info($1,nick),$3)
+    return
+  }
+  if ($mIRCd.info($1,originalHost) == $null) { mIRCd.updateUser $1 originalHost $mIRCd.info($1,host) }
+  ; `-> If they ever -h, we need to revert back to their original host, even if it's just an +x host.
+  if (h !isincs $mIRCd.info($1,modes)) { mIRCd.updateUser $1 modes $+($mIRCd.info($1,modes),h) }
+  mIRCd.hostQuit $1 $hfind($mIRCd.slines,$3)
+}
+; ¦-> Interestingly, bircd lists oper as having completely different args. Needless to say, it didn't follow that. It was <host> <pass>
+; `-> regardless of status. (Probably a bug, but either way less work for me!)
 
 ; Commands and Functions
 
@@ -256,9 +291,9 @@ alias is_voice {
   var %this.id = $1
   return $bool_fmt($gettok($hget($mIRCd.chanUsers(%this.id),$2),5,32))
 }
-; ,-> NOTE: I need find a better way to "make" these two lines.
-alias mIRCd.chanModes { return $+(bc,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,d),g,$iif($hget($mIRCd.temp,HALFOP) == 1,h),ijklmnopstuvyC,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,D),HNOK,$iif($hget($mIRCd.temp,PERSISTANT_CHANNELS) == 1,P),STY) $+(bg,$iif($hget($mIRCd.temp,HALFOP) == 1,h),jklov) }
-alias mIRCd.chanModesSupport { return b,k,gjl, $+ $+(c,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,d),imnpstuy,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,D),CHNOK,$iif($hget($mIRCd.temp,PERSISTANT_CHANNELS) == 1,P),STY) }
+; ,-> NOTE: I need find a better way to "make" these two lines. (And the $mIRCd.userModes line.)
+alias mIRCd.chanModes { return $+(bc,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,d),g,$iif($hget($mIRCd.temp,HALFOP) == 1,h),ijklmnopstuvy,$iif($hget($mIRCd.temp,BANDWIDTH_MODE) == 1,B),C,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,D),HNOK,$iif($hget($mIRCd.temp,PERSISTANT_CHANNELS) == 1,P),STY) $+(bg,$iif($hget($mIRCd.temp,HALFOP) == 1,h),jklov,$iif($hget($mIRCd.temp,BANDWIDTH_MODE) == 1,B)) }
+alias mIRCd.chanModesSupport { return $+(b,$comma,k,$comma,gjl,$iif($hget($mIRCd.temp,BANDWIDTH_MODE) == 1,B),$comma,c,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,d),imnpstuyC,$iif($hget($mIRCd.temp,AUDITORIUM_MODE) == 1,D),HNOK,$iif($hget($mIRCd.temp,PERSISTANT_CHANNELS) == 1,P),STY) }
 ; `-> RPL_ISUPPORT. If you remove a mode from chanModes, just remember to _CAREFULLY_ remove it from here, too.
 alias -l mIRCd.defaultChanModes { return nt }
 ; `-> These are the fallback modes for the function right at the bottom of the script. (No need for the + here, we'll deal with that.)
@@ -291,14 +326,14 @@ alias -l mIRCd.parseMode {
         mIRCd.sraw $1 $mIRCd.reply(502,$mIRCd.info($1,nick))
         return
       }
-      mIRCd.sraw $1 $mIRCd.reply(221,$mIRCd.info(%this.sock,nick),$mIRCd.info(%this.sock,modes))
+      mIRCd.sraw $1 $mIRCd.reply(221,$mIRCd.info(%this.sock,nick),$removecs($mIRCd.info(%this.sock,modes),h))
       return
     }
     if ($4 == $null) {
-      mIRCd.sraw $1 $mIRCd.reply(221,$mIRCd.info($1,nick),$mIRCd.info($1,modes))
+      mIRCd.sraw $1 $mIRCd.reply(221,$mIRCd.info($1,nick),$removecs($mIRCd.info($1,modes),h))
       return
     }
-    var %this.flag = $null, %this.minus = -, %this.plus = +, %this.isSet = $null
+    var %this.flag = $null, %this.minus = -, %this.plus = +, %this.isSet = $null, %this.argv = 0
     var %this.mode = 0
     while (%this.mode < $len($4)) {
       inc %this.mode 1
@@ -336,6 +371,40 @@ alias -l mIRCd.parseMode {
           }
           continue
         }
+        if ($poscs(h,%this.char) != $null) {
+          ; `-> S:line. (Or fakehost if you don't know what that is.)
+          if (%this.flag == -) {
+            var %this.hiddenHost = 0
+            continue
+          }
+          ; ,-> + (Doesn't matter if they're +h already, either.)
+          inc %this.argv 1
+          var %this.hostToken = $gettok($5-,%this.argv,32)
+          if (%this.hostToken == $null) {
+            mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),SETHOST)
+            continue
+          }
+          inc %this.argv 1
+          var %this.passToken = $gettok($5-,%this.argv,32)
+          if (%this.passToken == $null) {
+            mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),SETHOST)
+            continue
+          }
+          if ($hget($mIRCd.slines,%this.hostToken) == $null) {
+            mIRCd.sraw $1 $mIRCd.reply(551,$mIRCd.info($1,nick),%this.hostToken)
+            continue
+          }
+          if ($mIRCd.encryptPass(%this.passToken) !== $hget($mIRCd.slines,%this.hostToken)) {
+            ; `-> !== because of "magic hashes."
+            mIRCd.sraw $1 $mIRCd.reply(551,$mIRCd.info($1,nick),%this.hostToken)
+            continue
+          }
+          var %this.hiddenHostSline = $hfind($mIRCd.slines,%this.hostToken)
+          ; `-> Set the host correctly, not what they put.
+          var %this.hiddenHost = 1
+          ; `-> We'll deal with this last. Thankfully it's an invisible mode, so we don't have to deal with the string.
+          continue
+        }
         if ($poscs(dgikmnoswxBCDIMWX,%this.char) != $null) {
           if (%this.flag == -) {
             if ((%this.isSet == $false) || (%this.char === x)) { continue }
@@ -350,10 +419,12 @@ alias -l mIRCd.parseMode {
           ; ,-> +
           if (%this.isSet == $true) {
             if (%this.char === s) {
+              inc %this.argv 1
               if ($is_oper($1) == $false) { continue }
-              ; `-> This is the only usermode which has an arg - a number. (See: https://www.undernet.org/docs/snomask-server-notice-masks)
-              if ($5 !isnum 1-65536) {
-                if (($5 <= 0) || ($5 > 65536)) {
+              var %this.token = $gettok($5-,%this.argv,32)
+              ; `-> This usermode has an arg - a number. (See: https://www.undernet.org/docs/snomask-server-notice-masks)
+              if (%this.token !isnum 1-65535) {
+                if ((%this.token <= 0) || (%this.token >= 65536)) {
                   ; `-> Remove +s.
                   mIRCd.updateUser $1 modes $removecs($mIRCd.info($1,modes),%this.char)
                   var %this.minus = $+(%this.minus,%this.char)
@@ -361,9 +432,9 @@ alias -l mIRCd.parseMode {
                 }
                 continue
               }
-              if ($5 != $mIRCd.info($1,snoMask)) {
-                mIRCd.updateUser $1 snoMask $5
-                mIRCd.sraw $1 $mIRCd.reply(008,$mIRCd.info($1,nick),$5,$base($5,10,16))
+              if (%this.token != $mIRCd.info($1,snoMask)) {
+                mIRCd.updateUser $1 snoMask %this.token
+                mIRCd.sraw $1 $mIRCd.reply(008,$mIRCd.info($1,nick),%this.token,$base(%this.token,10,16))
               }
             }
             continue
@@ -403,6 +474,19 @@ alias -l mIRCd.parseMode {
       if (X isincs %this.plus) { mIRCd.serverWallops %this.wallString +X (Oper Override) }
     }
     ; `-> MODESPL doesn't matter for usermode(s). Also, it's the only mode which is colonized.
+    if (%this.hiddenHost == 1) {
+      if ($mIRCd.info($1,originalHost) == $null) { mIRCd.updateUser $1 originalHost $mIRCd.info($1,host) }
+      ; `-> If they ever -h, we need to revert back to their original host, even if it's just an +x host.
+      if (h !isincs $mIRCd.info($1,modes)) { mIRCd.updateUser $1 modes $+($mIRCd.info($1,modes),h) }
+      mIRCd.hostQuit $1 %this.hiddenHostSline
+      return
+    }
+    if (%this.hiddenHost == 0) {
+      if (h !isincs $mIRCd.info($1,modes)) { return }
+      mIRCd.updateUser $1 modes $removecs($mIRCd.info($1,modes),h)
+      mIRCd.hostQuit $1 $iif($mIRCd.info($1,originalHost) != $null,$v1,$mIRCd.info($1,trueHost))
+      ; `-> I don't believe it'll ever fall back to trueHost, but you can never be too careful.
+    }
     return
   }
   ; ,-> Channel.
@@ -424,9 +508,9 @@ alias -l mIRCd.parseMode {
         return
       }
     }
-    var %this.modeString = $mIRCd.info(%this.id,modes), %this.modeItem = g gagTime,j joinThrottle,l limit,k key
+    var %this.modeString = $mIRCd.info(%this.id,modes), %this.modeItem = B bandwidth,g gagTime,j joinThrottle,l limit,k key
     var %this.key = $iif($is_oper($1) == $false && $is_on(%this.id,$1) == $false,*,$mIRCd.info(%this.id,key))
-    var %this.modeArgs = $regsubex(%this.modeString,/(.)/g,$iif($poscs(gjlk,\t) != $null,$+($iif(\t === k,%this.key,$mIRCd.info(%this.id,$gettok($matchtokcs(%this.modeItem,$+(\t,$chr(32)),1,44),2,32))),$chr(32))))
+    var %this.modeArgs = $regsubex(%this.modeString,/(.)/g,$iif($poscs(Bgjlk,\t) != $null,$+($iif(\t === k,%this.key,$mIRCd.info(%this.id,$gettok($matchtokcs(%this.modeItem,$+(\t,$chr(32)),1,44),2,32))),$chr(32))))
     mIRCd.sraw $1 $mIRCd.reply(324,$mIRCd.info($1,nick),%this.name,%this.modeString) $iif(%this.modeArgs != $null,$v1)
     mIRCd.sraw $1 $mIRCd.reply(329,$mIRCd.info($1,nick),%this.name,$mIRCd.info(%this.id,createTime))
     return
@@ -521,8 +605,8 @@ alias -l mIRCd.parseMode {
         }
         goto cleanupModes
       }
-      if ($poscs(gjl,%this.char) != $null) {
-        var %mode.hashItems = g gagTime,j joinThrottle,l limit, %this.hashItem = $gettok($matchtokcs(%mode.hashItems,$+(%this.char,$chr(32)),1,44),2,32)
+      if ($poscs(gjlB,%this.char) != $null) {
+        var %mode.hashItems = B bandwidth,g gagTime,j joinThrottle,l limit, %this.hashItem = $gettok($matchtokcs(%mode.hashItems,$+(%this.char,$chr(32)),1,44),2,32)
         if (%this.flag == -) {
           ; `-> Do not check for tokens in -g/l.
           if (%this.isSet == $false) { goto cleanupModes }
@@ -674,7 +758,7 @@ alias -l mIRCd.parseMode {
         goto cleanupModes
         ; `-> This whole section is a special case and will be done last.
       }
-      if ($poscs(imntuyCHNKOPTY,%this.char) != $null) {
+      if ($poscs(imntuyCBHNKOPTY,%this.char) != $null) {
         if ($poscs(OP,%this.char) != $null) {
           if ($is_oper($1) == $false) {
             mIRCd.sraw $1 $mIRCd.reply(481,$mIRCd.info($1,nick))
@@ -806,7 +890,7 @@ alias -l mIRCd.parseMode {
   }
 }
 ; ¦-> We're done! This is quite literally one of the biggest pains in the ass out of the entire codebase! (Hey, at least it works!)
-; `-> 27/01/2023: I stand corrected. /WHO now officially takes the crown throne. Compared to that, this was a cakewalk.
+; `-> 27/01/2023: I stand corrected. /WHO now officially takes the throne. Compared to that, this was a cakewalk.
 alias mIRCd.dCheck {
   ; /mIRCd.dCheck <chan id>
 
@@ -876,8 +960,9 @@ alias mIRCd.makeDefaultModes {
   }
   ; ,-> User.
   if ($1 == $null) { + }
-  var %this.loop = 0, %these.polars = cS, %this.polar = c S,S c, %this.forbidden = koX
-  ; `-> I don't mind the other modes being allowed (+g/+W) but I will _NOT_ allow +k, +o or +X. That's just asking for trouble.
+  var %this.loop = 0, %these.polars = cS, %this.polar = c S,S c, %this.forbidden = hkoX
+  ; ¦-> I don't mind the other modes being allowed (+g/+W) but I will _NOT_ allow +h, +k, +o or +X.
+  ; `-> +h requires a S:line for a host (E.g. Jigsy!Jigsy@Towa.Herschel.is.mai.wai.fu), but +k, +o and +X are just asking for trouble.
   while (%this.loop < $len($1)) {
     inc %this.loop = 1
     var %this.char = $mid($1,%this.loop,1)
@@ -912,4 +997,6 @@ alias -l mIRCd.modeTell {
     mIRCd.raw $hget($mIRCd.chanUsers($3),%this.push).item $+(:,$iif($2 == CLEARMODE || $2 == OPMODE,$hget($mIRCd.temp,SERVER_NAME),%this.fulladdr)) MODE $mIRCd.info($3,name) %this.string
   }
 }
-alias mIRCd.userModes { return $+(cdgikmnoswx,$iif($hget($mIRCd.temp,BOT_SUPPORT) == 1,B),CDIMS,$iif($hget($mIRCd.temp,WHOIS_PARANOIA) == 1,W),$iif($hget($mIRCd.temp,OPER_OVERRIDE) == 1,X)) }
+alias mIRCd.userModes { return $+(cdg,$iif($hget($mIRCd.temp,SLINE_SUPPORT) == 1,h),ikmnoswx,$iif($hget($mIRCd.temp,BOT_SUPPORT) == 1,B),CDIMS,$iif($hget($mIRCd.temp,WHOIS_PARANOIA) == 1,W),$iif($hget($mIRCd.temp,OPER_OVERRIDE) == 1,X)) }
+
+; EOF

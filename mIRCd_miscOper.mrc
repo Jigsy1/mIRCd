@@ -45,7 +45,7 @@ alias mIRCd_command_rehash {
     return
   }
   if ($mIRCd.check > 0) {
-    mIRCd.sraw NOTICE $mIRCd.info($1,nick) :*** Notice -- Error(s) detected in the config.
+    mIRCd.sraw NOTICE $mIRCd.info($1,nick) :*** Notice -- Aborting. Error(s) detected in the config.
     return
   }
   hadd -m $mIRCd.temp REHASH $1

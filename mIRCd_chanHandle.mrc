@@ -94,8 +94,15 @@ alias mIRCd_command_join {
     if ($is_exists(%this.chan).chan == $false) {
       if (($is_klineMatch(%this.chan) == $true) || ($is_glineMatch(%this.chan) == $true)) {
         ; `-> I was going to add oper immunity, but then wondered why an oper would need to join a prohibited, unjoinable channel.
+        if ($bool_fmt($mIRCd(WALLOPS_BAD_JOINS)) == $true) { mIRCd.serverWallops $mIRCd.info($1,nick) $parenthesis($gettok($mIRCd.fulladdr($1),2,33)) attempted to join a banned channel: %this.chan }
         mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
         continue
+      }
+      if ($bool_fmt($mIRCd(DENY_CHANNEL_CREATION)) == $true) {
+        if ($is_oper($1) == $false) {
+          mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
+          continue
+        }
       }
       var %this.name = $left(%this.chan,$mIRCd(MAXCHANNELLEN))
       ; `-> NOTE: # *is* counted as part of the length. (I checked on another IRCd.)
@@ -206,9 +213,9 @@ alias mIRCd_command_kick {
       mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) KICK %this.name %this.nickname $colonize($iif($5- != $null,$left($v1,$mIRCd(KICKLEN)),%this.nickname)))
     }
     mIRCd.chanDelUser %this.id %this.kickSock
-    if (%this.d == 1) {
-      if ($is_modeSet(%this.id,d).chan == $true) { mIRCd.dCheck %this.id }
-    }
+  }
+  if (%this.d == 1) {
+    if ($is_modeSet(%this.id,d).chan == $true) { mIRCd.dCheck %this.id }
   }
 }
 alias mIRCd_command_knock {
@@ -320,7 +327,7 @@ alias mIRCd_command_names {
         }
         ; `-> I did notice on bircd that /NAMES -d #chan when oper doesn't show invisible users. (Though I believe that might be a bug.)
       }
-      var %this.userState = $mIRCd.namesStatus(%this.id,%this.sock)
+      var %this.userState = $iif($mIRCd.info($1,NAMESX) == 1,$mIRCd.namesStatus(%this.id,%this.sock),$mIRCd.namesStatus(%this.id,%this.sock).top)
       if (%this.d == 1) {
         if (%this.sockState != 1) { continue }
         if (%this.sock == $1) { continue }
@@ -338,7 +345,7 @@ alias mIRCd_command_names {
         ; `-> Ignore those still invisible.
       }
       :processNamesString
-      var %this.string = $+(%this.userState,$mIRCd.fulladdr(%this.sock)) %this.string
+      var %this.string = $+(%this.userState,$iif($mIRCd.info($1,UHNAMES) == 1,$mIRCd.fulladdr(%this.sock),$mIRCd.info($1,nick))) %this.string
       if ($numtok(%this.string,32) == 8) {
         ; `-> I've opted for a hardcoded eight here. After eight users are in the string, send the line to the user.
         mIRCd.sraw $1 $mIRCd.reply($iif(%this.d == 1,355,353),$mIRCd.info($1,nick),%this.flag,%this.name,%this.string)
@@ -421,6 +428,7 @@ alias mIRCd_command_svsjoin {
   }
   if ($is_exists(%this.chan).chan == $false) {
     if (($is_klineMatch(%this.chan) == $true) || ($is_glineMatch(%this.chan) == $true)) {
+      mIRCd.serverWallops Failed $upper($2) to a banned channel by $mIRCd.info($1,nick) $+($parenthesis($gettok($mIRCd.fulladdr($1),2,33)),:) %this.nick -> %this.name
       mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
       return
     }
@@ -583,12 +591,33 @@ alias mIRCd.addBan {
 
   hadd -m $mIRCd.chanBans($1) $2 $3 $4
 }
+alias mIRCd.makeAutoJoin {
+  ; $mIRCd.makeAutoJoin
+
+  if ($mIRCd(AUTOJOIN_CHANS) == $null) { return }
+  var %these.chans = $v1
+  var %this.loop = 0
+  while (%this.loop < $numtok(%these.chans,44)) {
+    inc %this.loop 1
+    var %this.target = $gettok($strip($gettok(%these.chans,%this.loop,44)),1,160)
+    if ($is_valid(%this.target).chan == $false) { continue }
+    if ($len(%this.target) > $mIRCd(MAXCHANNELLEN)) { continue }
+    var %this.string = $+(%this.target,$comma,%this.string)
+    if ($numtok(%this.string,44) >= $hget($mIRCd.targMax,TARGMAX_JOIN)) { break }
+    if ($numtok(%this.string,44) >= $mIRCd(MAXCHANNELS)) { break }
+  }
+  return $sorttok(%this.string,44,a)
+}
 alias mIRCd.chanAddUser {
   ; /mIRCd.chanAddUser <chan ID> <sockname>
 
   var %this.id = $1, %this.name = $mIRCd.info(%this.id,name)
-  var %this.users = $hcount($mIRCd.chanUsers(%this.id))
-  hadd -m $mIRCd.chanUsers(%this.id) $2 $ctime $iif(%this.users > 0 && $is_modeSet(%this.id,D).chan == $true,1,0) $iif(%this.users > 0,0,1) 0 0
+  var %this.users = $hcount($mIRCd.chanUsers(%this.id)), %this.opFlag = $iif(%this.users > 0,0,1)
+  if (($mIRCd(OPLESS_CHANS) isnum 1-2) && (%this.opFlag == 1)) {
+    var %this.opFlag = 0
+    if ($is_oper($2) == $true) { var %this.opFlag = 1 }
+  }
+  hadd -m $mIRCd.chanUsers(%this.id) $2 $ctime $iif(%this.users > 0 && $is_modeSet(%this.id,D).chan == $true,1,0) %this.opFlag 0 0
   ; `-> Explaination of everything here-^: <time joined> <hidden via +D> <op> <hop> <voice>
   mIRCd.updateUser $2 chans $+(%this.id,$comma,$mIRCd.info($2,chans))
   var %this.loop = 0
@@ -624,10 +653,11 @@ alias mIRCd.chanDelUser {
   mIRCd.delUserItem $2 chans
 }
 alias mIRCd.namesStatus {
-  ; $mIRCd.namesStatus(<chan ID>,<sockname>)
+  ; $mIRCd.namesStatus(<chan ID>,<sockname>)[.top]
 
   var %this.id = $1, %this.string = $gettok($hget($mIRCd.chanUsers(%this.id),$2),3-,32)
-  return $regsubex($str(.,$numtok(%this.string,32)),/./g,$iif($gettok(%this.string,\n,32) == 1,$mid(@%+,\n,1)))
+  var %this.return = $regsubex($str(.,$numtok(%this.string,32)),/./g,$iif($gettok(%this.string,\n,32) == 1,$mid(@%+,\n,1)))
+  return $iif($prop == top,$left(%this.return,1),%this.return)
 }
 alias mIRCd.createChan {
   ; /mIRCd.createChan <#chan> <sockname>

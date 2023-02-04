@@ -14,6 +14,8 @@ on *:signal:mIRCd_timeCheck:{
 
 alias mIRCd.glines { return mIRCd[Glines] }
 alias mIRCd.klines { return mIRCd[Klines] }
+alias mIRCd.local { $+(return mIRCd[local][,$1,]) }
+; `-> For local Shuns and Zlines. Like K-lines, these will not expire.
 alias mIRCd.shuns { return mIRCd[Shuns] }
 alias mIRCd.zlines { return mIRCd[Zlines] }
 
@@ -222,7 +224,7 @@ alias mIRCd_command_gline {
   var %this.loop = $hcount($mIRCd.users)
   while (%this.loop > 0) {
     var %this.sock = $hget($mIRCd.users,%this.loop).item
-    if (($is_glineMatch($mIRCd.fulladdr(%this.sock)) == $true) || ($is_glineMatch($mIRCd.trueaddr(%this.sock)) == $true)) {
+    if (($is_glineMatch($mIRCd.fulladdr(%this.sock)) == $true) || ($is_glineMatch($mIRCd.ipaddr(%this.sock)) == $true) || ($is_glineMatch($mIRCd.trueaddr(%this.sock)) == $true)) {
       mIRCd.serverNotice 512 G-line active for $mIRCd.info(%this.sock,nick) $parenthesis($gettok($mIRCd.fulladdr(%this.sock),2,33))
       mIRCd.sraw %this.sock $mIRCd.reply(465,$mIRCd.info($1,nick),%this.reason)
       mIRCd.errorUser %this.sock G-lined $parenthesis(%this.reason)
@@ -246,6 +248,15 @@ alias mIRCd_command_shun {
       var %this.item = $hget($mIRCd.shuns,%this.loop).item
       var %this.data = $hget($mIRCd.shuns,%this.item)
       mIRCd.sraw $1 $mIRCd.reply(290,$mIRCd.info($1,nick),%this.item,$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
+    }
+    if ($hcount($mIRCd.local(Shuns)) > 0) {
+      var %this.loop = 0
+      while (%this.loop < $hcount($mIRCd.local(Shuns))) {
+        inc %this.loop 1
+        var %this.item = $hget($mIRCd.local(Shuns),%this.loop).item
+        var %this.data = $hget($mIRCd.local(Shuns),%this.item)
+        mIRCd.sraw $1 $mIRCd.reply(290,$mIRCd.info($1,nick),%this.item,N/A,%this.data)
+      }
     }
     mIRCd.sraw $1 $mIRCd.reply(291,$mIRCd.info($1,nick))
     return
@@ -325,7 +336,7 @@ alias mIRCd_command_shun {
   while (%this.loop < $hcount($mIRCd.users)) {
     inc %this.loop 1
     var %this.sock = $hget($mIRCd.users,%this.loop).item
-    if (($is_shunMatch($mIRCd.fulladdr(%this.sock)) == $true) || ($is_shunMatch($mIRCd.trueaddr(%this.sock)) == $true)) {
+    if (($is_shunMatch($mIRCd.fulladdr(%this.sock)) == $true) || ($is_shunMatch($mIRCd.ipaddr(%this.sock)) == $true) || ($is_shunMatch($mIRCd.trueaddr(%this.sock)) == $true)) {
       mIRCd.serverNotice 512 Shun active for $mIRCd.info(%this.sock,nick) $parenthesis($gettok($mIRCd.fulladdr(%this.sock),2,33))
     }
   }
@@ -395,6 +406,15 @@ alias mIRCd_command_zline {
       var %this.item = $hget($mIRCd.zlines,%this.loop).item
       var %this.data = $hget($mIRCd.zlines,%this.item)
       mIRCd.sraw $1 $mIRCd.reply(292,$mIRCd.info($1,nick),%this.item,$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
+    }
+    if ($hcount($mIRCd.local(Zlines)) > 0) {
+      var %this.loop = 0
+      while (%this.loop < $hcount($mIRCd.local(Zlines))) {
+        inc %this.loop 1
+        var %this.item = $hget($mIRCd.local(Zlines),%this.loop).item
+        var %this.data = $hget($mIRCd.local(Zlines),%this.item)
+        mIRCd.sraw $1 $mIRCd.reply(292,$mIRCd.info($1,nick),%this.item,N/A,%this.data)
+      }
     }
     mIRCd.sraw $1 $mIRCd.reply(293,$mIRCd.info($1,nick))
     return
@@ -494,14 +514,14 @@ alias is_klineMatch {
   return $iif($hfind($mIRCd.klines,$1,0,W).item > 0,$true,$false)
 }
 alias is_shunned {
-  ; $is_shunned(<input>)
+  ; $is_shunned(<input>)[.local]
 
-  return $iif($hget($mIRCd.shuns,$1) != $null,$true,$false)
+  return $iif($hget($iif($prop == local,$mIRCd.local(Shuns),$mIRCd.shuns),$1) != $null,$true,$false)
 }
 alias is_shunMatch {
-  ; $is_shunMatch(<input>)
+  ; $is_shunMatch(<input>)[.local]
 
-  return $iif($hfind($mIRCd.shuns,$1,0,W).item > 0,$true,$false)
+  return $iif($hfind($iif($prop == local,$mIRCd.local(Shuns),$mIRCd.shuns),$1,0,W).item > 0,$true,$false)
 }
 ; `-> 1:1.
 alias is_silenced {
@@ -515,14 +535,14 @@ alias is_silenceMatch {
   return $iif($hfind($mIRCd.silence($1),$2,0,W).item > 0,$true,$false)
 }
 alias is_zlined {
-  ; $is_zlined(<ip>)
+  ; $is_zlined(<ip>)[.local]
 
-  return $iif($hget($mIRCd.zlines,$1) != $null,$true,$false)
+  return $iif($hget($iif($prop == local,$mIRCd.local(Zlines),$mIRCd.zlines),$1) != $null,$true,$false)
 }
 alias is_zlineMatch {
-  ; $is_zlineMatch(<ip>)
+  ; $is_zlineMatch(<ip>)[.local]
 
-  return $iif($hfind($mIRCd.zlines,$1,0,W).item > 0,$true,$false)
+  return $iif($hfind($iif($prop == local,$mIRCd.local(Zlines),$mIRCd.zlines),$1,0,W).item > 0,$true,$false)
 }
 alias makeMask {
   ; $makeMask(<input>)

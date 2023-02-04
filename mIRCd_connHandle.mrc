@@ -65,7 +65,11 @@ on *:sockread:mIRCd.*:{
     mIRCd.destroyIdent $sockname
     tokenize 58 $3-
     if ($mIRCd.info(%this.sock,isReg) == 1) { return }
-    if ($3 != $null) { mIRCd.updateUser %this.sock ident $left($3,$mIRCd.userLen) }
+    if ($3 != $null) {
+      mIRCd.updateUser %this.sock ident $left($3,$mIRCd.userLen)
+      mIRCd.updateUser %this.sock trueIdent $3
+      ; `-> 03/02/2023: Like user, there was a reason for this. I forget what.
+    }
     if ($mIRCd.info(%this.sock,dnsChecked) == $null) { return }
     if ($mIRCd.info(%this.sock,passPing) == $null) { return }
     $+(.timermIRCd.ping,%this.sock) off
@@ -85,7 +89,9 @@ on *:sockread:mIRCd.*:{
     }
     if ($mIRCd.info($sockname,isReg) == 0) {
       ; `-> Unregistered.
-      if ($istok($mIRCd.commands(0),$1,44) == $true) {
+      if ($mIRCd.info($sockname,firstCommand) == $null) { mIRCd.updateUser $sockname firstCommand $1 }
+      ; `-> We need to make sure PASS is first if it is used.
+      if ($hfind($mIRCd.commands(0),$1).data != $null) {
         mIRCd.doCommand $sockname $1-
         return
       }
@@ -93,16 +99,16 @@ on *:sockread:mIRCd.*:{
       return
     }
     ; `-> Registered.
-    if (($is_shunMatch($mIRCd.fulladdr($sockname)) == $true) || ($is_shunMatch($mIRCd.trueaddr($sockname)) == $true) || ($is_shunMatch($+(!R,$strip($mIRCd.info($sockname,realName)))) == $true)) {
-      if ($istok($mIRCd.commands(2),$1,44) == $true) {
+    if (($is_shunMatch($mIRCd.fulladdr($sockname)) == $true) || ($is_shunMatch($mIRCd.ipaddr($sockname)) == $true) || ($is_shunMatch($mIRCd.trueaddr($sockname)) == $true) || ($is_shunMatch($+(!R,$strip($mIRCd.info($sockname,realName)))) == $true) || ($is_shunMatch($mIRCd.fulladdr($sockname)).local == $true) || ($is_shunMatch($mIRCd.ipaddr($sockname)).local == $true) || ($is_shunMatch($mIRCd.trueaddr($sockname)).local == $true) || ($is_shunMatch($+(!R,$strip($mIRCd.info($sockname,realName)))).local == $true)) {
+      if ($hfind($mIRCd.commands(2),$1).data != $null) {
         mIRCd.doCommand $sockname $1-
         return
       }
-      if ($istok($mIRCd.commands(1),$1,44) == $false) { mIRCd.sraw $sockname $mIRCd.reply(421,$mIRCd.info($sockname,nick),$1) }
+      if ($hfind($mIRCd.commands(1),$1).data == $null) { mIRCd.sraw $sockname $mIRCd.reply(421,$mIRCd.info($sockname,nick),$1) }
       ; `-> Tell them failed commands don't work, but ignore everything else they try to do.
       return
     }
-    if ($istok($mIRCd.commands(1),$1,44) == $true) {
+    if ($hfind($mIRCd.commands(1),$1).data != $null) {
       if (($istok($mIRCd(OPER_CMDS),$1,44) == $true) && ($is_oper($sockname) == $false)) {
         mIRCd.sraw $sockname $mIRCd.reply(481,$mIRCd.info($sockname,nick))
         return
@@ -275,11 +281,14 @@ alias mIRCd.fulladdr {
   return $+($mIRCd.info($1,nick),!,$iif($mIRCd.info($1,ident) != $null,$v1,$mIRCd.info($1,user)),@,$mIRCd.info($1,host))
 }
 alias mIRCd.hostQuit {
-  ; /mIRCd.hostQuit <sockname>
+  ; /mIRCd.hostQuit <sockname> [host]
 
-  if ($bool_fmt($mIRCd(HIDE_HOSTS_FREELY)) == $false) { return }
-  ; `-> Do nothing for now. (If +r is part of modes - which is invisible and set via ACCOUNT, this should be <account>.users.localhost - or something.)
-  var %this.host = $makeHost($sock($1).ip)
+  if ($2 == $null) {
+    ; `-> Override if (fake)hosts.
+    if ($bool_fmt($mIRCd(HIDE_HOSTS_FREELY)) == $false) { return }
+    ; `-> Do nothing for now. (If +r is part of modes - which is invisible and set via ACCOUNT with a C:line, this should be <account>.users.localhost - or something.)
+  }
+  var %this.host = $iif($2 != $null,$v1,$makeHost($sock($1).ip))
   if ($numtok($mIRCd.info($1,chans),44) == 0) {
     mIRCd.updateUser $1 host %this.host
     mIRCd.sraw $1 $mIRCd.reply(396,$mIRCd.info($1,nick),%this.host)

@@ -1,4 +1,4 @@
-; mIRCd v0.09hf7 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+; mIRCd v0.09hf8 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm (Jurrasic Park)
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
@@ -9,7 +9,7 @@ menu Menubar {
   .$iif($sock(mIRCd.*,0) > 0,$style(2) &START $parenthesis(already running),&START):{ mIRCd.start }
   .-
   .$iif($sock(mIRCd.*,0) > 0,&DIE,$style(2) &DIE $parenthesis(not running)):{ mIRCd.die }
-  .$iif($sock(mIRCd.*,0) > 0,RE&HASH,RE&HASH):{ mIRCd.rehash }
+  .RE&HASH:{ mIRCd.rehash }
   .$iif($sock(mIRCd.*,0) > 0,&RESTART,$style(2) &RESTART $parenthesis(not running)):{ mIRCd.restart }
   .-
   .&MKPASSWD:{ write -c $qt($scriptdirmkpasswd.txt) $mIRCd.encryptPass($input(Enter a password:,p,Enter a password)) }
@@ -33,10 +33,12 @@ on *:unload:{ mIRCd.unload }
 ; Hash Tables
 
 alias mIRCd.accept { return $+(mIRCd[,$1,][Accept]) }
-alias mIRCd.badNicks { return mIRCd[badNicks] }
+alias mIRCd.badNicks { return mIRCd[BadNicks] }
 alias mIRCd.chans { return mIRCd[Chans] }
 alias mIRCd.chanBans { return $+(mIRCd[,$1,][Bans]) }
 alias mIRCd.chanUsers { return $+(mIRCd[,$1,][Users]) }
+alias mIRCd.commands { return $+(mIRCd[Commands],$bracket($1)) }
+; `-> Unregistered = 0; Registered = 1; Shunned = 2.
 alias mIRCd.dns { return mIRCd[DNS] }
 alias mIRCd.ident { return mIRCd[Ident] }
 alias mIRCd.invisible { return mIRCd[Invisible] }
@@ -54,6 +56,7 @@ alias mIRCd.silence { return $+(mIRCd[,$1,][Silence]) }
 alias mIRCd.targMax { return mIRCd[TargMax] }
 alias mIRCd.temp { return mIRCd[Temp] }
 alias mIRCd.table { return $+(mIRCd[,$1,]) }
+; `-> Generic table call.
 alias mIRCd.unknown { return mIRCd[Unknown] }
 ; `-> User(s) currently in the process of connecting to the server.
 alias mIRCd.users { return mIRCd[Users] }
@@ -61,16 +64,16 @@ alias mIRCd.whoWas { return $+(mIRCd[WhoWas],$iif($1 != $null,$bracket($v1))) }
 
 ; Commands and Functions
 
-alias _debugline { echo -aet [DEBUGLINE]: $1- }
+alias _debugline { echo -aet [DEBUG]: $1- }
 ; `-> Useful for hunting down annoying bugs.
 alias bracket { return [[ $+ $$1- $+ ]] }
-alias bool_fmt { return $iif($istok(1 on t true y yes,$1,32) == $true,$true,$false) }
+alias bool_fmt { return $iif($istok(1 ok okay on t true y yes,$1,32) == $true,$true,$false) }
 alias colonize { return $iif($count($1-,:) == 0,$+(:,$gettok($1-,-1,32)),$gettok($1-,$+($findtok($1-,$matchtok($1-,:,1,32),1,32),-),32)) }
 alias comma { return $chr(44) }
 alias dollar { return $chr(36) }
 alias decolonize { return $iif($left($1-,1) == :,$right($1-,-1),$1-) }
 alias depolarize { return $iif($pos(-+,$left($1-,1)) != $null,$right($1-,-1),$1-) }
-; `-> I don't believe this is used now, but retained it just incase.
+; `-> Note: I don't believe this is used anymore, but retained it just incase.
 alias hcount { return $hget($$1,0).data }
 alias is_valid {
   ; $is_valid(<arg>)[.<chan|nick>]
@@ -86,23 +89,18 @@ alias is_valid {
 }
 alias parenthesis { return ( $+ $$1- $+ ) }
 alias mIRCd { return $hget($mIRCd.main,$1) }
-alias mIRCd.commands {
-  if ($1 == 0) { return NICK,PONG,POST,QUIT,USER }
-  ; `-> Not registered with the IRCd. No other commands other than these five are permitted.
-  if ($1 == 1) { return ACCEPT,ADMIN,AWAY,CLEARMODE,CLOSE,DIE,ERROR,GET,GLINE,HASH,HELP,INFO,INVITE,ISON,JOIN,KICK,KILL,KNOCK,LINKS,LIST,LUSERS,MAP,MKPASSWD,MODE,MOTD,NAMES,NICK,NOTICE,OPER,OPMODE,PART,PING,PONG,POST,PRIVMSG,PROTOCTL,QUIT,REHASH,RESTART,SHUN,SILENCE,STATS,SVSJOIN,SVSNICK,SVSPART,TIME,TOPIC,USER,USERHOST,USERIP,VERSION,WALLCHOPS,WALLHOPS,WALLOPS,WALLUSERS,WALLVOICES,WHO,WHOWAS,WHOIS,ZLINE }
-  ; `-> Registered with the IRCd.
-  else { return ADMIN,PING,PONG,QUIT }
-  ; `-> The user is shunned. No other commands other than these four are permitted.
-}
-; `-> I should really replace these with a hash table: mIRCd[Commands][0], mIRCd[Commands][1], etc.
 alias mIRCd.fileBadNicks { return $qt($scriptdirconf\nicks.403) }
+alias mIRCd.fileCommands { return $qt($scriptdirconf\cmds\) }
 alias mIRCd.fileConf { return $qt($scriptdirmIRCd.ini) }
 alias mIRCd.fileKlines { return $qt($scriptdirconf\mIRCd.klines) }
+alias mIRCd.fileLocalShuns { return $qt($scriptdirconf\mIRCd.shuns) }
+alias mIRCd.fileLocalZlines { return $qt($scriptdirconf\mIRCd.zlines) }
 alias mIRCd.fileRaws { return $qt($scriptdirconf\mIRCd.raws) }
+alias mIRCd.fileSlines { return $qt($scriptdirconf\mIRCd.slines) }
 alias mIRCd.die {
   ; /mIRCd.die
 
-  ; ,-> _EVERYTHING_ will be wiped aside from the config (including opers, targets, etc.) and raws.
+  ; ,-> _EVERYTHING_ will be wiped aside from the commands, config (including opers, targets, etc.), local K-lines/Shuns/Z-lines and raws.
   if ($sock(mIRCd.*,0) == 0) { return }
   if ($show == $true) { mIRCd.echo /mIRCd.die: done }
   mIRCd.serverNotice 1 Instruction received $iif($hget($mIRCd.temp,DIE) != $null,from $v1) to shutdown the server.
@@ -113,12 +111,12 @@ alias -l mIRCd.die_ {
   .timermIRCd.* off
   sockclose mIRCd.*
   hfree -w mIRCd[mIRCd.*
-  ; `-> This should cover channel(s), channel user(s) and user(s) themselves.
+  ; `-> This should cover ban(s), channel(s), channel user(s), user(s), user accept(s) and user silence(s) themselves.
   hfree -w $mIRCd.whoWas(*)
-  var %this.tables = $mIRCd.dns , $mIRCd.chans , $mIRCd.glines , $mIRCd.ident , $mIRCd.invisible , $mIRCd.mStats , $mIRCd.opersOnline , $mIRCd.shuns , $mIRCd.temp , $mIRCd.unknown , $mIRCd.users , $mIRCd.whoWas , $mIRCd.zlines
-  tokenize 44 %this.tables
+  var %these.tables = $mIRCd.dns , $mIRCd.chans , $mIRCd.glines , $mIRCd.ident , $mIRCd.invisible , $mIRCd.mStats , $mIRCd.opersOnline , $mIRCd.shuns , $mIRCd.temp , $mIRCd.unknown , $mIRCd.users , $mIRCd.whoWas , $mIRCd.zlines
+  tokenize 44 %these.tables
   ; `-> A quick and dirty loop.
-  scon -r if ( $!hget( $* ) ) { hfree $* }
+  scon -r if ( $!hget( $* ) != $!null ) { hfree $* }
 }
 alias mIRCd.rehash {
   ; /mIRCd.rehash [section]
@@ -133,6 +131,7 @@ alias mIRCd.rehash {
     hdel $mIRCd.temp REHASH
   }
   if ($1 != $null) {
+    ; >-> Note: I was going to add Commands here, but decided not to.
     if ($1 == Klines) {
       if (($lines($mIRCd.fileKlines) > 0) && ($calc($lines($mIRCd.fileKlines) % 2) == 0)) { hload -m $mIRCd.klines $mIRCd.fileKlines }
     }
@@ -140,6 +139,15 @@ alias mIRCd.rehash {
       if ($lines($mIRCd.fileBadNicks) > 0) { hload -mn $mIRCd.badNicks $mIRCd.fileBadNicks }
     }
     if ($1 == Raws) { hload -m $mIRCd.raws $mIRCd.fileRaws }
+    if ($1 == Shuns) {
+      if (($lines($mIRCd.fileLocalShuns) > 0) && ($calc($lines($mIRCd.fileLocalShuns) % 2) == 0)) { hload -m $mIRCd.local(Shuns) $mIRCd.fileLocalShuns }
+    }
+    if ($1 == Slines) {
+      if (($lines($mIRCd.fileSlines) > 0) && ($calc($lines($mIRCd.fileSlines) % 2) == 0)) { hload -m $mIRCd.slines $mIRCd.fileSlines }
+    }
+    if ($1 == Zlines) {
+      if (($lines($mIRCd.fileLocalZlines) > 0) && ($calc($lines($mIRCd.fileLocalZlines) % 2) == 0)) { hload -m $mIRCd.local(Zlines) $mIRCd.fileLocalZlines }
+    }
     if ($1 == Server) { hload -im $mIRCd.main $mIRCd.fileConf Server }
     if ($1 == Mechanics) { hload -im $mIRCd.main $mIRCd.fileConf Mechanics }
     if ($1 == Admin) {
@@ -154,7 +162,7 @@ alias mIRCd.rehash {
     goto processCleanup
   }
   .mIRCd.load
-  ; >-> Just reload everything via /mIRCd.load. Next, we need to delete the removed items. We need to check five times.
+  ; >-> Just reload everything via /mIRCd.load. Next, we need to delete the removed items. We need to check numerous times.
   :processCleanup
   var %this.loop = $hcount($mIRCd.klines)
   while (%this.loop > 0) {
@@ -166,6 +174,24 @@ alias mIRCd.rehash {
   while (%this.loop > 0) {
     var %this.item = $hget($mIRCd.badNicks,%this.loop).data
     if ($read($mIRCd.fileBadNicks, w, %this.item) == $null) { hdel $mIRCd.badNicks %this.item }
+    dec %this.loop 1
+  }
+  var %this.loop = $hcount($mIRCd.local(Shuns))
+  while (%this.loop > 0) {
+    var %this.item = $hget($mIRCd.local(Shuns),%this.loop).item
+    if ($read($mIRCd.fileLocalShuns, w, %this.item) == $null) { hdel $mIRCd.local(Shuns) %this.item }
+    dec %this.loop 1
+  }
+  var %this.loop = $hcount($mIRCd.local(Zlines))
+  while (%this.loop > 0) {
+    var %this.item = $hget($mIRCd.local(Zlines),%this.loop).item
+    if ($read($mIRCd.fileLocalZlines, w, %this.item) == $null) { hdel $mIRCd.local(Zlines) %this.item }
+    dec %this.loop 1
+  }
+  var %this.loop = $hcount($mIRCd.slines)
+  while (%this.loop > 0) {
+    var %this.item = $hget($mIRCd.slines,%this.loop).item
+    if ($read($mIRCd.fileSlines, w, %this.item) == $null) { hdel $mIRCd.slines %this.item }
     dec %this.loop 1
   }
   var %this.loop = $hcount($mIRCd.main)
@@ -187,11 +213,11 @@ alias mIRCd.rehash {
     dec %this.loop 1
   }
 }
-; `-> I'm also not entirely with how hacky this is...
+; `-> I'm also not entirely happy with how hacky this is...
 alias mIRCd.restart {
   ; /mIRCd.restart
 
-  ; ,-> _EVERYTHING_ will be wiped aside from the config (including opers, targets, etc.) and raws.
+  ; ,-> _EVERYTHING_ will be wiped aside from the commands, config (including opers, targets, etc.), local K-lines/Shuns/Z-lines and raws.
   if ($sock(mIRCd.*,0) == 0) { return }
   if ($show == $true) { mIRCd.echo /mIRCd.restart: done }
   mIRCd.serverNotice 1 Instruction received $iif($hget($mIRCd.temp,RESTART) != $null,from $v1) to restart the server.
@@ -202,17 +228,17 @@ alias -l mIRCd.restart_ {
   .timermIRCd.* off
   sockclose mIRCd.*
   hfree -w mIRCd[mIRCd.*
-  ; `-> This should cover channel(s), channel user(s) and user(s) themselves.
+  ; `-> This should cover ban(s), channel(s), channel user(s), user(s), user accept(s) and user silence(s) themselves.
   hfree -w $mIRCd.whoWas(*)
-  var %this.tables = $mIRCd.dns , $mIRCd.chans , $mIRCd.glines , $mIRCd.ident , $mIRCd.invisible , $mIRCd.mStats , $mIRCd.opersOnline , $mIRCd.shuns , $mIRCd.temp , $mIRCd.unknown , $mIRCd.users , $mIRCd.whoWas , $mIRCd.zlines
-  tokenize 44 %this.tables
-  scon -r if ( $!hget( $* ) ) { hfree $* }
+  var %these.tables = $mIRCd.dns , $mIRCd.chans , $mIRCd.glines , $mIRCd.ident , $mIRCd.invisible , $mIRCd.mStats , $mIRCd.opersOnline , $mIRCd.shuns , $mIRCd.temp , $mIRCd.unknown , $mIRCd.users , $mIRCd.whoWas , $mIRCd.zlines
+  tokenize 44 %these.tables
+  scon -r if ( $!hget( $* ) != $!null ) { hfree $* }
   ; `-> A quick and dirty loop.
   .timermIRCd.restart -o 1 10 mIRCd.start
 }
 alias mIRCd.echo { !echo $+(-ac,$iif($active == Status Window,e)) "Info text" * $1- }
 alias mIRCd.fakeIP { return 0.0.0.0 }
-; `-> /WHO (if not oper), etc. (255.255.255.255 works too.)
+; `-> /WHO (if not oper), etc. (Using 255.255.255.255 works too.)
 alias mIRCd.load {
   ; /mIRCd.load
 
@@ -228,20 +254,46 @@ alias mIRCd.load {
   tokenize 44 %these.sections
   scon -r hload -im $mIRCd.main $mIRCd.fileConf $*
   if ($ini($mIRCd.fileConf, Admin) != $null) { hload -im $mIRCd.main $mIRCd.fileConf Admin }
+  ; `-> Loaded into the main table, but this section is entirely optional.
   if ($ini($mIRCd.fileConf, Targets) != $null) { hload -im $mIRCd.targmax $mIRCd.fileConf Targets }
   ; `-> Targets (for TARGMAX) are loaded into a separate table.
   if ($ini($mIRCd.fileConf, Opers) != $null) { hload -im $mIRCd.opers $mIRCd.fileConf Opers }
   ; `-> Opers are loaded into a separate table.
+  mIRCd.loadCommands
+  if ($result != LOAD_OK) {
+    mIRCd.echo /mIRCd.load: failed to load commands (files are empty or have been renamed); fix them first, then try again
+    return
+  }
   hload -m $mIRCd.raws $mIRCd.fileRaws
   if (($lines($mIRCd.fileKlines) > 0) && ($calc($lines($mIRCd.fileKlines) % 2) == 0)) { hload -m $mIRCd.klines $mIRCd.fileKlines }
   ; `-> Won't get loaded if the entries are an odd number.
   if ($lines($mIRCd.fileBadNicks) > 0) { hload -mn $mIRCd.badNicks $mIRCd.fileBadNicks }
+  if (($lines($mIRCd.fileLocalShuns) > 0) && ($calc($lines($mIRCd.fileLocalShuns) % 2) == 0)) { hload -m $mIRCd.local(Shuns) $mIRCd.fileLocalShuns }
+  if (($lines($mIRCd.fileLocalZlines) > 0) && ($calc($lines($mIRCd.fileLocalZlines) % 2) == 0)) { hload -m $mIRCd.local(Zlines) $mIRCd.fileLocalZlines }
+  ; `-> Same as K-lines.
+  if (($lines($mIRCd.fileSlines) > 0) && ($calc($lines($mIRCd.fileSlines) % 2) == 0)) { hload -m $mIRCd.slines $mIRCd.fileSlines }
   if ($show == $true) { mIRCd.echo /mIRCd.load: done }
+}
+alias mIRCd.loadCommands {
+  ; /mIRCd.loadCommands
+
+  if ($findfile($noqt($mIRCd.fileCommands),*.cmds,0) != 3) { return }
+  var %these.files = $left($regsubex($str(.,3),/./g,$+($gettok($findfile($noqt($mIRCd.fileCommands),*.cmds,\n),-1,92),$comma)),-1), %these.numbers = Unregistered 0,Registered 1,Shunned 2
+  ; ,-> We have to use a while loop, sadly. $* doesn't work well with a large number of $identifiers...
+  var %this.loop = 0
+  while (%this.loop < $numtok(%these.numbers,44)) {
+    inc %this.loop 1
+    var %this.file = $gettok(%these.files,%this.loop,44)
+    if ($matchtokcs(%these.numbers,$gettok(%this.file,1,46),1,44) == $null) { return }
+    if ($lines($qt($+($noqt($mIRCd.fileCommands),%this.file))) == 0) { return }
+    hload -mn $mIRCd.commands($gettok($matchtokcs(%these.numbers,$gettok(%this.file,1,46),1,44),2,32)) $qt($+($noqt($mIRCd.fileCommands),%this.file))
+  }
+  return LOAD_OK
 }
 alias mIRCd.loadScripts {
   var %these.scripts = $regsubex($str(.,$findfile($scriptdir,mIRCd_*.mrc,0)),/./g,$+($findfile($scriptdir,mIRCd_*.mrc,\n),¦))
   tokenize 166 %these.scripts
-  scon -r if ( $!script( $* ) == $!null) { .load -rs $!qt( $* ) }
+  scon -r if ( $!script( $* ) == $!null ) { .load -rs $!qt( $* ) }
   ; `-> A quick and dirty loop.
 }
 alias mIRCd.raw {
@@ -291,11 +343,16 @@ alias mIRCd.start {
     if ($hget($mIRCd.temp,totalCount) == $null) { hadd -m $mIRCd.temp totalCount 0 }
     ; `-> The last two are for stats tracking only.
     if ($hget($mIRCd.temp,AUDITORIUM_MODE) == $null) { hadd -m $mIRCd.temp AUDITORIUM_MODE $iif($bool_fmt($mIRCd(AUDITORIUM_MODE)) == $true,1,0) }
+    if ($hget($mIRCd.temp,AUTOJOIN_CHANS) == $null) {
+      if ($mIRCd.makeAutoJoin != $null) { hadd -m $mIRCd.temp AUTOJOIN_CHANS $v1 }
+    }
+    if ($hget($mIRCd.temp,BANDWIDTH_MODE) == $null) { hadd -m $mIRCd.temp BANDWIDTH_MODE $iif($bool_fmt($mIRCd(BANDWIDTH_MODE)) == $true,1,0) }
     if ($hget($mIRCd.temp,BOT_SUPPORT) == $null) { hadd -m $mIRCd.temp BOT_SUPPORT $iif($bool_fmt($mIRCd(BOT_SUPPORT)) == $true,1,0) }
     if ($hget($mIRCd.temp,HALFOP) == $null) { hadd -m $mIRCd.temp HALFOP $iif($bool_fmt($mIRCd(HALFOP)) == $true,1,0) }
     if ($hget($mIRCd.temp,LOOSE_OBFUSCATION) == $null) { hadd -m $mIRCd.temp LOOSE_OBFUSCATION $iif($bool_fmt($mIRCd(LOOSE_OBFUSCATION)) == $true,1,0) }
     if ($hget($mIRCd.temp,OPER_OVERRIDE) == $null) { hadd -m $mIRCd.temp OPER_OVERRIDE $iif($bool_fmt($mIRCd(OPER_OVERRIDE)) == $true,1,0) }
     if ($hget($mIRCd.temp,PERSISTANT_CHANNELS) == $null) { hadd -m $mIRCd.temp PERSISTANT_CHANNELS $iif($bool_fmt($mIRCd(PERSISTANT_CHANNELS)) == $true,1,0) }
+    if ($hget($mIRCd.temp,SLINE_SUPPORT) == $null) { hadd -m $mIRCd.temp SLINE_SUPPORT $iif($bool_fmt($mIRCd(SLINE_SUPPORT)) == $true,1,0) }
     if ($hget($mIRCd.temp,WHOIS_PARANOIA) == $null) { hadd -m $mIRCd.temp WHOIS_PARANOIA $iif($bool_fmt($mIRCd(WHOIS_PARANOIA)) == $true,1,0) }
     if ($hget($mIRCd.temp,DEFAULT_CHANMODES) == $null) { hadd -m $mIRCd.temp DEFAULT_CHANMODES $iif($mIRCd.makeDefaultModes($mIRCd(DEFAULT_CHANMODES)).chan != $null,$v1,$mIRCd.defaultChanModes) }
     if ($hget($mIRCd.temp,DEFAULT_USERMODES) == $null) { hadd -m $mIRCd.temp DEFAULT_USERMODES $mIRCd.makeDefaultModes($mIRCd(DEFAULT_USERMODES)).nick }
@@ -319,13 +376,13 @@ alias mIRCd.unload {
   .timermIRCd.hfree -o 1 5 hfree -w mIRCd*
   var %these.scripts = $regsubex($str(.,$findfile($scriptdir,mIRCd_*.mrc,0)),/./g,$+($findfile($scriptdir,mIRCd_*.mrc,\n),¦))
   tokenize 166 %these.scripts
-  scon -r if ( $!script( $* ) ) { .unload -rs $!qt( $* ) }
+  scon -r if ( $!script( $* ) != $!null ) { .unload -rs $!qt( $* ) }
   ; `-> A quick and dirty loop.
 }
-alias mIRCd.version { return mIRCd[0.09hf7(Rev.2)][2021-2023] }
+alias mIRCd.version { return mIRCd[0.09hf8(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 alias -l nextHour { return $+($asctime($calc($ctime + 3600),HH),:00) }
 alias -l requiredVersion { return 7.66 }
-; `-> Although I've modified this from a version higher than 7.66 (currently 7.72), this should still work on 7.66.
+; `-> Note: Although I've since modified this from a version of mIRC higher than 7.66 (currently 7.72), this should still work on 7.66.
 
 ; EOF

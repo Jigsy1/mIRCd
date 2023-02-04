@@ -1,4 +1,4 @@
-mIRCd v0.09hf7 (Revision 2) - by Jigsy (https://github.com/Jigsy1/mIRCd)
+mIRCd v0.09hf8 (Revision 2) - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ---------------------------------------------------------------------------
 
 Files included in this release:
