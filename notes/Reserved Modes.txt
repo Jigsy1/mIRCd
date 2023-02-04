@@ -3,21 +3,20 @@
 Chanmodes:
 ----------
 a - Admin on non ircu IRCds.
-e - Ban exemption for n!u@h.
+e - Ban exemption for n!u@h. (Some ircu based IRCds.)
 q - Owner on non ircu IRCds or quiet on other non ircu IRCds. (n!u@h)
-r - Only registered users can join the channel.
-I - Invite exemption for n!u@h.
-M - Only registered users may talk.
-Q - Quiet. (n!u@h)
-Z - Only users on an SSL connection may join the channel.
+r - Only registered users can join the channel. (ircu)
+I - Invite exemption for n!u@h on non ircu IRCds.
+M - Only registered users may talk. (Some ircu based IRCds.)
+Q - Quiet on some non ircu IRCds. (n!u@h)
+Z - Only users on an SSL connection may join the channel. (Some ircu based IRCds.)
 
 Usermodes:
 ----------
-h - User has a fakehost. (This is a hidden mode.)
-r - User is registered. (This is a hidden mode. Cannot be unset.)
-R - Only registered users can message you.
-W - Web clients.
-Z - User is connected via SSL. (Cannot be unset.)
+r - User is registered. (This is a hidden mode. Cannot be unset.) (ircu)
+R - Only registered users can message you. (ircu)
+W - Web clients. (Some ircu based IRCds.)
+Z - User is connected via SSL. (Cannot be unset.) (Some ircu based IRCds.)
 
 Deprecated usermodes:
 -------------------------
