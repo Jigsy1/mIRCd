@@ -26,7 +26,7 @@ alias mIRCd_command_help {
     return
   }
   var %this.file = $+($mIRCd.dirHelp,$3,.help")
-  if (($exists(%this.file) == $false) || ($lines(%this.file) == 0)) {
+  if ($lines(%this.file) == 0) {
     mIRCd.sraw $1 $mIRCd.reply(608,$mIRCd.info($1,nick),$3)
     return
   }
@@ -117,11 +117,11 @@ alias mIRCd_command_lusers {
   if ($hcount($mIRCd.unknown) > 0) { mIRCd.sraw $1 $mIRCd.reply(253,$mIRCd.info($1,nick)) }
   mIRCd.sraw $1 $mIRCd.reply(254,$mIRCd.info($1,nick))
   mIRCd.sraw $1 $mIRCd.reply(255,$mIRCd.info($1,nick))
-  mIRCd.sraw $1 $mIRCd.reply(265,$mIRCd.info($1,nick),$hget($mIRCd.temp,highCount))
+  mIRCd.sraw $1 $mIRCd.reply(265,$mIRCd.info($1,nick),$mIRCd(highCount).temp)
   ; PLACEHOLDER FOR NUMERIC 266: GLOBAL_INFO/GLOBAL_MAX
   ; ,-> WARNING!: If you change the line for raw 250 in mIRCd.raws it will totally screw up the line below. So, either don't change the line, or comment the two lines below out after you change it.
   var %this.string = $hget($mIRCd.raws,250)
-  mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $puttok($puttok(%this.string,$hget($mIRCd.temp,highCount),4,32),$+($chr(40),$hget($mIRCd.temp,highCount)),5,32) $parenthesis($hget($mIRCd.temp,totalCount) connections received)
+  mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $puttok($puttok(%this.string,$mIRCd(highCount).temp,4,32),$+($chr(40),$mIRCd(highCount).temp),5,32) $parenthesis($mIRCd(totalCount).temp connection(s) received)
 }
 alias mIRCd_command_mkpasswd {
   ; /mIRCd_command_mkpasswd <sockname> MKPASSWD <password>
@@ -135,7 +135,7 @@ alias mIRCd_command_mkpasswd {
 alias mIRCd_command_motd {
   ; /mIRCd_command_motd <sockname> MOTD
 
-  if (($exists($mIRCd.fileMotd) == $false) || ($lines($mIRCd.fileMotd) == 0)) {
+  if ($lines($mIRCd.fileMotd) == 0) {
     mIRCd.sraw $1 $mIRCd.reply(422,$mIRCd.info($1,nick))
     return
   }
@@ -158,8 +158,15 @@ alias mIRCd_command_protoctl {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
   }
-  if ($3 == NAMESX) { mIRCd.updateUser $1 NAMESX $iif($4 != $null,$iif($bool_fmt($4) == $true,1,0),1) }
-  if ($3 == UHNAMES) { mIRCd.updateUser $1 UHNAMES $iif($4 != $null,$iif($bool_fmt($4) == $true,1,0),1) }
+  var %this.bool =  $iif($4 != $null,$iif($bool_fmt($4) == $true,1,0),1)
+  if ($3 == NAMESX) {
+    mIRCd.updateUser $1 NAMESX %this.bool
+    return
+  }
+  if ($3 == UHNAMES) {
+    mIRCd.updateUser $1 UHNAMES %this.bool
+    return
+  }
 }
 ; ¦-> If the client does these, it means they want NAMESX (@%+nick) and UHNAMES (n!u@h) in /NAMES replies.
 ; `-> mIRCd now takes this into consideration. They can update these at any time. (Defaults to TRUE.)
@@ -176,7 +183,12 @@ alias mIRCd_command_stats {
       return
     }
   }
-  var %this.sock = $1, %this.flag = $3
+  ; ,-> I honestly doubt anything else other than these few will be added?
+  if ($poscs(gkmopsuzGKMOPSUZ,$3) == $null) {
+    ; ,-> Just return "End of /STATS report" regardless of if it exists or not.
+    mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+    return
+  }
   if ($3 == g) {
     ; `-> g/G are the same.
     var %this.loop = 0
@@ -186,6 +198,8 @@ alias mIRCd_command_stats {
       var %this.data = $hget($mIRCd.glines,%this.item)
       mIRCd.sraw $1 $mIRCd.reply(247,$mIRCd.info($1,nick),%this.item,$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
     }
+    mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+    return
   }
   if ($3 == k) {
     ; `-> Ditto.
@@ -195,6 +209,8 @@ alias mIRCd_command_stats {
       var %this.item = $hget($mIRCd.klines,%this.loop).item
       mIRCd.sraw $1 $mIRCd.reply(216,$mIRCd.info($1,nick),%this.item,$hget($mIRCd.klines,%this.item))
     }
+    mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+    return
   }
   if ($3 == m) {
     ; `-> Ditto.
@@ -204,6 +220,8 @@ alias mIRCd_command_stats {
       var %this.command = $hget($mIRCd.commands(1),%this.loop).data, %this.data = $iif($hget($mIRCd.mStats,%this.command) != $null,$v1,0)
       mIRCd.sraw $1 $mIRCd.reply(212,$mIRCd.info($1,nick),%this.command,%this.data)
     }
+    mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+    return
   }
   if ($3 == o) {
     ; `-> Ditto for o/O.
@@ -213,13 +231,18 @@ alias mIRCd_command_stats {
       var %this.item = $hget($mIRCd.opers,%this.loop).item
       mIRCd.sraw $1 $mIRCd.reply(243,$mIRCd.info($1,nick),%this.item)
     }
+    mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+    return
   }
   if ($3 == p) {
     ; `-> Ditto for p/P.
+    var %this.sock = $1, %this.flag = $3
     tokenize 44 $sorttok($mIRCd(CLIENT_PORTS),44,n)
     scon -r mIRCd.sraw %this.sock $!mIRCd.reply(217,$mIRCd.info(%this.sock,nick),%this.flag, $* )
     ; ¦-> A quick and dirty loop.
     ; `-> I also believe the final * on the raw reply - which should actually be a number here - is the amount of clients on that port?
+    mIRCd.sraw %this.sock $mIRCd.reply(219,$mIRCd.info(%this.sock,nick),%this.flag)
+    return
   }
   if ($3 === s) {
     ; `-> Note: This _MUST_ now be lowercase.
@@ -230,14 +253,18 @@ alias mIRCd_command_stats {
       var %this.data = $hget($mIRCd.shuns,%this.item)
       mIRCd.sraw $1 $mIRCd.reply(290,$mIRCd.info($1,nick),%this.item,$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
     }
-    if ($hcount($mIRCd.local(Shuns)) > 0) {
-      var %this.loop = 0
-      while (%this.loop < $hcount($mIRCd.local(Shuns))) {
-        inc %this.loop 1
-        var %this.item = $hget($mIRCd.local(Shuns),%this.loop).item
-        mIRCd.sraw $1 $mIRCd.reply(290,$mIRCd.info($1,nick),%this.item,N/A,$hget($mIRCd.local(Shuns),%this.item))
-      }
+    if ($hcount($mIRCd.local(Shuns)) == 0) {
+      mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+      return
     }
+    var %this.loop = 0
+    while (%this.loop < $hcount($mIRCd.local(Shuns))) {
+      inc %this.loop 1
+      var %this.item = $hget($mIRCd.local(Shuns),%this.loop).item
+      mIRCd.sraw $1 $mIRCd.reply(290,$mIRCd.info($1,nick),%this.item,N/A,$hget($mIRCd.local(Shuns),%this.item))
+    }
+    mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+    return
   }
   if ($3 === S) {
     ; `-> _Uppercase_!
@@ -246,15 +273,19 @@ alias mIRCd_command_stats {
       inc %this.loop 1
       mIRCd.sraw $1 $mIRCd.reply(229,$mIRCd.info($1,nick),$hget($mIRCd.slines,%this.loop).item)
     }
+    mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+    return
   }
   if ($3 === u) {
     ; `-> Note: This _MUST_ be lowercase.
-    var %this.duration = $calc($ctime - $iif($hget($mIRCd.temp,startTime) != $null,$v1,$sock($mIRCd.info($1,thruSock)).to))
+    var %this.duration = $calc($ctime - $iif($mIRCd(startTime).temp != $null,$v1,$sock($mIRCd.info($1,thruSock)).to))
     var %this.days = $int($calc(%this.duration / 86400)), %this.hours = $int($calc((%this.duration % 86400) / 3600))
     var %this.mins = $int($calc((%this.duration % 3600) / 60)), %this.secs = $int($calc(%this.duration % 60))
     var %this.output = %this.days days, $+(%this.hours,:,$base(%this.mins,10,10,2),:,$base(%this.secs,10,10,2))
     mIRCd.sraw $1 $mIRCd.reply(242,$mIRCd.info($1,nick),%this.output)
-    mIRCd.sraw $1 $mIRCd.reply(250,$mIRCd.info($1,nick),$hget($mIRCd.temp,highCount),$hget($mIRCd.temp,highCount))
+    mIRCd.sraw $1 $mIRCd.reply(250,$mIRCd.info($1,nick),$mIRCd(highCount).temp,$mIRCd(highCount).temp)
+    mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+    return
   }
   if ($3 === U) {
     ; `-> _Uppercase_!
@@ -262,6 +293,8 @@ alias mIRCd_command_stats {
       var %this.string = $sorttok($left($regsubex($str(.,$hget($mIRCd.badNicks,0).item),/./g,$+($hget($mIRCd.badNicks,\n).data,$comma)),-1),44,a)
       mIRCd.sraw $1 $mIRCd.reply(248,$mIRCd.info($1,nick),%this.string)
     }
+    mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+    return
   }
   if ($3 == z) {
     ; `-> Ditto for z/Z.
@@ -272,19 +305,20 @@ alias mIRCd_command_stats {
       var %this.data = $hget($mIRCd.zlines,%this.item)
       mIRCd.sraw $1 $mIRCd.reply(292,$mIRCd.info($1,nick),%this.item,$left($gettok(%this.data,1,32),-1),$gettok(%this.data,2-,32))
     }
-    if ($hcount($mIRCd.local(Zlines)) > 0) {
-      var %this.loop = 0
-      while (%this.loop < $hcount($mIRCd.local(Zlines))) {
-        inc %this.loop 1
-        var %this.item = $hget($mIRCd.local(Zlines),%this.loop).item
-        mIRCd.sraw $1 $mIRCd.reply(292,$mIRCd.info($1,nick),%this.item,N/A,$hget($mIRCd.local(Zlines),%this.item))
-      }
+    if ($hcount($mIRCd.local(Zlines)) == 0) {
+      mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+      return
     }
+    var %this.loop = 0
+    while (%this.loop < $hcount($mIRCd.local(Zlines))) {
+      inc %this.loop 1
+      var %this.item = $hget($mIRCd.local(Zlines),%this.loop).item
+      mIRCd.sraw $1 $mIRCd.reply(292,$mIRCd.info($1,nick),%this.item,N/A,$hget($mIRCd.local(Zlines),%this.item))
+    }
+    mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)
+    return
   }
-  mIRCd.sraw %this.sock $mIRCd.reply(219,$mIRCd.info(%this.sock,nick),%this.flag)
-  ; `-> Just return "End of /STATS report" regardless of if it exists or not.
 }
-; `-> I honestly doubt anything else other than these few will be added?
 alias mIRCd_command_userhost {
   ; /mIRCd_command_userhost <sockname> USERHOST <nick [nick nick ...]>
 
@@ -412,7 +446,7 @@ alias mIRCd_command_whois {
       if (%this.string != $null) { mIRCd.sraw $1 $mIRCd.reply(319,$mIRCd.info($1,nick),%this.nick,%this.string) }
     }
     if (($is_oper($1) == $true) || ($1 == %this.sock)) { mIRCd.sraw $1 $mIRCd.reply(338,$mIRCd.info($1,nick),%this.nick,$+(%this.user,@,$mIRCd.info(%this.sock,trueHost)),$sock(%this.sock).ip) }
-    mIRCd.sraw $1 $mIRCd.reply(312,$mIRCd.info($1,nick),%this.nick,$hget($mIRCd.temp,SERVER_NAME),$mIRCd(NETWORK_INFO))
+    mIRCd.sraw $1 $mIRCd.reply(312,$mIRCd.info($1,nick),%this.nick,$mIRCd(SERVER_NAME).temp,$mIRCd(NETWORK_INFO))
     if ($is_modeSet(%this.sock,o).nick == $true) { mIRCd.sraw $1 $mIRCd.reply(313,$mIRCd.info($1,nick),%this.nick) }
     if ($is_modeSet(%this.sock,k).nick == $true) { mIRCd.sraw $1 $mIRCd.reply(310,$mIRCd.info($1,nick),%this.nick) }
     if ($is_modeSet(%this.sock,D).nick == $true) { mIRCd.sraw $1 $mIRCd.reply(316,$mIRCd.info($1,nick),%this.nick) }
@@ -458,7 +492,7 @@ alias mIRCd_command_whowas {
       var %this.user = $iif($hget($mIRCd.whoWas(%this.table),ident) != $null,$v1,$hget($mIRCd.whoWas(%this.table),user)), %this.host = $hget($mIRCd.whoWas(%this.table),$iif($is_oper($1) == $true,trueHost,host))
       ; `-> Only oper(s) can see the trueHost.
       mIRCd.sraw $1 $mIRCd.reply(314,$mIRCd.info($1,nick),$hget($mIRCd.whoWas(%this.table),nick),%this.user,%this.host,$hget($mIRCd.whoWas(%this.table),realName))
-      mIRCd.sraw $1 $mIRCd.reply(312,$mIRCd.info($1,nick),$hget($mIRCd.whoWas(%this.table),nick),$hget($mIRCd.temp,SERVER_NAME),$asctime($hget($mIRCd.whoWas(%this.table),signon),ddd mmm d hh:mm:ss yyyy))
+      mIRCd.sraw $1 $mIRCd.reply(312,$mIRCd.info($1,nick),$hget($mIRCd.whoWas(%this.table),nick),$mIRCd(SERVER_NAME).temp,$asctime($hget($mIRCd.whoWas(%this.table),signon),ddd mmm d hh:mm:ss yyyy))
     }
   }
   mIRCd.sraw $1 $mIRCd.reply(369,$mIRCd.info($1,nick),%this.whowas)
@@ -481,6 +515,7 @@ alias is_whoWasMatch {
 alias mIRCd.cleanWhoWas {
   ; /mIRCd.cleanWhoWas
 
+  if ($hcount($mIRCd.whoWas) == 0) { return }
   if ($mIRCd(CLEAR_WHOWAS_CACHE) != $null) {
     var %this.temp = $v1
     if (%this.temp !isnum 1-) {
@@ -493,7 +528,6 @@ alias mIRCd.cleanWhoWas {
   var %this.duration = 86400
   ; `-> 86400s is 1d.
   :clearEntries
-  if ($hcount($mIRCd.whoWas) == 0) { return }
   var %this.loop = $hcount($mIRCd.whoWas)
   while (%this.loop > 0) {
     var %this.table = $hget($mIRCd.whoWas,%this.loop).item
@@ -506,7 +540,7 @@ alias mIRCd.cleanWhoWas {
 }
 alias mIRCd.dirHelp { return $+(",$scriptdirconf\help\) }
 ; `-> Note: The closing quote is missing because of what'll be done in the command.
-alias mIRCd.encryptPass { return $hmac($sha512($1), $+($1,:,$hget($mIRCd.temp,SALT)), sha512, 0) }
+alias mIRCd.encryptPass { return $hmac($sha512($1), $+($1,:,$mIRCd(SALT).temp), sha512, 0) }
 alias mIRCd.fileMotd { return $+($scriptdirmIRCd.motd) }
 alias mIRCd.mkpasswd {
   ; /mIRCd.mkpasswd <password>

@@ -1,3 +1,20 @@
+mIRCd[0.09hf9(Rev.2)][2021-2023] - ??/02/2023
+--------------------------------------------------
+1.  Sending a /MSG or /NOTICE to nick@server should now work the way it should on an actual IRCd.
+2.  Fixed a bug where /CTCP wasn't being blocked by +C, and /action would have been blocked by +C if the former had actually worked.
+3.  As I felt this was a bug, ops and hops can no longer bypass channel mode +C (no /CTCP) or +T (no /amsg, etc.).
+    The order is now: [OPER +X PASS] -> +n -> +T -> +C -> [OP/HOP PASS] -> +N -> [VOICE PASS] -> +b -> +m -> +g -> +c -> +S
+4.  Possible bug. Usermode +X now bypasses +d(eaf) users, being silenced, stripping colors via PM, and chan mode +B.
+5.  Fixed a bug with /CLOSE.
+6.  Unloading mIRCd should now correctly deal with terminating the IRCd and cleanup operations.
+7.  Fixed a reply bug in /INVITE.
+8.  Fixed a bug in /NAMES.
+9.  NAMESX and UHNAMES are now set for the user upon connection.
+10. Joining the channel automatically upon connection is now done after modes being parsed due to a bug involving +x, not
+    to mention now has a slightly longer delay.
+11. A few other fixes and some optimization.
+
+
 mIRCd[0.09hf8(Rev.2)][2021-2023] - 04/02/2023
 --------------------------------------------------
 1.  The check for channel mode -d now occurs after the KICK command has parsed, rather than after each nick specified.
@@ -30,7 +47,7 @@ mIRCd[0.09hf8(Rev.2)][2021-2023] - 04/02/2023
 18. Can now deny channels from being made except by IRC operators by adding DENY_CHANNEL_CREATION=TRUE or DENY_CHANNEL_CREATION=FALSE
     to [Mechanics] in mIRCd.ini. Defaults to FALSE.
 19. Can now prevent new channels from having ops by adding OPLESS_CHANS=1 or OPLESS_CHANS=2 to [Mechanics] in mIRCd.ini.
-    Meaining: 0 = Disabled, 1 = Everybody, 2 = Non-opers.
+    Meaning: 0 = Disabled, 1 = Everybody, 2 = Non-opers.
 20. Other changes.
 
 

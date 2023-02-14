@@ -9,17 +9,21 @@ alias mIRCd_command_die {
     mIRCd.sraw $1 $mIRCd.reply(481,$mIRCd.info($1,nick))
     return
   }
-  if ($mIRCd(DIE_PASSWORD) != $null) {
-    if ($3 == $null) {
-      mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
-      return
-    }
-    if ($mIRCd.encryptPass($3) !== $mIRCd(DIE_PASSWORD)) {
-      mIRCd.sraw $1 $mIRCd.reply(464,$mIRCd.info($1,nick))
-      return
-    }
+  if ($mIRCd(DIE_PASSWORD) == $null) {
+    ; `-> No password is required.
+    hadd -m $mIRCd.temp DIE $mIRCd.info($1,nick)
+    .mIRCd.die
+    return
   }
-  ; ,-> No password is required.
+  if ($3 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  if ($mIRCd.encryptPass($3) !== $mIRCd(DIE_PASSWORD)) {
+    ; `-> !== because of "magic hashes."
+    mIRCd.sraw $1 $mIRCd.reply(464,$mIRCd.info($1,nick))
+    return
+  }
   hadd -m $mIRCd.temp DIE $mIRCd.info($1,nick)
   .mIRCd.die
 }
@@ -59,17 +63,21 @@ alias mIRCd_command_restart {
     mIRCd.sraw $1 $mIRCd.reply(481,$mIRCd.info($1,nick))
     return
   }
-  if ($mIRCd(RESTART_PASSWORD) != $null) {
-    if ($3 == $null) {
-      mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
-      return
-    }
-    if ($mIRCd.encryptPass($3) !== $mIRCd(RESTART_PASSWORD)) {
-      mIRCd.sraw $1 $mIRCd.reply(464,$mIRCd.info($1,nick))
-      return
-    }
+  if ($mIRCd(RESTART_PASSWORD) == $null) {
+    ; `-> No password is required.
+    hadd -m $mIRCd.temp RESTART $mIRCd.info($1,nick)
+    .mIRCd.restart
+    return
   }
-  ; ,-> No password is required.
+  if ($3 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  if ($mIRCd.encryptPass($3) !== $mIRCd(RESTART_PASSWORD)) {
+    ; `-> !== because of "magic hashes."
+    mIRCd.sraw $1 $mIRCd.reply(464,$mIRCd.info($1,nick))
+    return
+  }
   hadd -m $mIRCd.temp RESTART $mIRCd.info($1,nick)
   .mIRCd.restart
 }
@@ -79,12 +87,11 @@ alias mIRCd_command_restart {
 alias divMask {
   ; $divMask(<N>)
 
-  if ($1 > 0) {
-    var %this.mask = $1, %this.base = 0, %this.flags = 65536,32768,16384,8192,4096,2048,1024,512,256,128,64,32,16,8,4,2,1,0, %this.output = $null
-    while (%this.base < $numtok(%this.flags,44)) {
-      inc %this.base 1
-      if ($calc(%this.mask % $gettok(%this.flags,%this.base,44)) != %this.mask) { var %this.mask = $v1, %this.output = %this.output $gettok(%this.flags,%this.base,44) }
-    }
+  if (($1 == $null) || ($1 == 0)) { return 0 }
+  var %this.mask = $1, %this.base = 0, %this.flags = 65536,32768,16384,8192,4096,2048,1024,512,256,128,64,32,16,8,4,2,1,0, %this.output = $null
+  while (%this.base < $numtok(%this.flags,44)) {
+    inc %this.base 1
+    if ($calc(%this.mask % $gettok(%this.flags,%this.base,44)) != %this.mask) { var %this.mask = $v1, %this.output = %this.output $gettok(%this.flags,%this.base,44) }
   }
   return $iif(%this.output != $null,$v1,0)
 }
@@ -92,12 +99,14 @@ alias mIRCd.serverNotice {
   ; /mIRCd.serverNotice <snomask> <message>
 
   if ($2 == $null) { return }
+  if ($hcount($mIRCd.users) == 0) { return }
   var %this.loop = 0
   while (%this.loop < $hcount($mIRCd.users)) {
     inc %this.loop 1
     var %this.sock = $hget($mIRCd.users,%this.loop).item
     if ($is_modeSet(%this.sock,s).nick == $false) { continue }
-    if ($istok($divMask($mIRCd.info(%this.sock,snoMask)),$1,32) == $true) { mIRCd.sraw %this.sock NOTICE $mIRCd.info(%this.sock,nick) :*** Notice -- $2- }
+    if ($istok($divMask($mIRCd.info(%this.sock,snoMask)),$1,32) == $false) { continue }
+    mIRCd.sraw %this.sock NOTICE $mIRCd.info(%this.sock,nick) :*** Notice -- $2-
   }
 }
 

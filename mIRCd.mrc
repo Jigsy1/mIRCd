@@ -1,11 +1,11 @@
-; mIRCd v0.09hf8 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+; mIRCd v0.09hf9 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm (Jurrasic Park)
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
 
 menu Menubar {
   &mIRCd
-  .&LOAD:{ mIRCd.load }
+  .$iif($hget($mIRCd.main,0).data > 0,$style(2) &LOAD $parenthesis(please use rehash),&LOAD):{ mIRCd.load }
   .$iif($sock(mIRCd.*,0) > 0,$style(2) &START $parenthesis(already running),&START):{ mIRCd.start }
   .-
   .$iif($sock(mIRCd.*,0) > 0,&DIE,$style(2) &DIE $parenthesis(not running)):{ mIRCd.die }
@@ -32,11 +32,11 @@ on *:unload:{ mIRCd.unload }
 
 ; Hash Tables
 
-alias mIRCd.accept { return $+(mIRCd[,$1,][Accept]) }
+alias mIRCd.accept { return $+(mIRCd,$bracket($1),[Accept]) }
 alias mIRCd.badNicks { return mIRCd[BadNicks] }
 alias mIRCd.chans { return mIRCd[Chans] }
-alias mIRCd.chanBans { return $+(mIRCd[,$1,][Bans]) }
-alias mIRCd.chanUsers { return $+(mIRCd[,$1,][Users]) }
+alias mIRCd.chanBans { return $+(mIRCd,$bracket($1),[Bans]) }
+alias mIRCd.chanUsers { return $+(mIRCd,$bracket($1),[Users]) }
 alias mIRCd.commands { return $+(mIRCd[Commands],$bracket($1)) }
 ; `-> Unregistered = 0; Registered = 1; Shunned = 2.
 alias mIRCd.dns { return mIRCd[DNS] }
@@ -52,10 +52,10 @@ alias mIRCd.opersOnline { return mIRCd[OpersOnline] }
 alias mIRCd.raws { return mIRCd[Raws] }
 alias mIRCd.servers { return mIRCd[Servers] }
 ; `-> WARNING!: This isn't used (yet); but _DO NOT_ remove it. (re: /LUSERS)
-alias mIRCd.silence { return $+(mIRCd[,$1,][Silence]) }
+alias mIRCd.silence { return $+(mIRCd,$bracket($1),[Silence]) }
 alias mIRCd.targMax { return mIRCd[TargMax] }
 alias mIRCd.temp { return mIRCd[Temp] }
-alias mIRCd.table { return $+(mIRCd[,$1,]) }
+alias mIRCd.table { return $+(mIRCd,$bracket($1)) }
 ; `-> Generic table call.
 alias mIRCd.unknown { return mIRCd[Unknown] }
 ; `-> User(s) currently in the process of connecting to the server.
@@ -73,10 +73,10 @@ alias comma { return $chr(44) }
 alias dollar { return $chr(36) }
 alias decolonize { return $iif($left($1-,1) == :,$right($1-,-1),$1-) }
 alias depolarize { return $iif($pos(-+,$left($1-,1)) != $null,$right($1-,-1),$1-) }
-; `-> Note: I don't believe this is used anymore, but retained it just incase.
+; `-> Note: I don't believe this is used anymore, but I've retained it just incase.
 alias hcount { return $hget($$1,0).data }
 alias is_valid {
-  ; $is_valid(<arg>)[.<chan|nick>]
+  ; $is_valid(<arg>)[.<chan|nick|server>]
 
   if ($prop == chan) {
     var %this.regex = /([#][^\x07\x2C\s])/
@@ -86,9 +86,18 @@ alias is_valid {
     var %this.regex = /^([][A-Za-z_\\^`{|}][][\w\\^`{|}-]*)$/
     return $bool_fmt($regex($1,%this.regex))
   }
+  if ($prop == server) {
+    ; ,-> I just hope this works. I really do. (By bkr on Stack Overflow.)
+    var %this.regex = (?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)
+    return $bool_fmt($regex($1,%this.regex))
+  }
 }
 alias parenthesis { return ( $+ $$1- $+ ) }
-alias mIRCd { return $hget($mIRCd.main,$1) }
+alias mIRCd {
+  ; $mIRCd(<item>)[.temp]
+
+  return $hget($iif($prop != temp,$mIRCd.main,$mIRCd.temp),$1)
+}
 alias mIRCd.fileBadNicks { return $qt($scriptdirconf\nicks.403) }
 alias mIRCd.fileCommands { return $qt($scriptdirconf\cmds\) }
 alias mIRCd.fileConf { return $qt($scriptdirmIRCd.ini) }
@@ -98,16 +107,17 @@ alias mIRCd.fileLocalZlines { return $qt($scriptdirconf\mIRCd.zlines) }
 alias mIRCd.fileRaws { return $qt($scriptdirconf\mIRCd.raws) }
 alias mIRCd.fileSlines { return $qt($scriptdirconf\mIRCd.slines) }
 alias mIRCd.die {
-  ; /mIRCd.die
+  ; /mIRCd.die [-unload]
 
   ; ,-> _EVERYTHING_ will be wiped aside from the commands, config (including opers, targets, etc.), local K-lines/Shuns/Z-lines and raws.
-  if ($sock(mIRCd.*,0) == 0) { return }
+  if (($sock(mIRCd.*,0) == 0) && ($1 != -unload)) { return }
   if ($show == $true) { mIRCd.echo /mIRCd.die: done }
-  mIRCd.serverNotice 1 Instruction received $iif($hget($mIRCd.temp,DIE) != $null,from $v1) to shutdown the server.
-  .timermIRCd.die_ -o 1 1 mIRCd.die_
+  mIRCd.serverNotice 1 Instruction received $iif($mIRCd(DIE).temp != $null,from $v1) to shutdown the server.
+  .timermIRCd.die_ -o 1 1 mIRCd.die_ $1
   ; `-> The instant death of the server means nobody ever sees the server notice; so add a short delay.
 }
 alias -l mIRCd.die_ {
+  var %unload.flag = $1
   .timermIRCd.* off
   sockclose mIRCd.*
   hfree -w mIRCd[mIRCd.*
@@ -117,6 +127,7 @@ alias -l mIRCd.die_ {
   tokenize 44 %these.tables
   ; `-> A quick and dirty loop.
   scon -r if ( $!hget( $* ) != $!null ) { hfree $* }
+  if (%unload.flag == -unload) { mIRCd.unloadScripts }
 }
 alias mIRCd.rehash {
   ; /mIRCd.rehash [section]
@@ -125,8 +136,8 @@ alias mIRCd.rehash {
     mIRCd.echo /mIRCd.rehash: cannot rehash config due to errors; fix them first, then try again
     return
   }
-  if ($sock(mIRCd.user.*,0) > 0) { mIRCd.serverNotice 1 $iif($hget($mIRCd.temp,REHASH) != $null,$mIRCd.info($v1,nick),Admin) is rehashing Server config file }
-  if ($hget($mIRCd.temp,REHASH) != $null) {
+  if ($sock(mIRCd.user.*,0) > 0) { mIRCd.serverNotice 1 $iif($mIRCd(REHASH).temp != $null,$mIRCd.info($v1,nick),Admin) is rehashing Server config file }
+  if ($mIRCd(REHASH).temp != $null) {
     mIRCd.sraw $v1 $mIRCd.reply(382,$mIRCd.info($v1,nick),$gettok($noqt($mIRCd.fileConf),-1,92))
     hdel $mIRCd.temp REHASH
   }
@@ -220,7 +231,7 @@ alias mIRCd.restart {
   ; ,-> _EVERYTHING_ will be wiped aside from the commands, config (including opers, targets, etc.), local K-lines/Shuns/Z-lines and raws.
   if ($sock(mIRCd.*,0) == 0) { return }
   if ($show == $true) { mIRCd.echo /mIRCd.restart: done }
-  mIRCd.serverNotice 1 Instruction received $iif($hget($mIRCd.temp,RESTART) != $null,from $v1) to restart the server.
+  mIRCd.serverNotice 1 Instruction received $iif($mIRCd(RESTART).temp != $null,from $v1) to restart the server.
   .timermIRCd.restart_ -o 1 1 mIRCd.restart_
   ; `-> The instant death of the server means nobody ever sees the server notice; so add a short delay.
 }
@@ -242,8 +253,8 @@ alias mIRCd.fakeIP { return 0.0.0.0 }
 alias mIRCd.load {
   ; /mIRCd.load
 
-  if ($exists($mIRCd.fileConf) == $false) {
-    mIRCd.echo /mIRCd.load: config is missing
+  if ($lines($mIRCd.fileConf) == 0) {
+    mIRCd.echo /mIRCd.load: config is empty, missing or has been renamed
     return
   }
   if ($mIRCd.check > 0) {
@@ -312,7 +323,7 @@ alias mIRCd.sraw {
   ; /mIRCd.sraw <sockname> <args>
 
   if ($sock($1) == $null) { return }
-  sockwrite -nt $1 $+(:,$hget($mIRCd.temp,SERVER_NAME)) $2-
+  sockwrite -nt $1 $+(:,$mIRCd(SERVER_NAME).temp) $2-
   if ($window($mIRCd.window) != $null) { echo -ci2t "Info text" $v1 [W]: $1 <- $2- }
 }
 alias mIRCd.start {
@@ -338,26 +349,24 @@ alias mIRCd.start {
     inc %this.open 1
   }
   if (%this.open > 0) {
-    if ($hget($mIRCd.temp,startTime) == $null) { hadd -m $mIRCd.temp startTime $ctime }
-    if ($hget($mIRCd.temp,highCount) == $null) { hadd -m $mIRCd.temp highCount 0 }
-    if ($hget($mIRCd.temp,totalCount) == $null) { hadd -m $mIRCd.temp totalCount 0 }
+    if ($mIRCd(startTime).temp == $null) { hadd -m $mIRCd.temp startTime $ctime }
+    if ($mIRCd(highCount).temp == $null) { hadd -m $mIRCd.temp highCount 0 }
+    if ($mIRCd(totalCount).temp == $null) { hadd -m $mIRCd.temp totalCount 0 }
     ; `-> The last two are for stats tracking only.
-    if ($hget($mIRCd.temp,AUDITORIUM_MODE) == $null) { hadd -m $mIRCd.temp AUDITORIUM_MODE $iif($bool_fmt($mIRCd(AUDITORIUM_MODE)) == $true,1,0) }
-    if ($hget($mIRCd.temp,AUTOJOIN_CHANS) == $null) {
-      if ($mIRCd.makeAutoJoin != $null) { hadd -m $mIRCd.temp AUTOJOIN_CHANS $v1 }
-    }
-    if ($hget($mIRCd.temp,BANDWIDTH_MODE) == $null) { hadd -m $mIRCd.temp BANDWIDTH_MODE $iif($bool_fmt($mIRCd(BANDWIDTH_MODE)) == $true,1,0) }
-    if ($hget($mIRCd.temp,BOT_SUPPORT) == $null) { hadd -m $mIRCd.temp BOT_SUPPORT $iif($bool_fmt($mIRCd(BOT_SUPPORT)) == $true,1,0) }
-    if ($hget($mIRCd.temp,HALFOP) == $null) { hadd -m $mIRCd.temp HALFOP $iif($bool_fmt($mIRCd(HALFOP)) == $true,1,0) }
-    if ($hget($mIRCd.temp,LOOSE_OBFUSCATION) == $null) { hadd -m $mIRCd.temp LOOSE_OBFUSCATION $iif($bool_fmt($mIRCd(LOOSE_OBFUSCATION)) == $true,1,0) }
-    if ($hget($mIRCd.temp,OPER_OVERRIDE) == $null) { hadd -m $mIRCd.temp OPER_OVERRIDE $iif($bool_fmt($mIRCd(OPER_OVERRIDE)) == $true,1,0) }
-    if ($hget($mIRCd.temp,PERSISTANT_CHANNELS) == $null) { hadd -m $mIRCd.temp PERSISTANT_CHANNELS $iif($bool_fmt($mIRCd(PERSISTANT_CHANNELS)) == $true,1,0) }
-    if ($hget($mIRCd.temp,SLINE_SUPPORT) == $null) { hadd -m $mIRCd.temp SLINE_SUPPORT $iif($bool_fmt($mIRCd(SLINE_SUPPORT)) == $true,1,0) }
-    if ($hget($mIRCd.temp,WHOIS_PARANOIA) == $null) { hadd -m $mIRCd.temp WHOIS_PARANOIA $iif($bool_fmt($mIRCd(WHOIS_PARANOIA)) == $true,1,0) }
-    if ($hget($mIRCd.temp,DEFAULT_CHANMODES) == $null) { hadd -m $mIRCd.temp DEFAULT_CHANMODES $iif($mIRCd.makeDefaultModes($mIRCd(DEFAULT_CHANMODES)).chan != $null,$v1,$mIRCd.defaultChanModes) }
-    if ($hget($mIRCd.temp,DEFAULT_USERMODES) == $null) { hadd -m $mIRCd.temp DEFAULT_USERMODES $mIRCd.makeDefaultModes($mIRCd(DEFAULT_USERMODES)).nick }
-    if ($hget($mIRCd.temp,SALT) == $null) { hadd -m $mIRCd.temp SALT $mIRCd(SALT) }
-    if ($hget($mIRCd.temp,SERVER_NAME) == $null) { hadd -m $mIRCd.temp SERVER_NAME $mIRCd(SERVER_NAME) }
+    if ($mIRCd(AUDITORIUM_MODE).temp == $null) { hadd -m $mIRCd.temp AUDITORIUM_MODE $iif($bool_fmt($mIRCd(AUDITORIUM_MODE)) == $true,1,0) }
+    if (($mIRCd(AUTOJOIN_CHANS).temp == $null) && ($mIRCd.makeAutoJoin != $null)) { hadd -m $mIRCd.temp AUTOJOIN_CHANS $v1 }
+    if ($mIRCd(BANDWIDTH_MODE).temp == $null) { hadd -m $mIRCd.temp BANDWIDTH_MODE $iif($bool_fmt($mIRCd(BANDWIDTH_MODE)) == $true,1,0) }
+    if ($mIRCd(BOT_SUPPORT).temp == $null) { hadd -m $mIRCd.temp BOT_SUPPORT $iif($bool_fmt($mIRCd(BOT_SUPPORT)) == $true,1,0) }
+    if ($mIRCd(HALFOP).temp == $null) { hadd -m $mIRCd.temp HALFOP $iif($bool_fmt($mIRCd(HALFOP)) == $true,1,0) }
+    if ($mIRCd(LOOSE_OBFUSCATION).temp == $null) { hadd -m $mIRCd.temp LOOSE_OBFUSCATION $iif($bool_fmt($mIRCd(LOOSE_OBFUSCATION)) == $true,1,0) }
+    if ($mIRCd(OPER_OVERRIDE).temp == $null) { hadd -m $mIRCd.temp OPER_OVERRIDE $iif($bool_fmt($mIRCd(OPER_OVERRIDE)) == $true,1,0) }
+    if ($mIRCd(PERSISTANT_CHANNELS).temp == $null) { hadd -m $mIRCd.temp PERSISTANT_CHANNELS $iif($bool_fmt($mIRCd(PERSISTANT_CHANNELS)) == $true,1,0) }
+    if ($mIRCd(SLINE_SUPPORT).temp == $null) { hadd -m $mIRCd.temp SLINE_SUPPORT $iif($bool_fmt($mIRCd(SLINE_SUPPORT)) == $true,1,0) }
+    if ($mIRCd(WHOIS_PARANOIA).temp == $null) { hadd -m $mIRCd.temp WHOIS_PARANOIA $iif($bool_fmt($mIRCd(WHOIS_PARANOIA)) == $true,1,0) }
+    if ($mIRCd(DEFAULT_CHANMODES).temp == $null) { hadd -m $mIRCd.temp DEFAULT_CHANMODES $iif($mIRCd.makeDefaultModes($mIRCd(DEFAULT_CHANMODES)).chan != $null,$v1,$mIRCd.defaultChanModes) }
+    if ($mIRCd(DEFAULT_USERMODES).temp == $null) { hadd -m $mIRCd.temp DEFAULT_USERMODES $mIRCd.makeDefaultModes($mIRCd(DEFAULT_USERMODES)).nick }
+    if ($mIRCd(SALT).temp == $null) { hadd -m $mIRCd.temp SALT $mIRCd(SALT) }
+    if ($mIRCd(SERVER_NAME).temp == $null) { hadd -m $mIRCd.temp SERVER_NAME $mIRCd(SERVER_NAME) }
     ; `-> WARNING!: These may not be modified when the IRCd is already running.
     if ($timer(mIRCd.checkRegistering) == $null) { .timermIRCd.checkRegistering -o 0 $mIRCd(REGISTRATION_DURATION) mIRCd.checkRegistering }
     if ($timer(mIRCd.pingUsers) == $null) { .timermIRCd.pingUsers -o 0 $mIRCd(PING_DURATION) mIRCd.pingUsers }
@@ -372,14 +381,21 @@ alias mIRCd.start {
 }
 alias mIRCd.startCleanWhoWas { .timermIRCd.cleanWhoWas -o 0 3600 .signal -n mIRCd_cleanWhoWas }
 alias mIRCd.unload {
-  mIRCd.die
+  if ($sock(mIRCd.*,0) > 0) {
+    mIRCd.die -unload
+    return
+  }
+  mIRCd.unloadScripts
+}
+alias mIRCd.unloadScripts {
   .timermIRCd.hfree -o 1 5 hfree -w mIRCd*
   var %these.scripts = $regsubex($str(.,$findfile($scriptdir,mIRCd_*.mrc,0)),/./g,$+($findfile($scriptdir,mIRCd_*.mrc,\n),¦))
   tokenize 166 %these.scripts
   scon -r if ( $!script( $* ) != $!null ) { .unload -rs $!qt( $* ) }
   ; `-> A quick and dirty loop.
+  if ($script($script) != $null) { .unload -rs $qt($script) }
 }
-alias mIRCd.version { return mIRCd[0.09hf8(Rev.2)][2021-2023] }
+alias mIRCd.version { return mIRCd[0.09hf9(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 alias -l nextHour { return $+($asctime($calc($ctime + 3600),HH),:00) }
 alias -l requiredVersion { return 7.66 }

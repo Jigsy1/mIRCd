@@ -127,7 +127,7 @@ alias makeHost {
   ; $makeHost(<ip>)
 
   var %this.base = $+($longip($1),:,$mIRCd(SALT))
-  if ($hget($mIRCd.temp,LOOSE_OBFUSCATION) == 1) { var %this.base = $+($regsubex($str(.,32),/./g,$gettok($rand(a,z) $rand(0,9) $rand(A,Z),$rand(1,3),32)),:,%this.base) }
+  if ($mIRCd(LOOSE_OBFUSCATION).temp == 1) { var %this.base = $+($regsubex($str(.,32),/./g,$gettok($rand(a,z) $rand(0,9) $rand(A,Z),$rand(1,3),32)),:,%this.base) }
   ; `-> Allow for loose obfuscation. This means that each host will be different for people on the same ip address.
   return $+($gettok($regsubex($upper($hmac($sha512($1), %this.base, sha512, 0)),/(.{8})/g,\1.),1-3,46),.IP)
 }
@@ -356,7 +356,7 @@ alias mIRCd.pingUsers {
       ; `-> Ignore connecting user(s), they have their own routine.
       continue
     }
-    if ($sock(%this.sock).to >= $int($calc($mIRCd(PING_TIMEOUT) / 2))) { mIRCd.raw %this.sock PING $+(:,$hget($mIRCd.temp,SERVER_NAME)) }
+    if ($sock(%this.sock).to >= $int($calc($mIRCd(PING_TIMEOUT) / 2))) { mIRCd.raw %this.sock PING $+(:,$mIRCd(SERVER_NAME).temp) }
     ; `-> A little amnesty first. (No point pinging users who've just registered with the IRCd.)
   }
 }

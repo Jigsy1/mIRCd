@@ -9,15 +9,17 @@ alias mIRCd_command_close {
     mIRCd.sraw $1 $mIRCd.reply(481,$mIRCd.info($1,nick))
     return
   }
-  if ($hcount($mIRCd.unknown) > 0) {
-    var %this.loop = 0
-    while (%this.loop < $hcount($mIRCd.unknown)) {
-      inc %this.loop 1
-      var %this.sock = $hget($mIRCd.unknown,%this.loop).item
-      mIRCd.errorUser %this.sock $mIRCd.closeConnection
-    }
+  if ($hcount($mIRCd.unknown) == 0) {
+    mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :Closed 0 connection(s)...
+    return
   }
-  mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :Closed $iif(%this.loop > 0,$v1,0) connection(s)...
+  var %this.count = $hcount($mIRCd.unknown), %this.loop = %this.count
+  while (%this.loop > 0) {
+    var %this.sock = $hget($mIRCd.unknown,%this.loop).item
+    mIRCd.errorUser %this.sock $mIRCd.closeConnection
+    dec %this.loop 1
+  }
+  mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :Closed %this.count connection(s)...
 }
 alias mIRCd_command_error { noop }
 ; `-> noop by design.
@@ -32,7 +34,7 @@ alias mIRCd_command_kill {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
   }
-  if ($3 == $hget($mIRCd.temp,SERVER_NAME)) {
+  if ($3 == $mIRCd(SERVER_NAME).temp) {
     mIRCd.sraw $1 $mIRCd.reply(483,$mIRCd.info($1,nick))
     return
   }
@@ -188,29 +190,31 @@ alias mIRCd_command_pong {
     return
   }
   ; `-> K-line takes priority (because it's local), but there's no specific order to Z-line or G-line. (03/02/2023: Now with local Z-lines, Z-line takes priority over G-line.)
-  if ((127.* !iswm $sock($1).ip) && (192.168.* !iswm $sock($1).ip)) {
-    if ($mIRCd(CONNECTION_PASS) != $null) {
-      if ($mIRCd.info($1,firstCommand) != PASS) {
-        ; `-> PASS needs to be sent *BEFORE* NICK and USER.
-        $+(.timermIRCd.passNotFirst,$1) -o 1 0 mIRCd.errorUser $1 Incorrect credentials $parenthesis(Sent $mIRCd.info($1,firstCommand) before PASS.)
-        return
-      }
-      if ($mIRCd.info($1,password) !== $mIRCd(CONNECTION_PASS)) {
-        ; `-> !== because of "magic hashes."
-        $+(.timermIRCd.wrongPass,$1) -o 1 0 mIRCd.errorUser $1 Incorrect credentials $parenthesis(Incorrect password.)
-        return
-      }
-    }
-    if ($bool_fmt($mIRCd(DENY_EXTERNAL_CONNECTIONS)) == $true) {
-      $+(.timermIRCd.deny,$1) -o 1 0 mIRCd.errorUser $1 No more connections allowed $parenthesis(No external connections.)
+  if ((127.* iswm $sock($1).ip) && (192.168.* iswm $sock($1).ip)) {
+    mIRCd.welcome $1
+    return
+  }
+  if ($mIRCd(CONNECTION_PASS) != $null) {
+    if ($mIRCd.info($1,firstCommand) != PASS) {
+      ; `-> PASS needs to be sent *BEFORE* NICK and USER.
+      $+(.timermIRCd.passNotFirst,$1) -o 1 0 mIRCd.errorUser $1 Incorrect credentials $parenthesis(Sent $upper($mIRCd.info($1,firstCommand)) before PASS.)
       return
     }
-    if ($mIRCd(MAX_USERS) isnum 1-) {
-      ; `-> Allow localhost and LAN to override the next line of code.
-      if ($calc($hcount($mIRCd.users) - $hcount($mIRCd.unknown)) >= $mIRCd(MAX_USERS)) {
-        $+(.timermIRCd.full,$1) -o 1 0 mIRCd.errorUser $1 No more connections allowed $parenthesis(The server is full.)
-        return
-      }
+    if ($mIRCd.info($1,password) !== $mIRCd(CONNECTION_PASS)) {
+      ; `-> !== because of "magic hashes."
+      $+(.timermIRCd.wrongPass,$1) -o 1 0 mIRCd.errorUser $1 Incorrect credentials $parenthesis(Incorrect password.)
+      return
+    }
+  }
+  if ($bool_fmt($mIRCd(DENY_EXTERNAL_CONNECTIONS)) == $true) {
+    $+(.timermIRCd.deny,$1) -o 1 0 mIRCd.errorUser $1 No more connections allowed $parenthesis(No external connections.)
+    return
+  }
+  if ($mIRCd(MAX_USERS) isnum 1-) {
+    ; `-> Allow localhost and LAN to override the next line of code.
+    if ($calc($hcount($mIRCd.users) - $hcount($mIRCd.unknown)) >= $mIRCd(MAX_USERS)) {
+      $+(.timermIRCd.full,$1) -o 1 0 mIRCd.errorUser $1 No more connections allowed $parenthesis(The server is full.)
+      return
     }
   }
   mIRCd.welcome $1
@@ -338,38 +342,43 @@ alias mIRCd.welcome {
   ; `-> No longer needed.
   mIRCd.updateUser $1 lastPing $ctime
   mIRCd.updateUser $1 snoMask $mIRCd(DEFAULT_SNOMASK)
-  if ($calc($hcount($mIRCd.users) - $hcount($mIRCd.unknown)) > $hget($mIRCd.temp,highCount)) { hadd -m $mIRCd.temp highCount $v1 }
+  mIRCd.updateUser $1 NAMESX 1
+  mIRCd.updateUser $1 UHNAMES 1
+  if ($calc($hcount($mIRCd.users) - $hcount($mIRCd.unknown)) > $mIRCd(highCount).temp) { hadd -m $mIRCd.temp highCount $v1 }
   ; `-> TBC: Does the highCount include connecting users?
   mIRCd.sraw $1 $mIRCd.reply(001,$mIRCd.info($1,nick),$mIRCd.fulladdr($1))
   mIRCd.sraw $1 $mIRCd.reply(002,$mIRCd.info($1,nick))
-  mIRCd.sraw $1 $mIRCd.reply(003,$mIRCd.info($1,nick),$calc($ctime - $iif($hget($mIRCd.temp,startTime) != $null,$calc($ctime - $v1),$sock($mIRCd.info($1,thruSock)).to)))
+  mIRCd.sraw $1 $mIRCd.reply(003,$mIRCd.info($1,nick),$calc($ctime - $iif($mIRCd(startTime).temp != $null,$calc($ctime - $v1),$sock($mIRCd.info($1,thruSock)).to)))
   mIRCd.sraw $1 $mIRCd.reply(004,$mIRCd.info($1,nick))
   mIRCd.raw005 $1
   mIRCd_command_lusers $1
   mIRCd_command_motd $1
-  if ($hget($mIRCd.temp,AUTOJOIN_CHANS) != $null) {
+  if ($mIRCd(DEFAULT_USERMODES).temp == +) {
+    mIRCd.updateUser $1 modes +
+    if ($mIRCd(AUTOJOIN_CHANS).temp == $null) { return }
+    var %this.skipFlag = 1
+  }
+  if (%this.skipFlag != 1) {
+    var %these.modes = $mIRCd(DEFAULT_USERMODES).temp
+    mIRCd.updateUser $1 modes %these.modes
+    mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) MODE $mIRCd.info($1,nick) $+(:,%these.modes)
+    if (x isincs %these.modes) { mIRCd.hostQuit $1 }
+    if (i isincs %these.modes) { hadd -m $mIRCd.invisible $1 $ctime }
+    if (o isincs %these.modes) { hadd -m $mIRCd.opersOnline $1 $ctime }
+    ; `-> I'm only adding this one on the off chance somebody totally ignored my warning and removed o from the forbidden list.
+  }
+  if ($mIRCd(AUTOJOIN_CHANS).temp != $null) {
     var %these.chans = $v1
     mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :*** Notice -- Automatically joining channel(s)...
-    $+(.timermIRCd.autojoin,$1) -o 1 2 mIRCd_command_join $1 JOIN %these.chans
+    $+(.timermIRCd.autojoin,$1) -o 1 5 mIRCd_command_join $1 JOIN %these.chans
   }
-  if ($hget($mIRCd.temp,DEFAULT_USERMODES) == +) {
-    mIRCd.updateUser $1 modes +
-    return
-  }
-  var %these.modes = $hget($mIRCd.temp,DEFAULT_USERMODES)
-  mIRCd.updateUser $1 modes %these.modes
-  mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) MODE $mIRCd.info($1,nick) $+(:,%these.modes)
-  if (x isincs %these.modes) { mIRCd.hostQuit $1 }
-  if (i isincs %these.modes) { hadd -m $mIRCd.invisible $1 $ctime }
-  if (o isincs %these.modes) { hadd -m $mIRCd.opersOnline $1 $ctime }
-  ; `-> I'm only adding this one on the off chance somebody totally ignored my warning and removed o from the forbidden list.
 }
 alias mIRCd.raw005 {
   ; /mIRCd.raw005 <sockname>
 
   if ($hcount($mIRCd.targMax) > 0) { var %this.targmax = $+(TARGMAX=,$sorttok($left($regsubex($str(.,$hget($mIRCd.targMax,0).item),/./g,$iif(TARGMAX_* iswm $hget($mIRCd.targMax,\n).item && $hget($mIRCd.targMax,\n).data isnum 1-,$+($gettok($hget($mIRCd.targMax,\n).item,2,95),:,$iif($hget($mIRCd.targMax,\n).data != $null,$v1,$null),$comma))),-1),44,a)) }
   ; `-> Prep. TARGMAX=... first. Send it as the last part of RPL_ISUPPORT last too because of the length(?).
-  var %this.prefix = (o $+ $iif($hget($mIRCd.temp,HALFOP) == 1,h) $+ v)@ $+ $iif($hget($mIRCd.temp,HALFOP) == 1,$chr(37)) $+ +
+  var %this.prefix = (o $+ $iif($mIRCd(HALFOP).temp == 1,h) $+ v)@ $+ $iif($mIRCd(HALFOP).temp == 1,$chr(37)) $+ +
   var %this.list = $+(ACCEPT=,$mIRCd(MAXACCEPT)) $+(AWAYLEN=,$mIRCd(AWAYLEN)) $iif(B isincs $mIRCd.usermodes,BOT=B) CASEMAPPING=ascii $+(CHANNELLEN=,$mIRCd(MAXCHANNELLEN)) $+(CHANMODES=,$mIRCd.chanModesSupport) CHANTYPES=# DEAF=d $+(KEYLEN=,$mIRCd(KEYLEN)) $+(KICKLEN=,$mIRCd(KICKLEN)) $iif($hfind($mIRCd.commands(1),KNOCK).data != $null,KNOCK) $+(MAXBANS=,$mIRCd(MAXBANS)) $+(MAXCHANNELS=,$mIRCd(MAXCHANNELS)) $iif($hfind($mIRCd.commands(1),MAP).data != $null,MAP) $+(MAXLIST=b:,$mIRCd(MAXBANS)) $+(MAXNICKLEN=,$mIRCd(MAXNICKLEN)) $iif($mIRCd(MAXTARGETS) != $null,$+(MAXTARGETS=,$mIRCd(MAXTARGETS))) $+(MODES=,$mIRCd(MODESPL)) NAMESX $+(NETWORK=,$mIRCd(NETWORK_NAME)) $+(NICKLEN=,$mIRCd(MAXNICKLEN)) $+(PREFIX=,%this.prefix) $+(SILENCE=,$mIRCd(MAXSILENCE)) SAFELIST $+(STATUSMSG=,$gettok(%this.prefix,2,41)) $+(TOPICLEN=,$mIRCd(TOPICLEN)) UHNAMES $iif($hfind($mIRCd.commands(1),USERIP).data != $null,USERIP) $+(USERLEN=,$mIRCd.userLen) $+(USERMODES=,$mIRCd.userModes) $iif($hfind($mIRCd.commands(1),WALLCHOPS).data != $null,WALLCHOPS) $iif($hfind($mIRCd.commands(1),WALLVOICES).data != $null,WALLVOICES) $iif($hfind($mIRCd.commands(1),WHO).data != $null,WHOX) $iif(%this.targmax != $null,$v1)
   ; ¦-> I'm not 100% sure on if my CASEMAPPING=... is ascii or rfc1459. I've opted for ascii for now. (Make an issue on Github and let me know if it's wrong.)
   ; `-> Anything else? Reference: https://defs.ircdocs.horse/defs/isupport.html
@@ -405,7 +414,7 @@ alias mIRCd.registerUser {
     return
   }
   [ %this.command ]
-  ; `-> I don't believe the evaulation [ brackets ] are really necessary here, but I'm leaving them in just incase.
+  ; `-> I don't believe the [ evaulation brackets ] are really necessary here, but I'm leaving them in just incase.
 }
 
 ; EOF

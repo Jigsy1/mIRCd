@@ -14,7 +14,7 @@ on *:signal:mIRCd_timeCheck:{
 
 alias mIRCd.glines { return mIRCd[Glines] }
 alias mIRCd.klines { return mIRCd[Klines] }
-alias mIRCd.local { $+(return mIRCd[local][,$1,]) }
+alias mIRCd.local { return $+(mIRCd[local],$bracket($1)) }
 ; `-> For local Shuns and Zlines. Like K-lines, these will not expire.
 alias mIRCd.shuns { return mIRCd[Shuns] }
 alias mIRCd.zlines { return mIRCd[Zlines] }
@@ -25,7 +25,7 @@ alias mIRCd_command_accept {
   ; /mIRCd_command_accept <sockname> ACCEPT [<nick>|<-|+n!u@h>]
 
   if (($pos(-+,$left($3,1)) == $null) || ($3 == $null)) {
-    ; ¦-> Show any silences (for a user).
+    ; ¦-> Show any accepts (for a user).
     ; `-> Please see the note under /mIRCd_command_silence.
     var %this.sock = $1
     if ($getSockname($3) != $null) { var %this.sock = $v1 }

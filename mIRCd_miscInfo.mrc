@@ -27,7 +27,7 @@ alias mIRCd_command_hash {
 alias mIRCd_command_info {
   ; /mIRCd_command_info <sockname> INFO
 
-  if (($exists($mIRCd.fileInfo) == $false) || ($lines($mIRCd.fileInfo) == 0)) { return }
+  if ($lines($mIRCd.fileInfo) == 0) { return }
   var %this.loop = 0
   while (%this.loop < $lines($mIRCd.fileInfo)) {
     inc %this.loop 1
@@ -40,14 +40,14 @@ alias mIRCd_command_info {
 alias mIRCd_command_links {
   ; /mIRCd_command_links <sockname> LINKS
 
-  mIRCd.sraw $1 $mIRCd.reply(364,$mIRCd.info($1,nick),$hget($mIRCd.temp,SERVER_NAME),$hget($mIRCd.temp,SERVER_NAME),0,$mIRCd(NETWORK_INFO))
+  mIRCd.sraw $1 $mIRCd.reply(364,$mIRCd.info($1,nick),$mIRCd(SERVER_NAME).temp,$mIRCd(SERVER_NAME).temp,0,$mIRCd(NETWORK_INFO))
   mIRCd.sraw $1 $mIRCd.reply(365,$mIRCd.info($1,nick))
 }
 alias mIRCd_command_map {
   ; /mIRCd_command_map <sockname> MAP
 
-  mIRCd.sraw $1 $mIRCd.reply(015,$mIRCd.info($1,nick),$hget($mIRCd.temp,SERVER_NAME),$hcount($mIRCd.users))
-  ; >-> NOTE: 016 = RPL_MOREMAP
+  mIRCd.sraw $1 $mIRCd.reply(015,$mIRCd.info($1,nick),$mIRCd(SERVER_NAME).temp,$hcount($mIRCd.users))
+  ; >-> NUMERIC 016 = RPL_MOREMAP
   mIRCd.sraw $1 $mIRCd.reply(017,$mIRCd.info($1,nick))
 }
 ; `-> re: LINKS/MAP, this is it for now!

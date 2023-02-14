@@ -25,7 +25,7 @@ on *:dialog:mIRCd:*:*:{
   }
   if ($devent == init) {
     if ($sock(mIRCd.*,0) > 0) { did -o $dname 3 1 &START (already running) }
-    if ($hget($mIRCd.temp,startTime) != $null) {
+    if ($mIRCd(startTime).temp != $null) {
       $+(.timer,$mIRCd.guiTimer) -o 0 1 mIRCd.updateUptime
     }
     else { did -o $dname 10 1 Uptime: N/A }
@@ -35,7 +35,7 @@ on *:dialog:mIRCd:*:*:{
     if ($did == 3) {
       mIRCd.start
       if ($sock(mIRCd.*,0) > 0) { did -o $dname 3 1 &START (running) }
-      if ($hget($mIRCd.temp,startTime) != $null) {
+      if ($mIRCd(startTime).temp != $null) {
         if ($timer($mIRCd.guiTimer) == $null) { $+(.timer,$mIRCd.guiTimer) -o 0 1 mIRCd.updateUptime }
       }
     }
@@ -57,6 +57,6 @@ alias mIRCd.gui {
 }
 alias -l mIRCd.guiName { return mIRCd }
 alias -l mIRCd.guiTimer { return mIRCd.guiUptime }
-alias -l mIRCd.updateUptime { did -o $mIRCd.guiName 10 1 Uptime: $duration($calc($ctime - $hget($mIRCd.temp,startTime)),3) }
+alias -l mIRCd.updateUptime { did -o $mIRCd.guiName 10 1 Uptime: $duration($calc($ctime - $mIRCd(startTime).temp),3) }
 
 ; EOF

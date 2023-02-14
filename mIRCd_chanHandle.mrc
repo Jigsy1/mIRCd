@@ -7,13 +7,16 @@ alias mIRCd_command_invite {
 
   if ($3 == $null) {
     ; `-> Return any outstanding invite(s).
-    var %this.sock = $1
-    if ($mIRCd.info($1,invites) != $null) {
-      tokenize 44 $v1
-      scon -r mIRCd.sraw %this.sock $!mIRCd.reply(346,$mIRCd.info(%this.sock,nick), $!mIRCd.info( $* ,name) )
-      ; `-> A quick and dirty loop.
+
+    if ($mIRCd.info($1,invites) == $null) {
+      mIRCd.sraw $1 $mIRCd.reply(347,$mIRCd.info($1,nick))
+      return
     }
-    mIRCd.sraw %this.sock $mIRCd.reply(347,$mIRCd.info($1,nick))
+    var %this.sock = $1
+    tokenize 44 $v1
+    scon -r mIRCd.sraw %this.sock $!mIRCd.reply(346,$mIRCd.info(%this.sock,nick), $!mIRCd.info( $* ,name) )
+    ; `-> A quick and dirty loop.
+    mIRCd.sraw %this.sock $mIRCd.reply(347,$mIRCd.info(%this.sock,nick))
     return
   }
   if ($4 == $null) {
@@ -345,7 +348,7 @@ alias mIRCd_command_names {
         ; `-> Ignore those still invisible.
       }
       :processNamesString
-      var %this.string = $+(%this.userState,$iif($mIRCd.info($1,UHNAMES) == 1,$mIRCd.fulladdr(%this.sock),$mIRCd.info($1,nick))) %this.string
+      var %this.string = $+(%this.userState,$iif($mIRCd.info($1,UHNAMES) == 1,$mIRCd.fulladdr(%this.sock),$mIRCd.info(%this.sock,nick))) %this.string
       if ($numtok(%this.string,32) == 8) {
         ; `-> I've opted for a hardcoded eight here. After eight users are in the string, send the line to the user.
         mIRCd.sraw $1 $mIRCd.reply($iif(%this.d == 1,355,353),$mIRCd.info($1,nick),%this.flag,%this.name,%this.string)
@@ -666,7 +669,7 @@ alias mIRCd.createChan {
   hadd -m $mIRCd.chans %this.id $1
   hadd -m $mIRCd.table(%this.id) name $1
   hadd -m $mIRCd.table(%this.id) createTime $ctime
-  hadd -m $mIRCd.table(%this.id) modes $hget($mIRCd.temp,DEFAULT_CHANMODES)
+  hadd -m $mIRCd.table(%this.id) modes $mIRCd(DEFAULT_CHANMODES).temp
   mIRCd.chanAddUser %this.id $2
 }
 alias mIRCd.delChanItem {

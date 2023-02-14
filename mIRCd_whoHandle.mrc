@@ -358,7 +358,7 @@ alias mIRCd.whoIP {
 alias mIRCd.whoString {
   ; $mIRCd.whoString(<string>,<sockname using /WHO>,<sockname being WHO'd>)
 
-  return $replace($1, <chan>, $mIRCd.lastJoined($2,$3), <user>, $iif($mIRCd.info($3,ident) != $null,$v1,$mIRCd.info($3,user)), <ip>, $mIRCd.whoIP($2,$3), <host>, $mIRCd.info($3,$iif($is_oper($2) == $true,trueHost,host)), <server>, $hget($mIRCd.temp,SERVER_NAME), <nick>, $mIRCd.info($3,nick), <flags>, $mIRCd.whoFlags($2,$3), <idle>, $iif($mIRCd.info($3,idleTime) != $null,$calc($ctime - $v1),$sock($3).to), <account>, 0, <hopcount>, 0, <:hopcount>, :0, <realName>, $mIRCd.info($3,realName), <:realName>, $+(:,$mIRCd.info($3,realName)))
+  return $replace($1, <chan>, $mIRCd.lastJoined($2,$3), <user>, $iif($mIRCd.info($3,ident) != $null,$v1,$mIRCd.info($3,user)), <ip>, $mIRCd.whoIP($2,$3), <host>, $mIRCd.info($3,$iif($is_oper($2) == $true,trueHost,host)), <server>, $mIRCd(SERVER_NAME).temp, <nick>, $mIRCd.info($3,nick), <flags>, $mIRCd.whoFlags($2,$3), <idle>, $iif($mIRCd.info($3,idleTime) != $null,$calc($ctime - $v1),$sock($3).to), <account>, 0, <hopcount>, 0, <:hopcount>, :0, <realName>, $mIRCd.info($3,realName), <:realName>, $+(:,$mIRCd.info($3,realName)))
 }
 
 ; EOF

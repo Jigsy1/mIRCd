@@ -94,7 +94,7 @@ alias mIRCd.parseMsg {
   var %this.loop = 0, %this.message = $4-
   while (%this.loop < $numtok(%this.targets,44)) {
     inc %this.loop 1
-    var %this.target = $gettok(%this.targets,%this.loop,44)
+    var %this.target = $gettok(%this.targets,%this.loop,44), %skip.error = 0
     if ($istok($gettok(%this.targets,$+($calc(%this.loop - 1),--),44),%this.target,44) == $true) { continue }
     ; `-> Send the message to the target once, and only once. Otherwise notice|privmsg #chan,#chan,#chan Hi! would annoyingly show "Hi!" in #chan three times.
     if ($is_valid(%this.target).chan == $true) {
@@ -112,25 +112,20 @@ alias mIRCd.parseMsg {
         mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (No external messages (+n))
         continue
       }
-      if (($is_op(%this.id,$1) == $true) || ($is_hop(%this.id,$1) == $true)) { goto parsePublic }
-      if (($is_modeSet(%this.id,c).chan == $true) && ($+(*,$chr(3),*) iswm %this.message)) {
-        ; `-> Just block the use of color. Bold, underline, etc. is okay.
-        mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (No colors allowed (+c))
+      if (($is_modeSet(%this.id,T).chan == $true) && ($numtok(%this.targets,44) > 1)) {
+        mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (No multi-target messages (+T))
         continue
       }
-      if (($is_modeSet(%this.id,C).chan == $true) && ($2 == PRIVMSG) && ($+($chr(1),*,$chr(1)) iswm %this.message) && ($+($chr(1),ACTION *,$chr(1)) !iswm %this.message)) {
+      if (($is_modeSet(%this.id,C).chan == $true) && ($2 == PRIVMSG) && ($+($chr(1),*,$chr(1)) iswm $decolonize(%this.message)) && ($+($chr(1),ACTION *,$chr(1)) !iswm $decolonize(%this.message))) {
         mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (/CTCP is not allowed (+C))
         continue
       }
+      if (($is_op(%this.id,$1) == $true) || ($is_hop(%this.id,$1) == $true)) { goto parsePublic }
       if (($is_modeSet(%this.id,N).chan == $true) && ($2 == NOTICE)) {
         mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (/NOTICE is not allowed (+N))
         continue
       }
       if ($is_voice(%this.id,$1) == $true) { goto parsePublic }
-      if (($is_modeSet(%this.id,T).chan == $true) && ($numtok(%this.targets,44) > 1)) {
-        mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (No multi-target messages (+T))
-        continue
-      }
       if (($is_banMatch(%this.id,$mIRCd.fulladdr($1)) == $true) || ($is_banMatch(%this.id,$mIRCd.ipaddr($1)) == $true) || ($is_banMatch(%this.id,$mIRCd.trueaddr($1)) == $true)) {
         mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (Cannot talk while banned (+b))
         continue
@@ -141,6 +136,11 @@ alias mIRCd.parseMsg {
       }
       if (($is_modeSet(%this.id,g).chan == $true) && ($calc($ctime - $gettok($hget($mIRCd.chanUsers(%this.id),$1),1,32)) <= $mIRCd.info(%this.id,gagTime))) {
         mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (Gagged: Please wait $calc($mIRCd.info(%this.id,gagTime) - $calc($ctime - $gettok($hget($mIRCd.chanUsers(%this.id),$1),1,32))) seconds (+g))
+        continue
+      }
+      if (($is_modeSet(%this.id,c).chan == $true) && ($+(*,$chr(3),*) iswm %this.message)) {
+        ; `-> Just block the use of color. Bold, underline, etc. is okay.
+        mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (No colors allowed (+c))
         continue
       }
       if ($is_modeSet(%this.id,S).chan == $true) { var %this.message = $strip(%this.message) }
@@ -155,6 +155,7 @@ alias mIRCd.parseMsg {
           mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) JOIN $mIRCd.info(%this.id,name)
           var %this.changeState = 1
         }
+        if ($is_modeSet($1,X).nick == $true) { goto skipTheseSettings }
         if ($is_modeSet(%this.sock,d).nick == $true) { continue }
         ; `-> +d(eaf) users live up to their name.
         if ($is_silenceMatch(%this.sock,$mIRCd.fulladdr($1)) == $true) { continue }
@@ -162,7 +163,9 @@ alias mIRCd.parseMsg {
         if ($is_modeSet(%this.id,B).chan == $true) {
           if ($iif($mIRCd.info(%this.sock,idleTime) != $null,$calc($ctime - $v1),$sock(%this.sock).to) >= $mIRCd.info(%this.id,bandwidth)) { continue }
         }
+        :skipTheseSettings
         mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) $upper($2) %this.name $colonize(%this.message)
+        ; `-> Note to self: Should certain user settings be taken into consideration here? Like /SILENCE?
       }
       if (%this.changeState == 1) {
         mIRCd.updateChanUser %this.id $1 0 2
@@ -185,7 +188,7 @@ alias mIRCd.parseMsg {
           continue
         }
         var %this.server = $right(%this.target,-1)
-        if (%this.server !iswm $hget($mIRCd.temp,SERVER_NAME)) {
+        if (%this.server !iswm $mIRCd.temp(SERVER_NAME).temp) {
           mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.target)
           continue
         }
@@ -197,10 +200,24 @@ alias mIRCd.parseMsg {
         }
         continue
       }
-      mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.target)
-      continue
+      if ($count(%this.target,@) > 0) {
+        var %this.server = $gettok(%this.target,2,64)
+        if (%this.server != $mIRCd(SERVER_NAME).temp) {
+          mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.target)
+          continue
+        }
+        var %this.serverTarget = $getSockname($gettok(%this.target,1,64))
+        if (%this.serverTarget != $null) {
+          var %this.target = $gettok(%this.target,1,64)
+          var %skip.error = 1
+        }
+      }
+      if (%skip.error != 1) {
+        mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),%this.target)
+        continue
+      }
     }
-    var %this.sock = $getSockname(%this.target), %this.nick = $mIRCd.info(%this.sock,nick)
+    var %this.sock = $getSockname($gettok(%this.target,1,64)), %this.nick = $mIRCd.info(%this.sock,nick)
     if ($1 == %this.sock) { goto parsePrivate }
     if (($is_modeSet(%this.sock,c).nick == $true) && ($+(*,$chr(3),*) iswm %this.message)) {
       if ($is_oper($1) == $false) {
@@ -226,12 +243,18 @@ alias mIRCd.parseMsg {
         continue
       }
     }
-    if (($is_modeSet(%this.sock,C).nick == $true) && ($+($chr(1),*,$chr(1)) iswm %this.message) && ($+($chr(1),ACTION *,$chr(1)) !iswm %this.message)) {
-      mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user denies /CTCP requests (+C))
-      continue
+    if (($is_modeSet(%this.sock,C).nick == $true) && ($+($chr(1),*,$chr(1)) iswm $decolonize(%this.message)) && ($+($chr(1),ACTION *,$chr(1)) !iswm $decolonize(%this.message))) {
+      if ($is_oper($1) == $false) {
+        mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user denies /CTCP requests (+C))
+        continue
+      }
     }
-    if ($is_modeSet(%this.sock,S).nick == $true) { var %this.message = $strip(%this.message) }
-    if ($is_silenceMatch(%this.sock,$mIRCd.fulladdr($1)) == $true) { continue }
+    if ($is_modeSet(%this.sock,S).nick == $true) {
+      if ($is_modeSet($1,X).nick == $false) { var %this.message = $strip(%this.message) }
+    }
+    if ($is_silenceMatch(%this.sock,$mIRCd.fulladdr($1)) == $true) {
+      if ($is_modeSet($1,X).nick == $false) { continue }
+    }
     :parsePrivate
     if ($mIRCd.info(%this.sock,away) != $null) { mIRCd.sraw $1 $mIRCd.reply(301,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick),$mIRCd.info(%this.sock,away)) }
     mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) $upper($2) %this.nick $colonize(%this.message)
@@ -276,11 +299,13 @@ alias mIRCd.serverWallops {
   ; /mIRCd.serverWallops <text>
 
   if ($1- = $null) { return }
+  if ($hcount($mIRCd.users) == 0) { return }
   var %this.loop = 0
   while (%this.loop < $hcount($mIRCd.users)) {
     inc %this.loop 1
     var %this.sock = $hget($mIRCd.users,%this.loop).item
-    if ($is_modeSet(%this.sock,g).nick == $true) { mIRCd.sraw %this.sock WALLOPS $+(:,$1-) }
+    if ($is_modeSet(%this.sock,g).nick == $false) { continue }
+    mIRCd.sraw %this.sock WALLOPS $+(:,$1-)
   }
 }
 ; `-> This is basically a desynch wallops (+g).
