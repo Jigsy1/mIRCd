@@ -1,4 +1,4 @@
-mIRCd[0.09hf9(Rev.2)][2021-2023] - ??/02/2023
+mIRCd[0.09hf9(Rev.2)][2021-2023] - 14/02/2023
 --------------------------------------------------
 1.  Sending a /MSG or /NOTICE to nick@server should now work the way it should on an actual IRCd.
 2.  Fixed a bug where /CTCP wasn't being blocked by +C, and /action would have been blocked by +C if the former had actually worked.
