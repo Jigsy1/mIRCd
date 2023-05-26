@@ -218,6 +218,7 @@ alias mIRCd_command_stats {
     while (%this.loop < $hget($mIRCd.commands(1),0).data) {
       inc %this.loop 1
       var %this.command = $hget($mIRCd.commands(1),%this.loop).data, %this.data = $iif($hget($mIRCd.mStats,%this.command) != $null,$v1,0)
+      if (%this.data == 0) { continue }
       mIRCd.sraw $1 $mIRCd.reply(212,$mIRCd.info($1,nick),%this.command,%this.data)
     }
     mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)

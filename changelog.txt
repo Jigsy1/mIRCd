@@ -1,3 +1,9 @@
+mIRCd[0.09hf10(Rev.2)][2021-2023] - 26/05/2023
+--------------------------------------------------
+1. Forgot a /return in $mIRCd.makeDefaultModes in mIRCd_modeHandle.mrc.
+2. Commands in /STATS m will not be displayed if the times used is zero. (Like ircu IRCds.)
+
+
 mIRCd[0.09hf9(Rev.2)][2021-2023] - 14/02/2023
 --------------------------------------------------
 1.  Sending a /MSG or /NOTICE to nick@server should now work the way it should on an actual IRCd.
@@ -9,7 +15,7 @@ mIRCd[0.09hf9(Rev.2)][2021-2023] - 14/02/2023
 6.  Unloading mIRCd should now correctly deal with terminating the IRCd and cleanup operations.
 7.  Fixed a reply bug in /INVITE.
 8.  Fixed a bug in /NAMES.
-9.  NAMESX and UHNAMES are now set for the user upon connection.
+9.  NAMESX and UHNAMES are now set for the user upon connection. (Defaults to 1.)
 10. Joining the channel automatically upon connection is now done after modes being parsed due to a bug involving +x, not
     to mention now has a slightly longer delay.
 11. A few other fixes and some optimization.
@@ -79,8 +85,8 @@ mIRCd[0.09hf7(Rev.2)][2021-2023] - 02/02/2023
 17. Can now specify if you want /WHOIS paranoia enabled (+W) by adding WHOIS_PARANOIA=TRUE or WHOIS_PARANOIA=FALSE to
     [Features] in mIRCd.ini. Defaults to FALSE.
 18. Ping timeout now displays the amount of second(s).
-19. Can now MKPASSWD via the Menubar and /mIRCd.gui. This will output into mkpasswd.txt rather than echo in the window.
-20. WHO_THROTTLE is now under [Features], not [Mechanics]. (Though this won't have any difference either way.)
+19. Can now MKPASSWD via the Menubar and /mIRCd.gui. This will still output into mkpasswd.txt rather than echo in the window.
+20. WHO_THROTTLE is now under [Features], not [Mechanics]. (Though this won't make any difference either way.)
 21. Other minor changes. (mIRCd, mIRCd.ini, etc.)
 
 
@@ -140,7 +146,7 @@ mIRCd[0.09hf5(Rev.2)][2021-2023] - 27/01/2023
     * Opers can now /INVITE, /KICK, change /MODEs and the /TOPIC when not on the channel.
     * Since I apparently forgot to code it in two years ago, opers can now walk past +i, +k, etc.
 
-4.  Oper override now trumps +K and +Y. (Though since they could just past the modes, why would they need to use /KNOCK?)
+4.  Oper override now trumps +K and +Y. (Though since they could just walk past the modes, why would they need to use /KNOCK?)
 5.  Fixed a bug in KNOCK where I specified %this.nick instead of %this.knock, meaning the channel name didn't show.
 6.  Users should now at least see the server notice when DIE and RESTART are issued.
 7.  WHOWAS cache cleaning will start on the next hour from when you started the IRCd.

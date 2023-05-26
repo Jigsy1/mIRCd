@@ -960,7 +960,7 @@ alias mIRCd.makeDefaultModes {
     ; `-> Default back to +nt if there isn't anything.
   }
   ; ,-> User.
-  if ($1 == $null) { + }
+  if ($1 == $null) { return + }
   var %this.loop = 0, %these.polars = cS, %this.polar = c S,S c, %this.forbidden = hkoX
   ; ¦-> I don't mind the other modes being allowed (+g/+W) but I will _NOT_ allow +h, +k, +o or +X.
   ; `-> +h requires a S:line for a host (E.g. Jigsy!Jigsy@Towa.Herschel.is.mai.wai.fu), but +k, +o and +X are just asking for trouble.
