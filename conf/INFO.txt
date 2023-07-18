@@ -38,6 +38,10 @@ For helping test the IRCd, which led to me locating some bugs.
 --------------------
 For helping test the IRCd, which led to me locating some bugs.
 
+(La5eR):
+----------
+For helping test the IRCd, which led to me locating some bugs.
+
 The following people on the mIRC forums who helped in other way(s):
 ----------------------------------------------------------------------
 Brax, maroon, qwerty, Raccoon, Saturn
