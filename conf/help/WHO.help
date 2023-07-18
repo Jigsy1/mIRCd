@@ -15,6 +15,7 @@ Matchflags:
 ---------------
 h/H - Match terms to hostname. (In the case of IRC operators, their true host.)
 i/I - Match terms to ip. (Will only work for IRC operators if the user is +x.)
+j/J - Match terms to the duration user has been connected to the IRCd for. (Own idea, not standard.)
 n/N - Match terms to nick.
 o/O - Match opers.
 r/R - Match terms to realname. (Will not work if their nick has spaces.)
@@ -47,6 +48,8 @@ Example(s):
 /<thisCommand> * i :255.255.255.255
 /<thisCommand> #<thisNetwork> r :/MSG ChanServ SHOWCOMMANDS
 /<thisCommand> Jigsy n%cnr
+/<thisCommand> >3600 j
+/<thisCommand> * j%n :<=180
 
 Further information about WHO can be viewed at http://xise.nl/mirc/who.html
 

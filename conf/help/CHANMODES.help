@@ -11,8 +11,8 @@ u - Part/quit messages are hidden from users in the channel.
 y - Anybody can use the /INVITE command.
 C - /CTCP is not allowed.
 D - Auditorium mode. Users will be hidden until they either change the topic, get kicked, receive @/%/+ or talk.
-H - Hide channel mode(s) from appearing in list. (Excluding opers.)
-N - /NOTICE to the channel are not allowed.
+H - Hide channel mode(s) from appearing in /LIST or via /MODE #chan if not on the channel. (Excluding opers.)
+N - /NOTICEs to the channel are not allowed.
 K - /KNOCK is not allowed.
 S - Strips any incoming messages of control codes such as bold, colors, etc.
 T - Multi-target (/PRIVMSG #chan1,#chan2,... etc.) messages are not allowed.
@@ -36,14 +36,14 @@ O - Only IRC operators can join.
 P - Persistent. The channel will not be deleted after the last user has left.
 
 Can not be (un)set via conventional means:
-----------------------------------------
+---------------------------------------------
 d - Auditorium mode. Will be set if you try to remove +D from a channel still containing hidden users.
-    Will be unset either by the server when the last hidden user has been unhidden, or if you +D again.
+    Will be unset either by the server when the last hidden user has been unhidden, or if someone does +D.
 
 Footnotes:
 ----------
 1. When unsetting a key (/MODE #chan -k), you must supply the key in order to unset it.
-2. However, you do not need to do this when unsetting a gag time, join throttle or limit.
+   However, you do not need to do this when unsetting a gag time, join throttle or limit.
 
 *The existence of the channel can be revealed by certain commands - E.g. trying to /KICK when not on the channel.
 However, if you set DENY_SECRET=TRUE in the config, it will vehemently deny that the channel exists.
