@@ -134,9 +134,12 @@ alias mIRCd.parseMsg {
         mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (Channel is moderated (+m))
         continue
       }
-      if (($is_modeSet(%this.id,g).chan == $true) && ($calc($ctime - $gettok($hget($mIRCd.chanUsers(%this.id),$1),1,32)) <= $mIRCd.info(%this.id,gagTime))) {
-        mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (Gagged: Please wait $calc($mIRCd.info(%this.id,gagTime) - $calc($ctime - $gettok($hget($mIRCd.chanUsers(%this.id),$1),1,32))) seconds (+g))
-        continue
+      if ($is_modeSet(%this.id,g).chan == $true) {
+        var %this.timestamp = $iif($gettok($hget($mIRCd.chanUsers(%this.id),$1),1,32) != $null,$v1,$ctime)
+        if ($calc($ctime - %this.timestamp) <= $mIRCd.info(%this.id,gagTime)) {
+          mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (Gagged: Please wait $calc($mIRCd.info(%this.id,gagTime) - $calc($ctime - %this.timestamp)) seconds (+g))
+          continue
+        }
       }
       if (($is_modeSet(%this.id,c).chan == $true) && ($+(*,$chr(3),*) iswm %this.message)) {
         ; `-> Just block the use of color. Bold, underline, etc. is okay.
@@ -219,6 +222,7 @@ alias mIRCd.parseMsg {
     }
     var %this.sock = $getSockname($gettok(%this.target,1,64)), %this.nick = $mIRCd.info(%this.sock,nick)
     if ($1 == %this.sock) { goto parsePrivate }
+    ; ,-> Note to self: Couldn't I just do like above and check if oper then use a goto?
     if (($is_modeSet(%this.sock,c).nick == $true) && ($+(*,$chr(3),*) iswm %this.message)) {
       if ($is_oper($1) == $false) {
         mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user blocks colors (+c))

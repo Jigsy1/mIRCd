@@ -31,7 +31,7 @@ alias mIRCd_command_who {
         var %this.include = $+(%this.include,%this.char)
         continue
       }
-      if ($pos(hinoru,%this.char,1) == $null) { continue }
+      if ($pos(hijnoru,%this.char,1) == $null) { continue }
       if ($pos(%this.field,%this.char,1) != $null) { continue }
       var %this.field = $+(%this.field,%this.char)
     }
@@ -71,7 +71,7 @@ alias mIRCd_command_who {
       if ($istok(chan field,%this.target,32) == $true) {
         var %this.uloop = 0
         while (%this.uloop < $hcount($mIRCd.users)) {
-          var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
+          var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.onlineMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
           if (%this.saw != $null) { var %this.sockSeen = %this.sockSeen %this.saw, %this.saw = $null }
           inc %this.uloop 1
           var %this.usock = $hget($mIRCd.users,%this.uloop).item
@@ -88,7 +88,7 @@ alias mIRCd_command_who {
           }
           if ($is_modeSet(%this.usock,i).nick == $true) {
             if (%this.item != $mIRCd.info(%this.usock,nick)) {
-              if (($is_mutual($1,%this.usock) == $false) && (%this.oper != 1)) {
+              if (($1 != %this.usock) && ($is_mutual($1,%this.usock) == $false) && (%this.oper != 1)) {
                 if ($istok(%this.invisible,%this.usock,32) == $false) { var %this.invisible = %this.invisible %this.usock }
                 continue
               }
@@ -114,6 +114,13 @@ alias mIRCd_command_who {
                 if (%this.item == $sock(%this.usock).ip) { var %this.ipMatch = 1 }
               }
             }
+            ; *** OWN IDEA ***
+            if (j isin %this.field) {
+              if ($regex(%this.item,(=|>|<|>=|<|<=|!=)\d+) != 1) { continue }
+              var %this.cmp = $_stripNumbers(%this.item), %this.dur = $_stripMatch(%this.item)
+              if ($sock(%this.usock).to %this.cmp %this.dur) { var %this.onlineMatch = 1 }
+            }
+            ; *** END ***
             if (n isin %this.field) {
               if (%this.item == $mIRCd.info(%this.usock,nick)) { var %this.nickMatch = 1 }
             }
@@ -124,7 +131,7 @@ alias mIRCd_command_who {
             if (u isin %this.field) {
               if ((%this.item == $mIRCd.info(%this.usock,ident)) || (%this.item == $mIRCd.info(%this.usock,user))) { var %this.userMatch = 1 }
             }
-            if ((%this.operMatch != 1) && (%this.trueHostMatch != 1) && (%this.hostMatch != 1) && (%this.ipMatch != 1) && (%this.nickMatch != 1) && (%this.nameMatch != 1) && (%this.userMatch != 1)) { continue }
+            if ((%this.operMatch != 1) && (%this.trueHostMatch != 1) && (%this.hostMatch != 1) && (%this.ipMatch != 1) && (%this.onlineMatch != 1) && (%this.nickMatch != 1) && (%this.nameMatch != 1) && (%this.userMatch != 1)) { continue }
           }
           var %this.saw = %this.usock, %this.reply = $mIRCd.whoString(%this.string,$1,%this.usock)
           mIRCd.sraw $1 $mIRCd.reply(%this.numeric,$mIRCd.info($1,nick),%this.reply)
@@ -147,14 +154,14 @@ alias mIRCd_command_who {
     ; ,-> Someone specified a :search. (So the comma separated field gets ignored.)
     var %this.uloop = 0
     while (%this.uloop < $hcount($mIRCd.users)) {
-      var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
+      var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.onlineMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
       if (%this.saw != $null) { var %this.sockSeen = %this.sockSeen %this.saw, %this.saw = $null }
       inc %this.uloop 1
       var %this.usock = $hget($mIRCd.users,%this.uloop).item
       if ($istok(%this.sockSeen,%this.usock,32) == $true) { continue }
       if ($mIRCd.chanSeen(%this.chanSeen,%this.usock) > 0) { continue }
       if ($is_modeSet(%this.usock,i).nick == $true) {
-        if (($is_mutual($1,%this.usock) == $false) && (%this.oper != 1)) { continue }
+        if (($1 != %this.usock) && ($is_mutual($1,%this.usock) == $false) && (%this.oper != 1)) { continue }
       }
       if (%this.field == $null) { continue }
       ; `-> Can't do anything without fields.
@@ -180,6 +187,13 @@ alias mIRCd_command_who {
           if ((%this.search == %this.ip) || (%this.search iswm %this.ip)) { var %this.ipMatch = 1 }
         }
       }
+      ; *** OWN IDEA ***
+      if (j isin %this.field) {
+        if ($regex(%this.search,(=|>|<|>=|<|<=|!=)\d+) != 1) { continue }
+        var %this.cmp = $_stripNumbers(%this.search), %this.dur = $_stripMatch(%this.search)
+        if ($sock(%this.usock).to %this.cmp %this.dur) { var %this.onlineMatch = 1 }
+      }
+      ; *** END ***
       if (n isin %this.field) {
         var %this.handle = $mIRCd.info(%this.usock,nick)
         ; `-> Just incase I've used %this.nick already...
@@ -193,7 +207,7 @@ alias mIRCd_command_who {
         var %this.ident = $mIRCd.info(%this.usock,ident), %this.user = $mIRCd.info(%this.user)
         if ((%this.search == %this.ident) || (%this.search iswm %this.ident) || (%this.search == %this.user) || (%this.search iswm %this.user)) { var %this.userMatch = 1 }
       }
-      if ((%this.operMatch != 1) && (%this.trueHostMatch != 1) && (%this.hostMatch != 1) && (%this.ipMatch != 1) && (%this.nickMatch != 1) && (%this.nameMatch != 1) && (%this.userMatch != 1)) { continue }
+      if ((%this.operMatch != 1) && (%this.trueHostMatch != 1) && (%this.hostMatch != 1) && (%this.ipMatch != 1) && (%this.onlineMatch != 1) && (%this.nickMatch != 1) && (%this.nameMatch != 1) && (%this.userMatch != 1)) { continue }
       var %this.saw = %this.usock, %this.reply = $mIRCd.whoString(%this.string,$1,%this.usock)
       mIRCd.sraw $1 $mIRCd.reply(%this.numeric,$mIRCd.info($1,nick),%this.reply)
       if (%this.flag != $null) { var %this.flag = 1 }
@@ -208,19 +222,19 @@ alias mIRCd_command_who {
       while (%this.loop < $numtok(%this.wild,32)) {
         if (%this.breakFlag == 1) { break }
         ; `-> If someone does something like /WHO *Serv,Jigs* then if *Serv returns anything, we list those entries and end it. Jigs* etc. get skipped.
-        var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
+        var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.onlineMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
         inc %this.loop 1
         var %this.item = $iif($gettok(%this.wild,%this.loop,32) != 0,$v1,*)
         var %this.uloop = 0
         while (%this.uloop < $hcount($mIRCd.users)) {
-          var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
+          var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.onlineMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
           if (%this.saw != $null) { var %this.sockSeen = %this.sockSeen %this.saw, %this.saw = $null }
           inc %this.uloop 1
           var %this.usock = $hget($mIRCd.users,%this.uloop).item
           if ($istok(%this.sockSeen,%this.usock,32) == $true) { continue }
           if ($mIRCd.chanSeen(%this.chanSeen,%this.usock) > 0) { continue }
           if ($is_modeSet(%this.usock,i).nick == $true) {
-            if (($is_mutual($1,%this.usock) == $false) && (%this.oper != 1)) { continue }
+            if (($1 != %this.usock) && ($is_mutual($1,%this.usock) == $false) && (%this.oper != 1)) { continue }
           }
           var %this.search = $decolonize($5-)
           if (o isin %this.field) {
@@ -271,6 +285,13 @@ alias mIRCd_command_who {
               }
             }
           }
+          ; *** OWN IDEA ***
+          if (j isin %this.field) {
+            if ($regex(%this.search,(=|>|<|>=|<|<=|!=)\d+) != 1) { continue }
+            var %this.cmp = $_stripNumbers(%this.search), %this.dur = $_stripMatch(%this.search)
+            if ($sock(%this.usock).to %this.cmp %this.dur) { var %this.onlineMatch = 1 }
+          }
+          ; *** END ***
           if (n isin %this.field) {
             var %this.handle = $mIRCd.info(%this.usock,nick)
             if (%this.item iswm %this.handle) {
@@ -301,7 +322,7 @@ alias mIRCd_command_who {
               }
             }
           }
-          if ((%this.operMatch != 1) && (%this.trueHostMatch != 1) && (%this.hostMatch != 1) && (%this.ipMatch != 1) && (%this.nickMatch != 1) && (%this.nameMatch != 1) && (%this.userMatch != 1)) { continue }
+          if ((%this.operMatch != 1) && (%this.trueHostMatch != 1) && (%this.hostMatch != 1) && (%this.ipMatch != 1) && (%this.onlineMatch != 1) && (%this.nickMatch != 1) && (%this.nameMatch != 1) && (%this.userMatch != 1)) { continue }
           var %this.saw = %this.usock, %this.reply = $mIRCd.whoString(%this.string,$1,%this.usock)
           mIRCd.sraw $1 $mIRCd.reply(%this.numeric,$mIRCd.info($1,nick),%this.reply)
           if (%this.breakFlag != 1) { var %this.breakFlag = 1, %this.mwho = $gettok(%this.search,1,32) }

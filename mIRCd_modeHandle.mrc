@@ -512,6 +512,11 @@ alias -l mIRCd.parseMode {
     var %this.modeString = $mIRCd.info(%this.id,modes), %this.modeItem = B bandwidth,g gagTime,j joinThrottle,l limit,k key
     var %this.key = $iif($is_oper($1) == $false && $is_on(%this.id,$1) == $false,*,$mIRCd.info(%this.id,key))
     var %this.modeArgs = $regsubex(%this.modeString,/(.)/g,$iif($poscs(Bgjlk,\t) != $null,$+($iif(\t === k,%this.key,$mIRCd.info(%this.id,$gettok($matchtokcs(%this.modeItem,$+(\t,$chr(32)),1,44),2,32))),$chr(32))))
+    if ((H isincs $mIRCd.info(%this.id,modes)) && ($is_on(%this.id,$1) == $false) && ($is_oper($1) == $false)) {
+      var %this.modeString = +, %this.modeArgs = $null
+      ; ¦-> Unsure if this should return +H since it's specified as hide modes or to also keep +H hidden as well and just return +.
+      ; `-> But since +H doesn't appear in /LIST either, maybe + is the better CoA.
+    }
     mIRCd.sraw $1 $mIRCd.reply(324,$mIRCd.info($1,nick),%this.name,%this.modeString) $iif(%this.modeArgs != $null,$v1)
     mIRCd.sraw $1 $mIRCd.reply(329,$mIRCd.info($1,nick),%this.name,$mIRCd.info(%this.id,createTime))
     return

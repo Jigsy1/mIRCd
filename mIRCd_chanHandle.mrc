@@ -7,7 +7,6 @@ alias mIRCd_command_invite {
 
   if ($3 == $null) {
     ; `-> Return any outstanding invite(s).
-
     if ($mIRCd.info($1,invites) == $null) {
       mIRCd.sraw $1 $mIRCd.reply(347,$mIRCd.info($1,nick))
       return
@@ -618,7 +617,11 @@ alias mIRCd.chanAddUser {
   var %this.users = $hcount($mIRCd.chanUsers(%this.id)), %this.opFlag = $iif(%this.users > 0,0,1)
   if (($mIRCd(OPLESS_CHANS) isnum 1-2) && (%this.opFlag == 1)) {
     var %this.opFlag = 0
-    if ($is_oper($2) == $true) { var %this.opFlag = 1 }
+    if (($mIRCd(OPLESS_CHANS) == 2) && ($is_oper($2) == $true)) { var %this.opFlag = 1 }
+  }
+  if ((P isincs $mIRCd.info(%this.id,modes)) && ($mIRCd(NOOP_PERSIST) isnum 1-2)) {
+    var %this.opFlag = 0
+    if (($mIRCd(NOOP_PERSIST) == 2) && ($is_oper($2) == $true)) { var %this.opFlag = 1 }
   }
   hadd -m $mIRCd.chanUsers(%this.id) $2 $ctime $iif(%this.users > 0 && $is_modeSet(%this.id,D).chan == $true,1,0) %this.opFlag 0 0
   ; `-> Explaination of everything here-^: <time joined> <hidden via +D> <op> <hop> <voice>

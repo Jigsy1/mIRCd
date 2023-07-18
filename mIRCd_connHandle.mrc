@@ -259,7 +259,7 @@ alias mIRCd.destroyUser {
 alias mIRCd.doCommand {
   ; /mIRCd.doCommand <sockname> <args>
 
-  hinc -m $mIRCd.mStats $2 1
+  hadd -m $mIRCd.mStats $2 $calc($hget($mIRCd.mStats,$2) + 1) $len($2-)
   [ [ $+(mIRCd_command_,$2) ] ] $1-
 }
 alias mIRCd.dnsUser {

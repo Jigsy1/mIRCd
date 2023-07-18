@@ -1,3 +1,32 @@
+mIRCd[0.09hf11(Rev.2)][2021-2023] - 19/07/2023
+--------------------------------------------------
+1. /STATS m now counts the data length received.
+2. Fixed a bug with +g where users could bypass the gag if they weren't on the channel and +n wasn't set.
+3. Fixed a bug where OPLESS_CHANS=1 would still op opers even though it wasn't supposed to.
+4. Can now prevent users from having ops in persistant channels if they join and there are no other users by adding
+   NOOP_PERSIST=1 or NOOP_PERSIST=2 to [Mechanics] in mIRCd.ini. Meaning: 0 = Disabled, 1 = Everybody, 2 = Non-opers.
+
+   This can work in conjunction with OPLESS_CHANS.
+5. Fixed a bug in /WHO where a user wouldn't appear if they themselves are +i under certain conditions.
+6. Given the recent SUPERBOWL related spam and based on a discussion with an oper on another ircu based IRC network (Nefarious),
+   we were quite surprised to learn that there isn't a way to use /WHO to return users who've been connected to the IRCd
+   for a certain duration of time, so I decided to add this in just for test purposes.
+
+   Since /WHO is a powerful tool, and it would be useful to deal with annoying spambots, hopefully it'll become part of WHOX
+   "standard" one day.
+
+   Using the j (joined) flag, you can return users - via !=, <, <=, =, >=, > - who've been connected for N seconds. E.g.
+
+   /WHO >3600 j
+   /WHO * j%n :<=60
+
+   I've indicated this code with: *** OWN IDEA *** ... *** END ***
+7. I've decided to classify this as a bug. If a channel is +H, the modes don't appear in /LIST... however, someone could
+   still get the modes by doing /MODE #chan. So now the modes aren't returned if the user isn't on the channel and does
+   /MODE #chan. (Excluding opers.)
+8. /LIST now works the way it should on other IRCds. (E.g. /LIST >0,C<5,T>0,!*exclude*, etc.)
+
+
 mIRCd[0.09hf10(Rev.2)][2021-2023] - 26/05/2023
 --------------------------------------------------
 1. Forgot a /return in $mIRCd.makeDefaultModes in mIRCd_modeHandle.mrc.

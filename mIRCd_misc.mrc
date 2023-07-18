@@ -62,11 +62,11 @@ alias mIRCd_command_ison {
   mIRCd.sraw $1 $mIRCd.reply(303,$mIRCd.info($1,nick),%this.string)
 }
 alias mIRCd_command_list {
-  ; /mIRCd_command_list <sockname> LIST [STOP]
+  ; /mIRCd_command_list <sockname> LIST [term[,term,term,...]|STOP]
 
   if ($mIRCd(CONNECTED_LIST_THROTTLE) isnum 1-) {
     if ($sock($1).to < $mIRCd(CONNECTED_LIST_THROTTLE)) {
-      mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $+(:,$upper($2)) cannot be used for $v2 second(s) upon connecting to the server.
+      mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $+(:/,$upper($2)) cannot be used for $v2 second(s) upon connecting to the server.
       return
     }
   }
@@ -84,11 +84,67 @@ alias mIRCd_command_list {
     mIRCd.sraw $1 $mIRCd.reply(321,$mIRCd.info($1,nick))
     var %this.loop = 0
     while (%this.loop < $hcount($mIRCd.chans)) {
-      var %this.onChan = 0, %this.modes = $null, %this.modeArgs = $null, %this.string = $null
+      var %this.skipList = 0, %this.onChan = 0, %this.modes = $null, %this.modeArgs = $null, %this.string = $null
       inc %this.loop 1
       if ($mIRCd.info($1,listing) == $null) { break }
       ; `-> Backup. If listing was removed via STOP, stop listing.
       var %this.id = $hget($mIRCd.chans,%this.loop).item
+      if (($3 != $null) && ($3 != STOP)) {
+        var %this.searchLoop = 0
+        while (%this.searchLoop < $numtok($3,44)) {
+          inc %this.searchLoop 1
+          var %this.term = $gettok($3,%this.searchLoop,44)
+          if ($regex(%this.term,^(=|>|<|>=|<|<=|!=)\d+) == 1) {
+            ; `-> Users.
+            var %this.cmp = $_stripNumbers(%this.term), %this.match = $_stripMatch(%this.term)
+            var %this.result = $iif($hcount($mIRCd.chanUsers(%this.id)) %this.cmp %this.match,1,0)
+            if (%this.result == 0) {
+              var %this.skipList = 1
+              break
+            }
+          }
+          if ($regex(%this.term,^C(=|>|<|>=|<|<=|!=)\d+) == 1) {
+            ; `-> Creation.
+            var %this.cmp = $remove($_stripNumbers(%this.term), C), %this.match = $remove($_stripMatch(%this.term), C)
+            var %this.result = $iif($calc($ctime - $mIRCd.info(%this.id,createTime)) %this.cmp $calc(%this.match * 60),1,0)
+            if (%this.result == 0) {
+              var %this.skipList = 1
+              break
+            }
+          }
+          ; if ($regex(%this.term,^M(=|>|<|>=|<|<=|!=)\d+) == 1) {
+          ;   `-> Activity.
+          ;}
+          if ($regex(%this.term,^T(=|>|<|>=|<|<=|!=)\d+) == 1) {
+            ; `-> Topic.
+            var %this.cmp = $remove($_stripNumbers(%this.term), T), %this.match = $remove($_stripMatch(%this.term), T)
+            if ($mIRCd.info(%this.id,topicTime) == $null) {
+              var %this.skipList = 1
+              break
+            }
+            var %this.result = $iif($calc($ctime - $mIRCd.info(%this.id,topicTime)) %this.cmp $calc(%this.match * 60),1,0)
+            if (%this.result == 0) {
+              var %this.skipList = 1
+              break
+            }
+          }
+          if (($left(%this.term,1) == !) && ($left(%this.term,2) != !=)) {
+            ; `-> !not matching pattern. E.g. Filter out everything containing !*twitter*
+            if (($mIRCd.info(%this.id,name) == $right(%this.term,-1)) || ($right(%this.term,-1) iswm $mIRCd.info(%this.id,name))) {
+              var %this.skipList = 1
+              break
+            }
+          }
+          if ($istok(! < = > C T,$left(%this.term,1),32) == $false) {
+            ; ,-> Matching pattern.
+            if (($mIRCd.info(%this.id,name) != %this.term) && (%this.term !iswm $mIRCd.info(%this.id,name))) {
+              var %this.skipList = 1
+              break
+            }
+          }
+        }
+        if (%this.skipList == 1) { continue }
+      }
       if (($is_oper($1) == $true) || ($is_on(%this.id,$1) == $true)) { var %this.onChan = 1 }
       if (($is_private(%this.id) == $true) || ($is_secret(%this.id) == $true)) {
         if (%this.OnChan != 1) { continue }
@@ -218,7 +274,7 @@ alias mIRCd_command_stats {
     while (%this.loop < $hget($mIRCd.commands(1),0).data) {
       inc %this.loop 1
       var %this.command = $hget($mIRCd.commands(1),%this.loop).data, %this.data = $iif($hget($mIRCd.mStats,%this.command) != $null,$v1,0)
-      if (%this.data == 0) { continue }
+      if ($gettok(%this.data,1,32) == 0) { continue }
       mIRCd.sraw $1 $mIRCd.reply(212,$mIRCd.info($1,nick),%this.command,%this.data)
     }
     mIRCd.sraw $1 $mIRCd.reply(219,$mIRCd.info($1,nick),$3)

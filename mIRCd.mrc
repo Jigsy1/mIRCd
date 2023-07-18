@@ -1,4 +1,4 @@
-; mIRCd v0.09hf10 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+; mIRCd v0.09hf11 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm (Jurrasic Park)
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
@@ -66,6 +66,8 @@ alias mIRCd.whoWas { return $+(mIRCd[WhoWas],$iif($1 != $null,$bracket($v1))) }
 
 alias _debugline { echo -aet [DEBUG]: $1- }
 ; `-> Useful for hunting down annoying bugs.
+alias _stripMatch { return $remove($1-, !, <, =, >) }
+alias _stripNumbers { return $remove($1-, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9) }
 alias bracket { return [[ $+ $$1- $+ ]] }
 alias bool_fmt { return $iif($istok(1 ok okay on t true y yes,$1,32) == $true,$true,$false) }
 alias colonize { return $iif($count($1-,:) == 0,$+(:,$gettok($1-,-1,32)),$gettok($1-,$+($findtok($1-,$matchtok($1-,:,1,32),1,32),-),32)) }
@@ -395,10 +397,10 @@ alias mIRCd.unloadScripts {
   ; `-> A quick and dirty loop.
   if ($script($script) != $null) { .unload -rs $qt($script) }
 }
-alias mIRCd.version { return mIRCd[0.09hf10(Rev.2)][2021-2023] }
+alias mIRCd.version { return mIRCd[0.09hf11(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 alias -l nextHour { return $+($asctime($calc($ctime + 3600),HH),:00) }
 alias -l requiredVersion { return 7.66 }
-; `-> Note: Although I've since modified this from a version of mIRC higher than 7.66 (currently 7.72), this should still work on 7.66.
+; `-> Note: Although I've since modified this from a version of mIRC higher than 7.66 (currently 7.73), this should still work on 7.66.
 
 ; EOF
