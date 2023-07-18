@@ -1,6 +1,6 @@
 ; P10 conversion.
 ;
-; Thanks to Dave (Codex` / Hero_Numer_Zero) for this code.
+; Thanks to Dave (Codex` / Hero_Number_Zero) for this code.
 
 alias base64toint {
   ; $base64toint(<N>)
