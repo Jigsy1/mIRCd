@@ -2,20 +2,23 @@
 
 Will list all channels on the network assuming they're not set to +p(rivate) or +s(ecret).
 
-You can also search based on a specific comma separated pattern and with specific flags. (!=, <, <=, =, >=, >)
+You can also search based on a specific comma separated term and with specific flags. (!=, <, <=, =, >=, >)
 
 For example:
 
-1. >0 would list channels with more than zero users
+1. >10 would list channels with more than ten users
 2. C>5 would list channels made more than five minutes ago
-3. T>0 would list channels with a topic made more than zero minutes ago
-4. *twitter* would list channels containing twitter in the channel name
-5. !*twitter* would list channels filtering out those containing twitter in the channel name
+3. M>0 would list channels that were active more than zero minutes ago
+4. T>0 would list channels with a topic made more than zero minutes ago
+5. *twitter* would list channels containing twitter in the channel name
+6. !*twitter* would list channels filtering out those containing twitter in the channel name
 
 To stop a listing in progress, use: /<thisCommand> STOP
 
 Example(s):
 ---------------
+/<thisCommand>
 /<thisCommand> >0,C<5
 /<thisCommand> >0,!*staff*
 /<thisCommand> T>10,#Help
+/<thisCommand> M<10
