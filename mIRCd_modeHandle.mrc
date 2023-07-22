@@ -147,6 +147,7 @@ alias mIRCd_command_clearmode {
     }
     mIRCd.modeTell $1 $2 %this.id %this.plus %this.minus
   }
+  mIRCd.updateChan %this.id lastActive $ctime
 }
 alias mIRCd_command_mode {
   ; /mIRCd_command_mode <sockname> MODE <target> [<modestring> [args ...]]
@@ -894,6 +895,7 @@ alias -l mIRCd.parseMode {
   if (%this.hiddenCheck == CHECK_LOWERCASE_D) {
     if (($is_modeSet(%this.id,D).chan == $false) && ($is_modeSet(%this.id,d).chan == $true)) { mIRCd.dCheck %this.id }
   }
+  mIRCd.updateChan %this.id lastActive $ctime
 }
 ; ¦-> We're done! This is quite literally one of the biggest pains in the ass out of the entire codebase! (Hey, at least it works!)
 ; `-> 27/01/2023: I stand corrected. /WHO now officially takes the throne. Compared to that, this was a cakewalk.

@@ -65,8 +65,8 @@ alias mIRCd_command_list {
   ; /mIRCd_command_list <sockname> LIST [term[,term,term,...]|STOP]
 
   if ($mIRCd(CONNECTED_LIST_THROTTLE) isnum 1-) {
-    if ($sock($1).to < $mIRCd(CONNECTED_LIST_THROTTLE)) {
-      mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $+(:/,$upper($2)) cannot be used for $v2 second(s) upon connecting to the server.
+    if (($sock($1).to <= $mIRCd(CONNECTED_LIST_THROTTLE)) && ($is_oper($1) == $false)) {
+      mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $+(:/,$upper($2)) cannot be used for $mIRCd(CONNECTED_LIST_THROTTLE) second(s) upon connecting to the server.
       return
     }
   }
@@ -112,9 +112,15 @@ alias mIRCd_command_list {
               break
             }
           }
-          ; if ($regex(%this.term,^M(=|>|<|>=|<|<=|!=)\d+) == 1) {
-          ;   `-> Activity.
-          ;}
+          if ($regex(%this.term,^M(=|>|<|>=|<|<=|!=)\d+) == 1) {
+            ;   `-> Activity.
+            var %this.cmp = $remove($_stripNumbers(%this.term), M), %this.match = $remove($_stripMatch(%this.term), M)
+            var %this.result = $iif($calc($ctime - $mIRCd.info(%this.id,lastActive)) %this.cmp $calc(%this.match * 60),1,0)
+            if (%this.result == 0) {
+              var %this.skipList = 1
+              break
+            }
+          }
           if ($regex(%this.term,^T(=|>|<|>=|<|<=|!=)\d+) == 1) {
             ; `-> Topic.
             var %this.cmp = $remove($_stripNumbers(%this.term), T), %this.match = $remove($_stripMatch(%this.term), T)
@@ -135,7 +141,7 @@ alias mIRCd_command_list {
               break
             }
           }
-          if ($istok(! < = > C T,$left(%this.term,1),32) == $false) {
+          if ($istok(! < = > C M T,$left(%this.term,1),32) == $false) {
             ; ,-> Matching pattern.
             if (($mIRCd.info(%this.id,name) != %this.term) && (%this.term !iswm $mIRCd.info(%this.id,name))) {
               var %this.skipList = 1

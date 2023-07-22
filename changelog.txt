@@ -1,3 +1,17 @@
+mIRCd[0.09hf12(Rev.2)][2021-2023] - 22/07/2023
+--------------------------------------------------
+1. /SVSPART now issues a generic part message to indicate that a user has been forcefully removed.
+2. Opers are no longer subjected to WHO_THROTTLE.
+3. Opers are no longer subjected to CONNECTED_LIST_THROTTLE.
+4. Can now /LIST based on last activity (in minutes) in a channel. E.g. /LIST M>5
+
+   As I don't know what classifies as activity, I've covered (for now): CLEARMODE, (SVS)JOIN, KICK, (OP)MODE, NOTICE,
+   (SVS)PART, PRIVMSG and TOPIC
+
+   NICK and QUIT are not specific to channels and thus not included.
+5. Other minor changes.
+
+
 mIRCd[0.09hf11(Rev.2)][2021-2023] - 19/07/2023
 --------------------------------------------------
 1. /STATS m now counts the data length received.
@@ -8,9 +22,9 @@ mIRCd[0.09hf11(Rev.2)][2021-2023] - 19/07/2023
 
    This can work in conjunction with OPLESS_CHANS.
 5. Fixed a bug in /WHO where a user wouldn't appear if they themselves are +i under certain conditions.
-6. Given the recent SUPERBOWL related spam and based on a discussion with an oper on another ircu based IRC network (Nefarious),
-   we were quite surprised to learn that there isn't a way to use /WHO to return users who've been connected to the IRCd
-   for a certain duration of time, so I decided to add this in just for test purposes.
+6. Given the recent "SUPERBOWL" related spam and based on a discussion with an oper on another ircu based (Nefarious) IRC
+   network, we were quite surprised to learn that there isn't a way to use /WHO to return users who've been connected to
+   the IRCd for a certain duration of time, so I decided to add this in just for test purposes.
 
    Since /WHO is a powerful tool, and it would be useful to deal with annoying spambots, hopefully it'll become part of WHOX
    "standard" one day.

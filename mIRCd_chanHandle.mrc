@@ -284,6 +284,7 @@ alias mIRCd_command_knock {
     }
     mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :*** Notice -- Knocked on %this.name
   }
+  mIRCd.updateChan %this.id lastActive $ctime
 }
 alias mIRCd_command_names {
   ; /mIRCd_command_names <sockname> NAMES [-d] <#chan[,#chan,#chan,...]>
@@ -474,7 +475,7 @@ alias mIRCd_command_svspart {
     mIRCd.sraw $1 $mIRCd.reply(441,$mIRCd.info($1,nick),%this.name,%this.nick)
     return
   }
-  mIRCd_command_part %this.sock PART %this.name :
+  mIRCd_command_part %this.sock PART %this.name $+(:,$mIRCd.svsPart)
   mIRCd.sraw %this.sock NOTICE %this.nick :*** Notice -- You were forced to part: %this.name
   mIRCd.serverWallops $upper($2) by $mIRCd.info($1,nick) $+($parenthesis($gettok($mIRCd.fulladdr($1),2,33)),:) %this.nick -> %this.name
   ; `-> Issue a +g wallops to prevent abuse.
@@ -554,6 +555,7 @@ alias mIRCd_command_topic {
       }
       mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) TOPIC %this.name $+(:,$mIRCd.info(%this.id,topic))
     }
+    mIRCd.updateChan %this.id lastActive $ctime
     if (%this.changeState == 1) {
       mIRCd.updateChanUser %this.id $1 0 2
       if ($is_modeSet(%this.id,d).chan == $true) { mIRCd.dCheck %this.id }
@@ -641,12 +643,14 @@ alias mIRCd.chanAddUser {
   }
   mIRCd_command_names $2 NAMES %this.name
   ; `-> NOTE: Make sure the user has been added _BEFORE_ invoking NAMES.
+  mIRCd.updateChan %this.id lastActive $ctime
 }
 alias mIRCd.chanDelUser {
   ; /mIRCd.chanDelUser <chan ID> <sockname>
 
   var %this.id = $1
   hdel $mIRCd.chanUsers(%this.id) $2
+  mIRCd.updateChan %this.id lastActive $ctime
   if ($hcount($mIRCd.chanUsers(%this.id)) == 0) {
     ; `-> Destroy the channel because the last user has left. (Unless it's +P, obv.)
     if ($is_modeSet(%this.id,P).chan == $false) { mIRCd.destroyChan %this.id }
@@ -719,5 +723,6 @@ alias newChanID {
 
 alias mIRCd.joinZero { return Left all channels. (User joined 0.) }
 alias mIRCd.standardPart { return Parted }
+alias mIRCd.svsPart { return Forced to leave by an IRC operator. }
 
 ; EOF

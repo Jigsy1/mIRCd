@@ -194,6 +194,7 @@ alias mIRCd_command_pong {
     mIRCd.welcome $1
     return
   }
+  ; `-> Allow localhost and LAN to override the rest of the code.
   if ($mIRCd(CONNECTION_PASS) != $null) {
     if ($mIRCd.info($1,firstCommand) != PASS) {
       ; `-> PASS needs to be sent *BEFORE* NICK and USER.
@@ -211,7 +212,6 @@ alias mIRCd_command_pong {
     return
   }
   if ($mIRCd(MAX_USERS) isnum 1-) {
-    ; `-> Allow localhost and LAN to override the next line of code.
     if ($calc($hcount($mIRCd.users) - $hcount($mIRCd.unknown)) >= $mIRCd(MAX_USERS)) {
       $+(.timermIRCd.full,$1) -o 1 0 mIRCd.errorUser $1 No more connections allowed $parenthesis(The server is full.)
       return

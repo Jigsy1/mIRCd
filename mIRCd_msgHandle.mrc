@@ -174,6 +174,7 @@ alias mIRCd.parseMsg {
         mIRCd.updateChanUser %this.id $1 0 2
         if ($is_modeSet(%this.id,d).chan == $true) { mIRCd.dCheck %this.id }
       }
+      mIRCd.updateChan %this.id lastActive $ctime
       continue
     }
     ; ,-> The target is a user?

@@ -6,7 +6,7 @@ alias mIRCd_command_who {
   ; /mIRCd_command_who <sockname> WHO <terms[,...]> [matchflags][%includeflags] [:search]
 
   if ($mIRCd(WHO_THROTTLE) isnum 1-) {
-    if ($calc($ctime - $iif($mIRCd.info($1,whoTime) != $null,$v1,$ctime)) <= $mIRCd(WHO_THROTTLE)) {
+    if (($calc($ctime - $iif($mIRCd.info($1,whoTime) != $null,$v1,$ctime)) <= $mIRCd(WHO_THROTTLE)) && ($is_oper($1) == $false)) {
       mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :*** Notice -- This command is rate limited. Please try again shortly.
       return
     }
