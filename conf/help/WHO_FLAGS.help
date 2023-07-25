@@ -13,7 +13,7 @@ i - Usermode +i, the user is invisible. (Only visible to IRC operators.)
 w - Usermode +w, the user sees wall(ops|users). (Only visible to IRC operators.)
 s - Usermode +s, the user sees server notices. (Only visible to IRC operators.)
 g - Usermode +g, the user sees server wallops. (Only visible to IRC operators.)
-x - Usermode +x, the has a hidden host.
+x - Usermode +x, the user has a hidden host.
 
 Example(s):
 ---------------

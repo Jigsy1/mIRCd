@@ -20,4 +20,4 @@ The breakdown is as follows and more or less adheres to UnderNet standards.
 
 The following are not used in this IRCd: 2, 8, 16, 32, 64, 128, 1024, 2048, 4096, 8192, 32768
 
-Setting +s 0 (or lower) or +s 65537 (or higher) will unset +s.
+Setting +s 0 (or lower) or +s 65536 (or higher) will unset +s.

@@ -6,12 +6,12 @@ You can also search based on a specific comma separated term and with specific f
 
 For example:
 
-1. >10 would list channels with more than ten users
-2. C>5 would list channels made more than five minutes ago
-3. M>0 would list channels that were active more than zero minutes ago
-4. T>0 would list channels with a topic made more than zero minutes ago
-5. *twitter* would list channels containing twitter in the channel name
-6. !*twitter* would list channels filtering out those containing twitter in the channel name
+1. >10 would list channels with more than ten users.
+2. C>5 would list channels made more than five minutes ago.
+3. M>0 would list channels that were active more than zero minutes ago.
+4. T>0 would list channels with a topic made more than zero minutes ago.
+5. *twitter* would list channels containing twitter in the channel name.
+6. !*twitter* would list channels filtering out those containing twitter in the channel name.
 
 To stop a listing in progress, use: /<thisCommand> STOP
 
