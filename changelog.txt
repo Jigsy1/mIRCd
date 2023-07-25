@@ -5,7 +5,7 @@ mIRCd[0.09hf12(Rev.2)][2021-2023] - 22/07/2023
 3. Opers are no longer subjected to CONNECTED_LIST_THROTTLE.
 4. Can now /LIST based on last activity (in minutes) in a channel. E.g. /LIST M>5
 
-   As I don't know what classifies as activity, I've covered (for now): CLEARMODE, (SVS)JOIN, KICK, (OP)MODE, NOTICE,
+   As I don't know what classifies as activity, I've covered (for now): CLEARMODE, (SVS)JOIN, KICK, KNOCK, (OP)MODE, NOTICE,
    (SVS)PART, PRIVMSG and TOPIC
 
    NICK and QUIT are not specific to channels and thus not included.
