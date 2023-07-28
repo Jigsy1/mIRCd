@@ -15,7 +15,7 @@ I mainly did this for my own personal amusement/as a pet project.
 * No SSL/TLS support (/socklisten doesn't support these)
 * Not IRCv3 compliant (though I personally don't consider this to be a bad thing as IRC conversation is supposed to be ephemeral)
 * No flood protection such as Excess Flood
-* Sockets have a max size they can send data (Interestingly, this limitation didn't exist in mIRC 6.35 ¬_¬)
+* Sockets have a max size they can send data (Interestingly, this limitation didn't exist in mIRC 6.35 ¬_¬) (Though this could be an issue in Windows 8.1.)
 * Some commands are missing: anything related to server linking (ACCOUNT, BURST, JUPE, etc.)
 
 Please consult readme.txt on how to get it running. -Jigsy
