@@ -46,3 +46,4 @@ The following people on the mIRC forums who helped in other way(s):
 ----------------------------------------------------------------------
 Brax, maroon, qwerty, Raccoon, Saturn
 
+...and others who've unknowingly contributed to the development of this IRCd.

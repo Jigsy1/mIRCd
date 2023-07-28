@@ -1,11 +1,11 @@
 ﻿001
 :Welcome to the $mIRCd(NETWORK_NAME) IRC Network, $3
 002
-:Your host is $+($hget($mIRCd.temp,SERVER_NAME),$comma) running version $mIRCd.version
+:Your host is $+($mIRCd(SERVER_NAME).temp,$comma) running version $mIRCd.version
 003
 :This server was created $asctime($3,ddd mmm doo yyyy) at $asctime($3,HH:mm:ss)
 004
-$hget($mIRCd.temp,SERVER_NAME) $mIRCd.version $mIRCd.userModes $mIRCd.chanModes
+$mIRCd(SERVER_NAME).temp $mIRCd.version $removecs($mIRCd.userModes, h) $mIRCd.chanModes
 005
 $3- :are supported by this server
 008
@@ -37,7 +37,7 @@ O $3
 247
 G $3 $4 +ol $+(:,$5-)
 248
-U $hget($mIRCd.temp,SERVER_NAME) $3-
+U $+(denied.,$ctime,.,$gettok($mIRCd(SERVER_NAME).temp,-1,46)) $3-
 250
 :Highest connection count: $3 $parenthesis($4 client(s))
 251
@@ -51,7 +51,7 @@ $hcount($mIRCd.chans) :channel(s) formed
 255
 :I have $hcount($mIRCd.users) client(s) and $calc($hcount($mIRCd.servers) + 1) server(s)
 256
-:Administrative info about $hget($mIRCd.temp,SERVER_NAME)
+:Administrative info about $mIRCd(SERVER_NAME).temp
 257
 $+(:,$3-)
 258
@@ -133,7 +133,7 @@ $+(:,$3)
 347
 :End of Invite List
 351
-$mIRCd.version $hget($mIRCd.temp,SERVER_NAME) :0
+$mIRCd.version $mIRCd(SERVER_NAME).temp :0
 352
 $3-
 353
@@ -169,7 +169,7 @@ $+(:,$3-)
 382
 $3 :Rehashing
 391
-$hget($mIRCd.temp,SERVER_NAME) $+(:,$asctime($ctime,dddd mmmm doo yyyy -- HH:nn:ss zzzz))
+$mIRCd(SERVER_NAME).temp $+(:,$asctime($ctime,dddd mmmm doo yyyy -- HH:nn:ss zzzz))
 396
 $3 :is now your hidden host
 401
@@ -195,7 +195,7 @@ $upper($3) :Unknown command
 422
 MOTD File is missing
 423
-$hget($mIRCd.temp,SERVER_NAME) :No administrative info available
+$mIRCd(SERVER_NAME).temp :No administrative info available
 431
 :No nickname given
 432
