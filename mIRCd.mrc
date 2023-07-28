@@ -1,4 +1,4 @@
-; mIRCd v0.09hf12 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+; mIRCd v0.09hf13 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm (Jurrasic Park)
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
@@ -42,13 +42,13 @@ alias mIRCd.commands { return $+(mIRCd[Commands],$bracket($1)) }
 alias mIRCd.dns { return mIRCd[DNS] }
 alias mIRCd.ident { return mIRCd[Ident] }
 alias mIRCd.invisible { return mIRCd[Invisible] }
-; `-> +i will add them; -i or quitting will remove them.
+; `-> +i will add them; -i or disconnecting will remove them.
 alias mIRCd.main { return mIRCd }
 alias mIRCd.mStats { return mIRCd[mStats] }
 ; `-> For: /STATS m/M
 alias mIRCd.opers { return mIRCd[Opers] }
 alias mIRCd.opersOnline { return mIRCd[OpersOnline] }
-; `-> /OPER will add them; -o or qutting will remove them.
+; `-> /OPER will add them; -o or disconnecting will remove them.
 alias mIRCd.raws { return mIRCd[Raws] }
 alias mIRCd.servers { return mIRCd[Servers] }
 ; `-> WARNING!: This isn't used (yet); but _DO NOT_ remove it. (re: /LUSERS)
@@ -285,6 +285,13 @@ alias mIRCd.load {
   if (($lines($mIRCd.fileLocalZlines) > 0) && ($calc($lines($mIRCd.fileLocalZlines) % 2) == 0)) { hload -m $mIRCd.local(Zlines) $mIRCd.fileLocalZlines }
   ; `-> Same as K-lines.
   if (($lines($mIRCd.fileSlines) > 0) && ($calc($lines($mIRCd.fileSlines) % 2) == 0)) { hload -m $mIRCd.slines $mIRCd.fileSlines }
+  hadd -m $mIRCd.main NETWORK_INFO $left($mIRCd(NETWORK_INFO),50)
+  ; `-> Truncate NETWORK_INFO to the same length as a "real name." (50 characters.)
+  hadd -m $mIRCd.main NETWORK_NAME $left($mIRCd(NETWORK_NAME),200)
+  ; ¦-> Testing on another ircu IRCd (bircd), there doesn't seem to be(?) a limit on the length of a NETWORK_NAME, so let's impose one.
+  ; `-> If I'm wrong and there is (I'm guessing probably 512), let me know via Github: https://github.com/Jigsy1/mIRCd/issues
+  hadd -m $mIRCd.main NETWORK_NAME $legalizeIdent($mIRCd(NETWORK_NAME))
+  ; `-> Make the NETWORK_NAME conform to naming conventions, which the nearest I can gather is the same as ident rules.
   if ($show == $true) { mIRCd.echo /mIRCd.load: done }
 }
 alias mIRCd.loadCommands {
@@ -397,7 +404,7 @@ alias mIRCd.unloadScripts {
   ; `-> A quick and dirty loop.
   if ($script($script) != $null) { .unload -rs $qt($script) }
 }
-alias mIRCd.version { return mIRCd[0.09hf12(Rev.2)][2021-2023] }
+alias mIRCd.version { return mIRCd[0.09hf13(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 alias -l nextHour { return $+($asctime($calc($ctime + 3600),HH),:00) }
 alias -l requiredVersion { return 7.66 }

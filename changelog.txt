@@ -1,3 +1,35 @@
+mIRCd[0.09hf13(Rev.2)][2021-2023] - 28/07/2023
+--------------------------------------------------
+1.  Fixed an (accidentally discovered) issue where the IRCd would respond to Telnet clients constantly with "Register first"
+    or "Unknown command" due to the fact that Telnet sends blank/empty lines to the IRCd when you're inputting commands.
+2.  As usermode +h (SETHOST) is a hidden mode, it should not have been visible in the usermodes sent in raw 004 or raw 005
+    USERMODES=... reply.
+3.  AUTOJOIN_CHANS creation now ignores channels which are K-lined or G-lined. (Though nobody could join them anyway.)
+4.  /OPER now informs the user what their default snoMask is if they set +s prior to being an oper.
+    This isn't a bug, but it was annoying the hell out of me due to the fact I wasn't seeing HACK(*) notices and forgetting why.
+5.  I discovered on bircd (another ircu IRCd) that there doesn't seem to be a limit on the NETWORK_NAME length?
+    So I've imposed a restriction of 200 characters. (Which should be adequate enough.)
+
+    If there is a limit (which is probably 512 characters?), let me know by making an issue.
+6.  NETWORK_NAME now conforms to naming rules, which the nearest I can gather after testing is the same as ident rules.
+7.  NETWORK_INFO is now truncated to the same length as a "real name" as it should have been. (50 characters.)
+8.  Fixed a bug in /SVSJOIN where trying to join channels that didn't exist wouldn't work.
+    This was actually being caused by $is_on. Now if the first argument of $is_on(<id>,...) is $null, it'll default to $false.
+
+    It was either this or ternary if every single instance of $getChanID(), so this might have unforseen consequences...
+9.  Fixed a bug where you could join a K-lined/G-lined channel assuming it still existed because I was operating on the assumption
+    that the channel wouldn't exist after banning it. E.g. /MODE #chan +P -> /GLINE #chan -> /JOIN #chan -> "Now talking in..."
+
+    The channel will still remain if +P is set, you just can't join it anymore.
+10. The same applies to /SVSJOIN as well. You could /SVSJOIN users into banned channels assuming they still existed because of +P.
+11. Changed it so /JOIN #chan1,#chan2,... key1,key2,... now requires the exact key and number of keys for each specific channel
+    instead of the half-assed hack I did.
+    My mentality for this change 2y later is because if #chan1 had the same key as #chan2, a user would be able to join both
+    channels even though they're probably not supposed to join #chan2.
+    Though the chances of a channel having the exact same key are pretty small...
+12. Other cosmetic/minor change(s).
+
+
 mIRCd[0.09hf12(Rev.2)][2021-2023] - 22/07/2023
 --------------------------------------------------
 1. /SVSPART now issues a generic part message to indicate that a user has been forcefully removed.

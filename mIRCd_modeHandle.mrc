@@ -177,7 +177,7 @@ alias mIRCd_command_oper {
   var %this.modes = $+($iif($is_modeSet($1,g).nick == $false,g),o,$iif($is_modeSet($1,s).nick == $false,s))
   mIRCd.updateUser $1 modes $+($mIRCd.info($1,modes),%this.modes)
   if (s isincs %this.modes) {
-    var %this.snoMask = $iif($mIRCd(DEFAULT_OPER_SNOMASK) isnum 1-65535,$v1,17157)
+    var %this.snoMask = $iif($mIRCd(DEFAULT_OPER_SNOMASK) isnum 1-65535,$v1,17157), %this.snoFlag = 1
     mIRCd.updateUser $1 snoMask %this.snoMask
     mIRCd.sraw $1 $mIRCd.reply(008,$mIRCd.info($1,nick),%this.snoMask,$base(%this.snoMask,10,16))
     ; `-> This should cover connections, DIE, GLINE, HACK(4), KILL, QUIT and RESTART.
@@ -186,6 +186,9 @@ alias mIRCd_command_oper {
   mIRCd.sraw $1 $mIRCd.reply(381,$mIRCd.info($1,nick))
   hadd -m $mIRCd.opersOnline $1 $ctime
   ; `-> This is a very hacky way of fiddling with the LUSERS numbers.
+  if (($is_modeSet($1,s).nick == $true) && (%this.snoFlag != 1)) {
+    if ($mIRCd.info($1,snoMask) != $null) { mIRCd.sraw $1 $mIRCd.reply(008,$mIRCd.info($1,nick),$v1,$base($v1,10,16)) }
+  }
   mIRCd.serverWallops $mIRCd.info($1,nick) $parenthesis($gettok($mIRCd.fulladdr($1),2-,33)) is now an IRC operator (+o) using account: $hfind($mIRCd.opers,$hget($mIRCd.opers,$3),1,W).data
 }
 alias mIRCd_command_opmode {

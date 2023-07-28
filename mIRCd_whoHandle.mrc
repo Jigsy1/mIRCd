@@ -1,4 +1,4 @@
-; mIRCd_whoHandle.mrc - This is not perfect...
+; mIRCd_whoHandle.mrc - This is probably not perfect...
 ;
 ; This script contains the following command(s): WHO
 
@@ -7,7 +7,7 @@ alias mIRCd_command_who {
 
   if ($mIRCd(WHO_THROTTLE) isnum 1-) {
     if (($calc($ctime - $iif($mIRCd.info($1,whoTime) != $null,$v1,$ctime)) <= $mIRCd(WHO_THROTTLE)) && ($is_oper($1) == $false)) {
-      mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :*** Notice -- This command is rate limited. Please try again shortly.
+      mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :*** Notice -- This command is rate limited. Please try again later.
       return
     }
   }
@@ -71,6 +71,7 @@ alias mIRCd_command_who {
       if ($istok(chan field,%this.target,32) == $true) {
         var %this.uloop = 0
         while (%this.uloop < $hcount($mIRCd.users)) {
+          ; >-> 2048 / (number_of_fields + 4)
           var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.onlineMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
           if (%this.saw != $null) { var %this.sockSeen = %this.sockSeen %this.saw, %this.saw = $null }
           inc %this.uloop 1
@@ -154,6 +155,7 @@ alias mIRCd_command_who {
     ; ,-> Someone specified a :search. (So the comma separated field gets ignored.)
     var %this.uloop = 0
     while (%this.uloop < $hcount($mIRCd.users)) {
+      ; >-> 2048 / (number_of_fields + 4)
       var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.onlineMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
       if (%this.saw != $null) { var %this.sockSeen = %this.sockSeen %this.saw, %this.saw = $null }
       inc %this.uloop 1
@@ -227,6 +229,7 @@ alias mIRCd_command_who {
         var %this.item = $iif($gettok(%this.wild,%this.loop,32) != 0,$v1,*)
         var %this.uloop = 0
         while (%this.uloop < $hcount($mIRCd.users)) {
+          ; >-> 2048 / (number_of_fields + 4)
           var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.onlineMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
           if (%this.saw != $null) { var %this.sockSeen = %this.sockSeen %this.saw, %this.saw = $null }
           inc %this.uloop 1
@@ -348,7 +351,7 @@ alias mIRCd.chanSeen {
 }
 alias -l mIRCd.whoDefaults { return hnu }
 alias mIRCd.lastJoined {
-  ; $mIRCd.lastJoined(<sockname using /WHO>,<sockname being WHO'd>)[.override]
+  ; $mIRCd.lastJoined(<sockname using /WHO>,<sockname being WHO'd>)
 
   var %this.id = $gettok($mIRCd.info($2,chans),1,44)
   if (%this.id == $null) { return * }
@@ -373,6 +376,7 @@ alias mIRCd.whoIP {
   ; $mIRCd.whoIP(<sockname using /WHO>,<sockname being WHO'd>)
 
   if ($is_modeSet($2,x).nick == $false) { return $sock($2).ip }
+  ; ,-> Note to self: Assuming +x is $true.
   if (($1 == $2) || ($is_oper($1) == $true)) { return $sock($2).ip }
   return $mIRCd.fakeIP
 }

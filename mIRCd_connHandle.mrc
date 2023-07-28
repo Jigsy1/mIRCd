@@ -82,6 +82,9 @@ on *:sockread:mIRCd.*:{
     sockread %mIRCd.user.sockRead
     tokenize 32 %mIRCd.user.sockRead
 
+    if ($len($1-) == 0) { return }
+    ; `-> Telnet related issue. (It sends empty lines when typing in commands.)
+
     if ($window($mIRCd.window) != $null) { echo -ci2t "Info text" $v1 [R]: $sockname -> $1- }
     if ($sockerr > 0) {
       mIRCd.errorUser $sockname $mIRCd.socketError

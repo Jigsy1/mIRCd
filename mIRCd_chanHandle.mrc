@@ -84,7 +84,7 @@ alias mIRCd_command_join {
     }
     ; `-> Maybe they just wanted to join 0?
   }
-  var %this.join = 0
+  var %this.join = 0, %this.keyToken = 0
   while (%this.join < $numtok(%this.joins,44)) {
     inc %this.join 1
     var %this.chan = $gettok($strip($gettok(%this.joins,%this.join,44)),1,160)
@@ -93,13 +93,14 @@ alias mIRCd_command_join {
       mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),%this.chan)
       continue
     }
+    if (($is_klineMatch(%this.chan) == $true) || ($is_glineMatch(%this.chan) == $true)) {
+      ; ¦-> I was going to add oper immunity, but then wondered why an oper would need to join a prohibited, unjoinable channel.
+      ; `-> Though on a proper IRCd, they should really be able to.
+      if ($bool_fmt($mIRCd(WALLOPS_BAD_JOINS)) == $true) { mIRCd.serverWallops $mIRCd.info($1,nick) $parenthesis($gettok($mIRCd.fulladdr($1),2,33)) attempted to join a banned channel: %this.chan }
+      mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
+      continue
+    }
     if ($is_exists(%this.chan).chan == $false) {
-      if (($is_klineMatch(%this.chan) == $true) || ($is_glineMatch(%this.chan) == $true)) {
-        ; `-> I was going to add oper immunity, but then wondered why an oper would need to join a prohibited, unjoinable channel.
-        if ($bool_fmt($mIRCd(WALLOPS_BAD_JOINS)) == $true) { mIRCd.serverWallops $mIRCd.info($1,nick) $parenthesis($gettok($mIRCd.fulladdr($1),2,33)) attempted to join a banned channel: %this.chan }
-        mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
-        continue
-      }
       if ($bool_fmt($mIRCd(DENY_CHANNEL_CREATION)) == $true) {
         if ($is_oper($1) == $false) {
           mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
@@ -145,10 +146,13 @@ alias mIRCd_command_join {
       continue
     }
     ; ,-> Do +k last due the nature of it.
-    if (($is_modeSet(%this.id,k).chan == $true) && ($istokcs($4,$mIRCd.info(%this.id,key),44) == $false)) {
-      ; `-> Just check the key against any given args. (It's either this hacky way or another loop...)
-      mIRCd.sraw $1 $mIRCd.reply(475,$mIRCd.info($1,nick),%this.name)
-      continue
+    if ($is_modeSet(%this.id,k).chan == $true) {
+      inc %this.keyToken 1
+      var %this.tryKey = $gettok($4,%this.keyToken,44)
+      if (%this.tryKey !== $mIRCd.info(%this.id,key)) {
+        mIRCd.sraw $1 $mIRCd.reply(475,$mIRCd.info($1,nick),%this.name)
+        continue
+      }
     }
     :parseJoin
     mIRCd.chanAddUser %this.id $1
@@ -429,12 +433,12 @@ alias mIRCd_command_svsjoin {
     mIRCd.sraw $1 $mIRCd.reply(441,$mIRCd.info($1,nick),%this.nick,%this.name)
     return
   }
+  if (($is_klineMatch(%this.chan) == $true) || ($is_glineMatch(%this.chan) == $true)) {
+    mIRCd.serverWallops Failed $upper($2) to a banned channel by $mIRCd.info($1,nick) $+($parenthesis($gettok($mIRCd.fulladdr($1),2,33)),:) %this.nick -> %this.name
+    mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
+    return
+  }
   if ($is_exists(%this.chan).chan == $false) {
-    if (($is_klineMatch(%this.chan) == $true) || ($is_glineMatch(%this.chan) == $true)) {
-      mIRCd.serverWallops Failed $upper($2) to a banned channel by $mIRCd.info($1,nick) $+($parenthesis($gettok($mIRCd.fulladdr($1),2,33)),:) %this.nick -> %this.name
-      mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
-      return
-    }
     mIRCd.createChan %this.chan %this.sock
     goto processInfoShare
   }
@@ -588,6 +592,7 @@ alias is_mutualHidden {
 alias is_on {
   ; $in_on(<chan ID>,<sockname>)
 
+  if ($1 == $null) { return $false }
   return $iif($hget($mIRCd.chanUsers($1),$2) != $null,$true,$false)
 }
 alias mIRCd.addBan {
@@ -606,6 +611,7 @@ alias mIRCd.makeAutoJoin {
     var %this.target = $gettok($strip($gettok(%these.chans,%this.loop,44)),1,160)
     if ($is_valid(%this.target).chan == $false) { continue }
     if ($len(%this.target) > $mIRCd(MAXCHANNELLEN)) { continue }
+    if (($is_klineMatch(%this.target) == $true) || ($is_glineMatch(%this.target) == $true)) { continue }
     var %this.string = $+(%this.target,$comma,%this.string)
     if ($numtok(%this.string,44) >= $hget($mIRCd.targMax,TARGMAX_JOIN)) { break }
     if ($numtok(%this.string,44) >= $mIRCd(MAXCHANNELS)) { break }
