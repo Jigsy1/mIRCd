@@ -84,7 +84,18 @@ on *:sockread:mIRCd.*:{
 
     if ($len($1-) == 0) { return }
     ; `-> Telnet related issue. (It sends empty lines when typing in commands.)
-
+    if ($mIRCd.info($sockname,flooding) == 1) { return }
+    ; `-> Rudimentary: If they're flagged as flooding, ignore anything they send because we're going to throw them off.
+    if ($bool_fmt($mIRCd(EXCESS_FLOOD)) == $true) {
+      if (($mIRCd(FLOOD_LIMIT) isnum 1024-) && ($sock($sockname).rq >= $mIRCd(FLOOD_LIMIT))) {
+        if ($mIRCd.info($sockname,flooding) != 1) {
+          mIRCd.updateUser $sockname flooding 1
+          mIRCd.errorUser $sockname $mIRCd.excessFlood($parenthesis(Received $sock($sockname).rq bytes))
+        }
+        return
+      }
+      ; `-> Rudimentary.
+    }
     if ($window($mIRCd.window) != $null) { echo -ci2t "Info text" $v1 [R]: $sockname -> $1- }
     if ($sockerr > 0) {
       mIRCd.errorUser $sockname $mIRCd.socketError
@@ -139,6 +150,7 @@ alias mIRCd.addWhoWas {
 
   var %this.sock = $1, %this.nick = $mIRCd.info($1,nick), %this.timestamp = $ctime, %this.table = $+(%this.nick,:,%this.timestamp)
   tokenize 44 host,ident,nick,realName,trueHost,user
+  ; `-> Note to self: trueIdent? trueUser?
   scon -r hadd -m $mIRCd.whoWas(%this.table) $* $!mIRCd.info(%this.sock, $* )
   ; `-> A quick and dirty loop.
   hadd -m $mIRCd.whoWas(%this.table) signon $calc(%this.timestamp - $sock(%this.sock).to)
@@ -380,6 +392,7 @@ alias mIRCd.userLen { return 10 }
 ; Error/Quit Messages
 
 alias mIRCd.closeConnection { return Closed unknown connection(s) }
+alias mIRCd.excessFlood { return Excess flood $iif($1 != $null,$v1) }
 alias mIRCd.hostChange { return Changing host }
 alias mIRCd.pingTimeout { return Ping timeout $iif($1- != $null,$v1) }
 alias mIRCd.socketClosed { return Remote socket closed the connection }

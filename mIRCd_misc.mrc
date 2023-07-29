@@ -180,7 +180,7 @@ alias mIRCd_command_lusers {
   mIRCd.sraw $1 $mIRCd.reply(254,$mIRCd.info($1,nick))
   mIRCd.sraw $1 $mIRCd.reply(255,$mIRCd.info($1,nick))
   mIRCd.sraw $1 $mIRCd.reply(265,$mIRCd.info($1,nick),$mIRCd(highCount).temp)
-  ; PLACEHOLDER FOR NUMERIC 266: GLOBAL_INFO/GLOBAL_MAX
+  ; >-> PLACEHOLDER FOR NUMERIC 266: GLOBAL_INFO/GLOBAL_MAX
   ; ,-> WARNING!: If you change the line for raw 250 in mIRCd.raws it will totally screw up the line below. So, either don't change the line, or comment the two lines below out after you change it.
   var %this.string = $hget($mIRCd.raws,250)
   mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) $puttok($puttok(%this.string,$mIRCd(highCount).temp,4,32),$+($chr(40),$mIRCd(highCount).temp),5,32) $parenthesis($mIRCd(totalCount).temp connection(s) received)

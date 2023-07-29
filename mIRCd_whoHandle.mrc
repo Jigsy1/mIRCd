@@ -71,10 +71,10 @@ alias mIRCd_command_who {
       if ($istok(chan field,%this.target,32) == $true) {
         var %this.uloop = 0
         while (%this.uloop < $hcount($mIRCd.users)) {
-          ; >-> 2048 / (number_of_fields + 4)
           var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.onlineMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
           if (%this.saw != $null) { var %this.sockSeen = %this.sockSeen %this.saw, %this.saw = $null }
           inc %this.uloop 1
+          if (%this.uloop > $int($calc($mIRCd.whoCutoff / ($len(%this.include) + 4)))) { break }
           var %this.usock = $hget($mIRCd.users,%this.uloop).item
           if ($istok(%this.sockSeen,%this.usock,32) == $true) { continue }
           if (($mIRCd.chanSeen(%this.chanSeen,%this.usock) > 0) && ($mIRCd.chanSeen(%this.secret,%this.usock) == 0)) { continue }
@@ -155,10 +155,10 @@ alias mIRCd_command_who {
     ; ,-> Someone specified a :search. (So the comma separated field gets ignored.)
     var %this.uloop = 0
     while (%this.uloop < $hcount($mIRCd.users)) {
-      ; >-> 2048 / (number_of_fields + 4)
       var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.onlineMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
       if (%this.saw != $null) { var %this.sockSeen = %this.sockSeen %this.saw, %this.saw = $null }
       inc %this.uloop 1
+      if (%this.uloop > $int($calc($mIRCd.whoCutoff / ($len(%this.include) + 4)))) { break }
       var %this.usock = $hget($mIRCd.users,%this.uloop).item
       if ($istok(%this.sockSeen,%this.usock,32) == $true) { continue }
       if ($mIRCd.chanSeen(%this.chanSeen,%this.usock) > 0) { continue }
@@ -229,10 +229,10 @@ alias mIRCd_command_who {
         var %this.item = $iif($gettok(%this.wild,%this.loop,32) != 0,$v1,*)
         var %this.uloop = 0
         while (%this.uloop < $hcount($mIRCd.users)) {
-          ; >-> 2048 / (number_of_fields + 4)
           var %this.operMatch = 0, %this.trueHostMatch = 0, %this.hostMatch = 0, %this.ipMatch = 0, %this.onlineMatch = 0, %this.nickMatch = 0, %this.nameMatch = 0, %this.userMatch = 0
           if (%this.saw != $null) { var %this.sockSeen = %this.sockSeen %this.saw, %this.saw = $null }
           inc %this.uloop 1
+          if (%this.uloop > $int($calc($mIRCd.whoCutoff / ($len(%this.include) + 4)))) { break }
           var %this.usock = $hget($mIRCd.users,%this.uloop).item
           if ($istok(%this.sockSeen,%this.usock,32) == $true) { continue }
           if ($mIRCd.chanSeen(%this.chanSeen,%this.usock) > 0) { continue }
@@ -359,6 +359,7 @@ alias mIRCd.lastJoined {
   if (($1 == $2) || ($is_on(%this.id,$1) == $true) || ($is_oper($1) == $true)) { return $mIRCd.info(%this.id,name) }
   return *
 }
+alias mIRCd.whoCutoff { return 2048 }
 alias mIRCd.whoFlags {
   ; $mIRCd.whoFlags(<sockname using /WHO>,<sockname being WHO'd>)
 
@@ -383,7 +384,7 @@ alias mIRCd.whoIP {
 alias mIRCd.whoString {
   ; $mIRCd.whoString(<string>,<sockname using /WHO>,<sockname being WHO'd>)
 
-  return $replace($1, <chan>, $mIRCd.lastJoined($2,$3), <user>, $iif($mIRCd.info($3,ident) != $null,$v1,$mIRCd.info($3,user)), <ip>, $mIRCd.whoIP($2,$3), <host>, $mIRCd.info($3,$iif($is_oper($2) == $true,trueHost,host)), <server>, $mIRCd(SERVER_NAME).temp, <nick>, $mIRCd.info($3,nick), <flags>, $mIRCd.whoFlags($2,$3), <idle>, $iif($mIRCd.info($3,idleTime) != $null,$calc($ctime - $v1),$sock($3).to), <account>, 0, <hopcount>, 0, <:hopcount>, :0, <realName>, $mIRCd.info($3,realName), <:realName>, $+(:,$mIRCd.info($3,realName)))
+  return $replace($1, <chan>, $mIRCd.lastJoined($2,$3), <user>, $iif($mIRCd.info($3,ident) != $null,$v1,$mIRCd.info($3,user)), <ip>, $mIRCd.whoIP($2,$3), <host>, $mIRCd.info($3,$iif($is_oper($2) == $true,trueHost,host)), <server>, $mIRCd(SERVER_NAME).temp, <nick>, $mIRCd.info($3,nick), <flags>, $mIRCd.whoFlags($2,$3), <idle>, $iif($mIRCd.info($3,idleTime) != $null,$calc($ctime - $v1),$sock($3).to), <account>, 0, <hopcount>, $mIRCd.hopCount, <:hopcount>, $+(:,$mIRCd.hopCount), <realName>, $mIRCd.info($3,realName), <:realName>, $+(:,$mIRCd.info($3,realName)))
 }
 
 ; EOF

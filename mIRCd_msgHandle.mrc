@@ -223,37 +223,31 @@ alias mIRCd.parseMsg {
     }
     var %this.sock = $getSockname($gettok(%this.target,1,64)), %this.nick = $mIRCd.info(%this.sock,nick)
     if ($1 == %this.sock) { goto parsePrivate }
-    ; ,-> Note to self: Couldn't I just do like above and check if oper then use a goto?
+    if ($is_oper($1) == $true) { goto preParsePrivate }
     if (($is_modeSet(%this.sock,c).nick == $true) && ($+(*,$chr(3),*) iswm %this.message)) {
-      if ($is_oper($1) == $false) {
-        mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user blocks colors (+c))
-        continue
-      }
+      mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user blocks colors (+c))
+      continue
     }
-    if (($is_modeSet(%this.sock,D).nick == $true) && ($is_oper($1) == $false)) {
+    if ($is_modeSet(%this.sock,D).nick == $true) {
       mIRCd.sraw $1 $mIRCd.reply(487,$mIRCd.info($1,nick),%this.nick)
       continue
     }
     if ($is_modeSet(%this.sock,m).nick == $true) {
       if (($is_acceptMatch(%this.sock,$mIRCd.fulladdr($1)) == $false) || ($is_acceptMatch(%this.sock,$mIRCd.ipaddr($1)) == $false) || ($is_acceptMatch(%this.sock,$mIRCd.trueaddr($1)) == $false)) {
-        if ($is_oper($1) == $false) {
-          mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user denies messages from those not on their /ACCEPT list (+m))
-          continue
-        }
+        mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user denies messages from those not on their /ACCEPT list (+m))
+        continue
       }
     }
     if (($is_modeSet(%this.sock,M).nick == $true) && ($is_mutual(%this.sock,$1) == $false)) {
-      if ($is_oper($1) == $false) {
-        mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (You are not on a mutual channel (+M))
-        continue
-      }
+      mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (You are not on a mutual channel (+M))
+      continue
     }
     if (($is_modeSet(%this.sock,C).nick == $true) && ($+($chr(1),*,$chr(1)) iswm $decolonize(%this.message)) && ($+($chr(1),ACTION *,$chr(1)) !iswm $decolonize(%this.message))) {
-      if ($is_oper($1) == $false) {
-        mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user denies /CTCP requests (+C))
-        continue
-      }
+      mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user denies /CTCP requests (+C))
+      continue
     }
+    :preParsePrivate
+    ; >-> Even though we've skipped the above if they're an oper, IRC opers still adhere to this unless usermode +X.
     if ($is_modeSet(%this.sock,S).nick == $true) {
       if ($is_modeSet($1,X).nick == $false) { var %this.message = $strip(%this.message) }
     }

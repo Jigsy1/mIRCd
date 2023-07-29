@@ -194,26 +194,39 @@ alias mIRCd_command_pong {
     mIRCd.welcome $1
     return
   }
-  ; `-> Allow localhost and LAN to override the rest of the code.
+  ; `-> Allow localhost and LAN to override the rest of the code. (Though now that I think about it, do they need to be subjected to network bans?)
   if ($mIRCd(CONNECTION_PASS) != $null) {
     if ($mIRCd.info($1,firstCommand) != PASS) {
       ; `-> PASS needs to be sent *BEFORE* NICK and USER.
-      $+(.timermIRCd.passNotFirst,$1) -o 1 0 mIRCd.errorUser $1 Incorrect credentials $parenthesis(Sent $upper($mIRCd.info($1,firstCommand)) before PASS.)
+      $+(.timermIRCd.passNotFirst,$1) -o 1 0 mIRCd.errorUser $1 $mIRCd.badCreds(Sent $upper($mIRCd.info($1,firstCommand)) before PASS.)
       return
     }
     if ($mIRCd.info($1,password) !== $mIRCd(CONNECTION_PASS)) {
       ; `-> !== because of "magic hashes."
-      $+(.timermIRCd.wrongPass,$1) -o 1 0 mIRCd.errorUser $1 Incorrect credentials $parenthesis(Incorrect password.)
+      $+(.timermIRCd.wrongPass,$1) -o 1 0 mIRCd.errorUser $1 $mIRCd.badCreds(Incorrect password.)
       return
     }
   }
   if ($bool_fmt($mIRCd(DENY_EXTERNAL_CONNECTIONS)) == $true) {
-    $+(.timermIRCd.deny,$1) -o 1 0 mIRCd.errorUser $1 No more connections allowed $parenthesis(No external connections.)
+    $+(.timermIRCd.deny,$1) -o 1 0 mIRCd.errorUser $1 $mIRCd.noMore(No external connections.)
     return
+  }
+  if ($mIRCd(MAXCLONES) isnum 1-) {
+    var %this.loop = 0, %this.count = 0
+    while (%this.loop < $hcount($mIRCd.users)) {
+      inc %this.loop 1
+      var %this.sock = $hget($mIRCd.users,%this.loop).item
+      if ($1 == %this.sock) { continue }
+      if ($sock($1).ip == $sock(%this.sock).ip) { inc %this.count 1 }
+      if (%this.count >= $mIRCd(MAXCLONES)) {
+        $+(.timermIRCd.maxClone,$1) -o 1 0 mIRCd.errorUser $1 $mIRCd.noMore(Too many from your host.)
+        return
+      }
+    }
   }
   if ($mIRCd(MAX_USERS) isnum 1-) {
     if ($calc($hcount($mIRCd.users) - $hcount($mIRCd.unknown)) >= $mIRCd(MAX_USERS)) {
-      $+(.timermIRCd.full,$1) -o 1 0 mIRCd.errorUser $1 No more connections allowed $parenthesis(The server is full.)
+      $+(.timermIRCd.full,$1) -o 1 0 mIRCd.errorUser $1 $mIRCd.noMore(The server is full.)
       return
     }
   }
@@ -416,5 +429,10 @@ alias mIRCd.registerUser {
   [ %this.command ]
   ; `-> I don't believe the [ evaulation brackets ] are really necessary here, but I'm leaving them in just incase.
 }
+
+; Error message(s):
+
+alias mIRCd.badCreds { return Incorrect credentials $parenthesis($1-) }
+alias mIRCd.noMore { return No more connections allowed $parenthesis($1-) }
 
 ; EOF

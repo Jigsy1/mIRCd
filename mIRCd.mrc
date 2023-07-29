@@ -1,4 +1,4 @@
-; mIRCd v0.09hf13 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+; mIRCd v0.09hf14 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm (Jurrasic Park)
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
@@ -69,7 +69,7 @@ alias _debugline { echo -aet [DEBUG]: $1- }
 alias _stripMatch { return $remove($1-, !, <, =, >) }
 alias _stripNumbers { return $remove($1-, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9) }
 alias bracket { return [[ $+ $$1- $+ ]] }
-alias bool_fmt { return $iif($istok(1 ok okay on t true y yes,$1,32) == $true,$true,$false) }
+alias bool_fmt { return $iif($istok(1 ok okay on one t tr true y yes,$1,32) == $true,$true,$false) }
 alias colonize { return $iif($count($1-,:) == 0,$+(:,$gettok($1-,-1,32)),$gettok($1-,$+($findtok($1-,$matchtok($1-,:,1,32),1,32),-),32)) }
 alias comma { return $chr(44) }
 alias dollar { return $chr(36) }
@@ -100,14 +100,6 @@ alias mIRCd {
 
   return $hget($iif($prop != temp,$mIRCd.main,$mIRCd.temp),$1)
 }
-alias mIRCd.fileBadNicks { return $qt($scriptdirconf\nicks.403) }
-alias mIRCd.fileCommands { return $qt($scriptdirconf\cmds\) }
-alias mIRCd.fileConf { return $qt($scriptdirmIRCd.ini) }
-alias mIRCd.fileKlines { return $qt($scriptdirconf\mIRCd.klines) }
-alias mIRCd.fileLocalShuns { return $qt($scriptdirconf\mIRCd.shuns) }
-alias mIRCd.fileLocalZlines { return $qt($scriptdirconf\mIRCd.zlines) }
-alias mIRCd.fileRaws { return $qt($scriptdirconf\mIRCd.raws) }
-alias mIRCd.fileSlines { return $qt($scriptdirconf\mIRCd.slines) }
 alias mIRCd.die {
   ; /mIRCd.die [-unload]
 
@@ -131,6 +123,15 @@ alias -l mIRCd.die_ {
   scon -r if ( $!hget( $* ) != $!null ) { hfree $* }
   if (%unload.flag == -unload) { mIRCd.unloadScripts }
 }
+alias mIRCd.fileBadNicks { return $qt($scriptdirconf\nicks.403) }
+alias mIRCd.fileCommands { return $qt($scriptdirconf\cmds\) }
+alias mIRCd.fileConf { return $qt($scriptdirmIRCd.ini) }
+alias mIRCd.fileKlines { return $qt($scriptdirconf\mIRCd.klines) }
+alias mIRCd.fileLocalShuns { return $qt($scriptdirconf\mIRCd.shuns) }
+alias mIRCd.fileLocalZlines { return $qt($scriptdirconf\mIRCd.zlines) }
+alias mIRCd.fileRaws { return $qt($scriptdirconf\mIRCd.raws) }
+alias mIRCd.fileSlines { return $qt($scriptdirconf\mIRCd.slines) }
+alias mIRCd.hopCount { return 0 }
 alias mIRCd.rehash {
   ; /mIRCd.rehash [section]
 
@@ -289,7 +290,7 @@ alias mIRCd.load {
   ; `-> Truncate NETWORK_INFO to the same length as a "real name." (50 characters.)
   hadd -m $mIRCd.main NETWORK_NAME $left($mIRCd(NETWORK_NAME),200)
   ; ¦-> Testing on another ircu IRCd (bircd), there doesn't seem to be(?) a limit on the length of a NETWORK_NAME, so let's impose one.
-  ; `-> If I'm wrong and there is (I'm guessing probably 512), let me know via Github: https://github.com/Jigsy1/mIRCd/issues
+  ; `-> If I'm wrong and there is (I'm guessing probably 512 characters), let me know via Github: https://github.com/Jigsy1/mIRCd/issues
   hadd -m $mIRCd.main NETWORK_NAME $legalizeIdent($mIRCd(NETWORK_NAME))
   ; `-> Make the NETWORK_NAME conform to naming conventions, which the nearest I can gather is the same as ident rules.
   if ($show == $true) { mIRCd.echo /mIRCd.load: done }
@@ -404,7 +405,7 @@ alias mIRCd.unloadScripts {
   ; `-> A quick and dirty loop.
   if ($script($script) != $null) { .unload -rs $qt($script) }
 }
-alias mIRCd.version { return mIRCd[0.09hf13(Rev.2)][2021-2023] }
+alias mIRCd.version { return mIRCd[0.09hf14(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 alias -l nextHour { return $+($asctime($calc($ctime + 3600),HH),:00) }
 alias -l requiredVersion { return 7.66 }

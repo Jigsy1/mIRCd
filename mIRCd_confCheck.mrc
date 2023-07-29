@@ -52,6 +52,10 @@ alias mIRCd.check {
     mIRCd.echo $+($bracket(%this.section),:) DEFAULT_SNOMASK must be a numerical value between 1 and 65535.
     return 1
   }
+  if (($readini($mIRCd.fileConf, %this.section, FLOOD_LIMIT) != $null) && ($readini($mIRCd.fileConf, %this.section, FLOOD_LIMIT) < 1024)) {
+    mIRCd.echo $+($bracket(%this.section),:) FLOOD_LIMIT must be a numerical value greater than 1024 bytes.
+    return 1
+  }
   if ($readini($mIRCd.fileConf, %this.section, KEYLEN) !isnum 1-23) {
     mIRCd.echo $+($bracket(%this.section),:) KEYLEN must be a numerical value between 1 and 23.
     return 1
@@ -98,6 +102,11 @@ alias mIRCd.check {
   }
   if ($readini($mIRCd.fileConf, %this.section, PING_TIMEOUT_DURATION) !isnum 60-) {
     mIRCd.echo $+($bracket(%this.section),:) PING_TIMEOUT_DURATION must be a numerical value greater than 60 seconds.
+    return 1
+  }
+  var %this.timeDuration = $v1
+  if ($calc(%this.timeDuration - $readini($mIRCd.fileConf, %this.section, PING_DURATION)) < 5) {
+    mIRCd.echo $+($bracket(%this.section),:) PING_TIMEOUT_DURATION must be at least five seconds higher than PING_DURATION.
     return 1
   }
   if ($readini($mIRCd.fileConf, %this.section, REGISTRATION_DURATION) !isnum 60-) {

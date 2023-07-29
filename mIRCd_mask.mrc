@@ -233,7 +233,7 @@ alias mIRCd_command_gline {
   }
 }
 alias mIRCd_command_shun {
-  ; /mIRCd_command_shun <sockname> SHUN [<-|+!realName|user@host> <duration> :<reason>]
+  ; /mIRCd_command_shun <sockname> SHUN [<-|+!RrealName|user@host> <duration> :<reason>]
 
   if ($is_oper($1) == $false) {
     mIRCd.sraw $1 $mIRCd.reply(481,$mIRCd.info($1,nick))

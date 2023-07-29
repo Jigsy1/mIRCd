@@ -1,3 +1,24 @@
+﻿mIRCd[0.09hf14(Rev.2)][2021-2023] - 30/07/2023
+--------------------------------------------------
+1. Can now allow opers to join (G|K)-lined channels by adding OPER_BYPASS_BADCHAN=TRUE or OPER_BYPASS_BADCHAN=FALSE to
+   [Features] in mIRCd.ini. Defaults to FALSE.
+   This also extends to /SVSJOIN.
+2. mIRCd_confCheck.mrc now checks to see if PING_TIMEOUT_DURATION is at least five seconds higher than PING_DURATION.
+3. /WHO now conforms to the amount of replies it should send if include fields are specified. (Which is still a lot even for this IRCd.)
+   (2048 / (NUMBER_OF_INCLUDE_FIELDS + 4))
+4. You can now limit the amount of users from the same ip address by adding MAXCLONES=<number> to [Mechanics] in mIRCd.ini.
+   LAN and localhost user(s) are not subject to this restriction.
+   The order is: [NETWORK BANS] -> *local immunity* -> [PASS] -> [NO EXTERNAL CONNECTIONS] -> [MAXCLONES] -> [MAXUSERS]
+5. Added pretty rudimentary "Excess flood" support. This can be enabled by adding EXCESS_FLOOD=TRUE or EXCESS_FLOOD=FALSE to
+   [Mechanics] in mIRCd.ini.
+6. Can specify the FLOOD_LIMIT=<bytes> for use with EXCESS_FLOOD under [Mechanics] in mIRCd.ini. (Needs to be >=1024 bytes.)
+   Currently 8192, which should be more than adequate.
+7. Fixed a visual bug in /mIRCd.modeTell which involved +k containing ¦. E.g. +k test¦key where the line showing the new modes
+   would truncate the key (just the key) to +k test. (The key itself would still be test¦key.)
+   Solved by replacing ¦ with a , since keys aren't allowed/supposed to contain commas due to /JOIN.
+8. Other cosmetic/minor change(s).
+
+
 mIRCd[0.09hf13(Rev.2)][2021-2023] - 28/07/2023
 --------------------------------------------------
 1.  Fixed an (accidentally discovered) issue where the IRCd would respond to Telnet clients constantly with "Register first"

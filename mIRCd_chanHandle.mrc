@@ -87,18 +87,19 @@ alias mIRCd_command_join {
   var %this.join = 0, %this.keyToken = 0
   while (%this.join < $numtok(%this.joins,44)) {
     inc %this.join 1
-    var %this.chan = $gettok($strip($gettok(%this.joins,%this.join,44)),1,160)
+    var %this.chan = $gettok($strip($gettok(%this.joins,%this.join,44)),1,160), %this.operBypass = 0
     ; `-> Strip any control codes and ignore everything post $chr(160). (These aren't being dealt with by the regex for some reason...)
     if ($is_valid(%this.chan).chan == $false) {
       mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),%this.chan)
       continue
     }
     if (($is_klineMatch(%this.chan) == $true) || ($is_glineMatch(%this.chan) == $true)) {
-      ; ¦-> I was going to add oper immunity, but then wondered why an oper would need to join a prohibited, unjoinable channel.
-      ; `-> Though on a proper IRCd, they should really be able to.
-      if ($bool_fmt($mIRCd(WALLOPS_BAD_JOINS)) == $true) { mIRCd.serverWallops $mIRCd.info($1,nick) $parenthesis($gettok($mIRCd.fulladdr($1),2,33)) attempted to join a banned channel: %this.chan }
-      mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
-      continue
+      if (($bool_fmt($mIRCd(OPER_BYPASS_BADCHAN)) == $true) && ($is_oper($1) == $true)) { var %this.operBypass = 1 }
+      if (%this.operBypass != 1) {
+        if ($bool_fmt($mIRCd(WALLOPS_BAD_JOINS)) == $true) { mIRCd.serverWallops $mIRCd.info($1,nick) $parenthesis($gettok($mIRCd.fulladdr($1),2,33)) attempted to join a banned channel: %this.chan }
+        mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
+        continue
+      }
     }
     if ($is_exists(%this.chan).chan == $false) {
       if ($bool_fmt($mIRCd(DENY_CHANNEL_CREATION)) == $true) {
@@ -434,9 +435,12 @@ alias mIRCd_command_svsjoin {
     return
   }
   if (($is_klineMatch(%this.chan) == $true) || ($is_glineMatch(%this.chan) == $true)) {
-    mIRCd.serverWallops Failed $upper($2) to a banned channel by $mIRCd.info($1,nick) $+($parenthesis($gettok($mIRCd.fulladdr($1),2,33)),:) %this.nick -> %this.name
-    mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
-    return
+    if (($bool_fmt($mIRCd(OPER_BYPASS_BADCHAN)) == $true) && ($is_oper(%this.sock) == $true)) { var %this.operBypass = 1 }
+    if (%this.operBypass != 1) {
+      mIRCd.serverWallops Failed $upper($2) to a banned channel by $mIRCd.info($1,nick) $+($parenthesis($gettok($mIRCd.fulladdr($1),2,33)),:) %this.nick -> %this.name
+      mIRCd.sraw $1 $mIRCd.reply(479,$mIRCd.info($1,nick),%this.chan)
+      return
+    }
   }
   if ($is_exists(%this.chan).chan == $false) {
     mIRCd.createChan %this.chan %this.sock
@@ -445,7 +449,8 @@ alias mIRCd_command_svsjoin {
   mIRCd.chanAddUser %this.id %this.sock
   ; `-> We need to bypass restrictions (+i, etc.), so this is different from SVSPART (which just uses the PART command).
   :processInfoShare
-  mIRCd.sraw %this.sock NOTICE %this.nick :*** Notice -- You were forced to join: %this.name
+  mIRCd.sraw %this.sock NOTICE %this.nick :*** Notice -- You were forced by $mIRCd.info($1,nick) $parenthesis($gettok($mIRCd.fulladdr($1),2,33)) to join: %this.name
+  ; `-> Include the nick and their user@host to prevent abuse. E.g. Rogue opers forcing users to join highly illegal channels or whatever.
   mIRCd.serverWallops $upper($2) by $mIRCd.info($1,nick) $+($parenthesis($gettok($mIRCd.fulladdr($1),2,33)),:) %this.nick -> %this.name
   ; `-> Issue a +g wallops to prevent abuse.
 }
@@ -481,6 +486,7 @@ alias mIRCd_command_svspart {
   }
   mIRCd_command_part %this.sock PART %this.name $+(:,$mIRCd.svsPart)
   mIRCd.sraw %this.sock NOTICE %this.nick :*** Notice -- You were forced to part: %this.name
+  ; `-> This one doesn't matter too much.
   mIRCd.serverWallops $upper($2) by $mIRCd.info($1,nick) $+($parenthesis($gettok($mIRCd.fulladdr($1),2,33)),:) %this.nick -> %this.name
   ; `-> Issue a +g wallops to prevent abuse.
 }

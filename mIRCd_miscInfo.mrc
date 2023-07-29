@@ -40,7 +40,7 @@ alias mIRCd_command_info {
 alias mIRCd_command_links {
   ; /mIRCd_command_links <sockname> LINKS
 
-  mIRCd.sraw $1 $mIRCd.reply(364,$mIRCd.info($1,nick),$mIRCd(SERVER_NAME).temp,$mIRCd(SERVER_NAME).temp,0,$mIRCd(NETWORK_INFO))
+  mIRCd.sraw $1 $mIRCd.reply(364,$mIRCd.info($1,nick),$mIRCd(SERVER_NAME).temp,$mIRCd(SERVER_NAME).temp,$mIRCd.hopCount,$mIRCd(NETWORK_INFO))
   mIRCd.sraw $1 $mIRCd.reply(365,$mIRCd.info($1,nick))
 }
 alias mIRCd_command_map {
