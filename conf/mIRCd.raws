@@ -133,7 +133,7 @@ $+(:,$3)
 347
 :End of Invite List
 351
-$mIRCd.version $mIRCd(SERVER_NAME).temp :0
+$mIRCd.version $mIRCd(SERVER_NAME).temp $+(:,$mIRCd.hopCount)
 352
 $3-
 353
