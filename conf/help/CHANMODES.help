@@ -1,18 +1,18 @@
 ﻿<thisCommand>
 
 c - Blocks any incoming messages containing colors only. Bold, underline, etc. will still be visible.
-i - Invite only. You cannot join unless someone /INVITEs you.
+i - Invite only. You cannot join unless someone does: /INVITE <yourNick> #chan
 m - Moderated. Only voices or above may change their nick or talk.
 n - No external messages. User must be on the channel in order to talk.
 p - Private. Channel will not appear in /LIST. (Excluding opers.)
 s - Secret*. Does not appear in /LIST, /WHOIS replies, etc. (Excluding opers.)
 t - Only (h)ops may change the topic.
-u - Part/quit messages are hidden from users in the channel.
+u - /PART and /QUIT messages are suppressed and replaced with a generic message.
 y - Anybody can use the /INVITE command.
 C - /CTCP is not allowed.
 D - Auditorium mode. Users will be hidden until they either change the topic, get kicked, receive @/%/+ or talk.
 H - Hide channel mode(s) from appearing in /LIST or via /MODE #chan if not on the channel. (Excluding opers.)
-N - /NOTICEs to the channel are not allowed.
+N - /NOTICE to the channel is not allowed.
 K - /KNOCK is not allowed.
 S - Strips any incoming messages of control codes such as bold, colors, etc.
 T - Multi-target (/PRIVMSG #chan1,#chan2,... etc.) messages are not allowed.
@@ -42,8 +42,8 @@ d - Auditorium mode. Will be set if you try to remove +D from a channel still co
 
 Footnotes:
 ----------
-1. When unsetting a key (/MODE #chan -k), you must supply the key in order to unset it.
-   However, you do not need to do this when unsetting a gag time, join throttle or limit.
+1. When unsetting a key (/MODE #chan -k), you _must_ supply the key in order to unset it.
+   However, you do not need to do this when unsetting bandwidth saver, a gag time, join throttle or limit.
 
 *The existence of the channel can be revealed by certain commands - E.g. trying to /KICK when not on the channel.
 However, if you set DENY_SECRET=TRUE in the config, it will vehemently deny that the channel exists.
