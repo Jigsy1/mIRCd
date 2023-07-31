@@ -174,20 +174,25 @@ alias mIRCd_command_oper {
     mIRCd.sraw $1 $mIRCd.reply(464,$mIRCd.info($1,nick))
     return
   }
-  var %this.modes = $+($iif($is_modeSet($1,g).nick == $false,g),o,$iif($is_modeSet($1,s).nick == $false,s))
-  mIRCd.updateUser $1 modes $+($mIRCd.info($1,modes),%this.modes)
-  if (s isincs %this.modes) {
-    var %this.snoMask = $iif($mIRCd(DEFAULT_OPER_SNOMASK) isnum 1-65535,$v1,17157), %this.snoFlag = 1
-    mIRCd.updateUser $1 snoMask %this.snoMask
-    mIRCd.sraw $1 $mIRCd.reply(008,$mIRCd.info($1,nick),%this.snoMask,$base(%this.snoMask,10,16))
-    ; `-> This should cover connections, DIE, GLINE, HACK(4), KILL, QUIT and RESTART.
-  }
-  mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) MODE $mIRCd.info($1,nick) $+(:+,%this.modes)
+  var %this.initial = $mIRCd.info($1,modes)
+  ; `-> For the new code.
+  mIRCd.updateUser $1 modes $+($mIRCd.info($1,modes),o)
+  mIRCd.raw $1 $+(:,$mIRCd.fulladdr($1)) MODE $mIRCd.info($1,nick) :+o
   mIRCd.sraw $1 $mIRCd.reply(381,$mIRCd.info($1,nick))
+  ; `-> Send +o separately because the next bit is entirely optional. (Plus we need o to be part of modes to push certain modes with mIRCd_command_mode.)
   hadd -m $mIRCd.opersOnline $1 $ctime
   ; `-> This is a very hacky way of fiddling with the LUSERS numbers.
-  if (($is_modeSet($1,s).nick == $true) && (%this.snoFlag != 1)) {
-    if ($mIRCd.info($1,snoMask) != $null) { mIRCd.sraw $1 $mIRCd.reply(008,$mIRCd.info($1,nick),$v1,$base($v1,10,16)) }
+  if ($mIRCd(DEFAULT_OPERMODES).temp != +) { mIRCd_command_mode $1 MODE $mIRCd.info($1,nick) $+(:,$mIRCd(DEFAULT_OPERMODES).temp) }
+  if ($is_modeSet($1,s).nick == $true) {
+    if (s !isincs %this.initial) {
+      var %this.snoMask = $iif($mIRCd(DEFAULT_OPER_SNOMASK) isnum 1-65535,$v1,17157)
+      mIRCd.updateUser $1 snoMask %this.snoMask
+      mIRCd.sraw $1 $mIRCd.reply(008,$mIRCd.info($1,nick),%this.snoMask,$base(%this.snoMask,10,16))
+      ; `-> This should cover connections, DIE, GLINE, HACK(4), KILL, QUIT and RESTART.
+    }
+    else {
+      if ($mIRCd.info($1,snoMask) != $null) { mIRCd.sraw $1 $mIRCd.reply(008,$mIRCd.info($1,nick),$v1,$base($v1,10,16)) (no change) }
+    }
   }
   mIRCd.serverWallops $mIRCd.info($1,nick) $parenthesis($gettok($mIRCd.fulladdr($1),2-,33)) is now an IRC operator (+o) using account: $hfind($mIRCd.opers,$hget($mIRCd.opers,$3),1,W).data
 }
@@ -302,6 +307,7 @@ alias mIRCd.chanModesSupport { return $+(b,$comma,k,$comma,gjl,$iif($mIRCd(BANDW
 ; `-> RPL_ISUPPORT. If you remove a mode from chanModes, just remember to _CAREFULLY_ remove it from here, too.
 alias -l mIRCd.defaultChanModes { return nt }
 ; `-> These are the fallback modes for the function right at the bottom of the script. (No need for the + here, we'll deal with that.)
+alias -l mIRCd.defaultOperModes { return gsw }
 ; ,-> Buckle up, kids!
 alias -l mIRCd.parseMode {
   ; /mIRCd.parseMode [<args>]
@@ -941,7 +947,7 @@ alias mIRCd.hiddenCheck {
   if (%this.d == 1) { return CHECK_LOWERCASE_D }
 }
 alias mIRCd.makeDefaultModes {
-  ; $mIRCd.makeDefaultModes(<input>)[.chan|user]
+  ; $mIRCd.makeDefaultModes(<input>)[.chan|oper|(nick|user)]
 
   if ($prop == chan) {
     if ($1 == $null) { return $+(+,$mIRCd.defaultChanModes) }
@@ -969,9 +975,9 @@ alias mIRCd.makeDefaultModes {
     return $+(+,$iif($removecs($+($sorttokcs(%this.lower,32,a),$sorttok(%this.upper,32,a)), $chr(32)) != $null,$v1,$mIRCd.defaultChanModes))
     ; `-> Default back to +nt if there isn't anything.
   }
-  ; ,-> User.
-  if ($1 == $null) { return + }
-  var %this.loop = 0, %these.polars = cS, %this.polar = c S,S c, %this.forbidden = hkoX
+  ; ,-> Oper/User.
+  if ($1 == $null) { return $+(+,$iif($prop == oper,$mIRCd.defaultOperModes)) }
+  var %this.loop = 0, %these.polars = cS, %this.polar = c S,S c, %this.forbidden = $iif($prop == oper,ho,hkoX)
   ; ¦-> I don't mind the other modes being allowed (+g/+W) but I will _NOT_ allow +h, +k, +o or +X.
   ; `-> +h requires a S:line for a host (E.g. Jigsy!Jigsy@Towa.Herschel.is.mai.wai.fu), but +k, +o and +X are just asking for trouble.
   while (%this.loop < $len($1)) {

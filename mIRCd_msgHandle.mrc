@@ -292,7 +292,9 @@ alias mIRCd.parseWall {
     if (($2 == WALLHOPS) && ($is_op(%this.id,%this.sock) == $false) && ($is_hop(%this.id,%this.sock) == $false)) { continue }
     if (($2 == WALLCHOPS) && ($is_op(%this.id,%this.sock) == $false)) { continue }
     mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) NOTICE $+(@,$3) %this.string
+    if (%this.activeFlag != 1) { var %this.activeFlag = 1 }
   }
+  if (%this.activeFlag == 1) { mIRCd.updateChan %this.id lastActive $ctime }
 }
 alias mIRCd.serverWallops {
   ; /mIRCd.serverWallops <text>

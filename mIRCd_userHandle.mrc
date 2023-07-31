@@ -124,7 +124,7 @@ alias mIRCd_command_pass {
   }
   var %this.current = $iif($mIRCd.info($1,nick) != $null,$v1,*)
   if ($3 == $null) {
-    ; `-> Just $3 being null. Apparently : itself is okay as a password.
+    ; `-> Just $3 being null. Apparently : itself is okay as a password. (Empty password perhaps?)
     mIRCd.sraw $1 $mIRCd.reply(461,%this.current,$2)
     return
   }
@@ -190,9 +190,11 @@ alias mIRCd_command_pong {
     return
   }
   ; `-> K-line takes priority (because it's local), but there's no specific order to Z-line or G-line. (03/02/2023: Now with local Z-lines, Z-line takes priority over G-line.)
-  if ((127.* iswm $sock($1).ip) && (192.168.* iswm $sock($1).ip)) {
-    mIRCd.welcome $1
-    return
+  if ((127.* iswm $sock($1).ip) || (192.168.* iswm $sock($1).ip)) {
+    if ($bool_fmt($mIRCd(LOCAL_IMMUNITY)) == $true) {
+      mIRCd.welcome $1
+      return
+    }
   }
   ; `-> Allow localhost and LAN to override the rest of the code. (Though now that I think about it, do they need to be subjected to network bans?)
   if ($mIRCd(CONNECTION_PASS) != $null) {
@@ -208,8 +210,11 @@ alias mIRCd_command_pong {
     }
   }
   if ($bool_fmt($mIRCd(DENY_EXTERNAL_CONNECTIONS)) == $true) {
-    $+(.timermIRCd.deny,$1) -o 1 0 mIRCd.errorUser $1 $mIRCd.noMore(No external connections.)
-    return
+    if (127.* !iswm $sock($1).ip) {
+      ; `-> This one doesn't need to apply to localhost. (We might want to restrict LAN, though.)
+      $+(.timermIRCd.deny,$1) -o 1 0 mIRCd.errorUser $1 $mIRCd.noMore(No external connections.)
+      return
+    }
   }
   if ($mIRCd(MAXCLONES) isnum 1-) {
     var %this.loop = 0, %this.count = 0

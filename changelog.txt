@@ -1,4 +1,23 @@
-﻿mIRCd[0.09hf14(Rev.2)][2021-2023] - 30/07/2023
+﻿mIRCd[0.09hf15(Rev.2)][2021-2023] - 01/08/2023
+--------------------------------------------------
+1. You can now specify DEFAULT_OPERMODES in mIRCd.ini to be set by a user whenever they succesfully /OPER by adding
+   DEFAULT_OPERMODES=modestring to [Mechanics] in mIRCd.ini. (Defaults to hardcoded +gsw.)
+2. Although this is not a bug (but was changed by UnderNet), you can now hide the /SILENCE list from other users (excluding IRC operators)
+   by adding HIDE_SILENCE_LIST=TRUE or HIDE_SILENCE_LIST=FALSE to [Mechanics] in mIRCd.ini. (Defaults to FALSE.)
+3. The same applies to /ACCEPT list, but by adding HIDE_ACCEPT_LIST=TRUE or HIDE_ACCEPT_LIST=FALSE to [Mechanics] in mIRCd.ini. (Defaults to FALSE.)
+
+   If you wish to hide both of them at the same time, you can simply abridge this to HIDE_CLIENT_LISTS=TRUE or HIDE_CLIENT_LISTS=FALSE
+   to [Mechanics] in mIRCd.ini. (Defaults to FALSE).
+4. WALLCHOPS, WALLHOPS and WALLVOICES now count towards time last active. (Assuming a message was successfully sent.)
+5. You can now specify if you want those on localhost/LAN to have immunity from restrictions upon connection (see order in notes for hf14)
+   by adding LOCAL_IMMUNITY=TRUE or LOCAL_IMMUNITY=FALSE to [Mechanics] in mIRCd.ini. (Defaults to FALSE.)
+6. Fixed a bug *with* local immunity. (Used the wrong boolean operator.)
+7. localhost (127.0.0.1) isn't subjected to DENY_EXTERNAL_CONNECTIONS=TRUE if LOCAL_IMMUNITY=FALSE, but LAN will be since you
+   might be wanting to restrict LAN users from connecting.
+8. Other cosmetic/minor change(s).
+
+
+mIRCd[0.09hf14(Rev.2)][2021-2023] - 30/07/2023
 --------------------------------------------------
 1. Can now allow opers to join (G|K)-lined channels by adding OPER_BYPASS_BADCHAN=TRUE or OPER_BYPASS_BADCHAN=FALSE to
    [Features] in mIRCd.ini. Defaults to FALSE.

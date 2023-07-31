@@ -1,4 +1,4 @@
-; mIRCd v0.09hf14 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+; mIRCd v0.09hf15 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm (Jurrasic Park)
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
@@ -374,6 +374,7 @@ alias mIRCd.start {
     if ($mIRCd(SLINE_SUPPORT).temp == $null) { hadd -m $mIRCd.temp SLINE_SUPPORT $iif($bool_fmt($mIRCd(SLINE_SUPPORT)) == $true,1,0) }
     if ($mIRCd(WHOIS_PARANOIA).temp == $null) { hadd -m $mIRCd.temp WHOIS_PARANOIA $iif($bool_fmt($mIRCd(WHOIS_PARANOIA)) == $true,1,0) }
     if ($mIRCd(DEFAULT_CHANMODES).temp == $null) { hadd -m $mIRCd.temp DEFAULT_CHANMODES $iif($mIRCd.makeDefaultModes($mIRCd(DEFAULT_CHANMODES)).chan != $null,$v1,$mIRCd.defaultChanModes) }
+    if ($mIRCd(DEFAULT_OPERMODES).temp == $null) { hadd -m $mIRCd.temp DEFAULT_OPERMODES $iif($mIRCd.makeDefaultModes($mIRCd(DEFAULT_OPERMODES)).oper != $null,$v1,$mIRCd.defaultOperModes) }
     if ($mIRCd(DEFAULT_USERMODES).temp == $null) { hadd -m $mIRCd.temp DEFAULT_USERMODES $mIRCd.makeDefaultModes($mIRCd(DEFAULT_USERMODES)).nick }
     if ($mIRCd(SALT).temp == $null) { hadd -m $mIRCd.temp SALT $mIRCd(SALT) }
     if ($mIRCd(SERVER_NAME).temp == $null) { hadd -m $mIRCd.temp SERVER_NAME $mIRCd(SERVER_NAME) }
@@ -405,7 +406,7 @@ alias mIRCd.unloadScripts {
   ; `-> A quick and dirty loop.
   if ($script($script) != $null) { .unload -rs $qt($script) }
 }
-alias mIRCd.version { return mIRCd[0.09hf14(Rev.2)][2021-2023] }
+alias mIRCd.version { return mIRCd[0.09hf15(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 alias -l nextHour { return $+($asctime($calc($ctime + 3600),HH),:00) }
 alias -l requiredVersion { return 7.66 }

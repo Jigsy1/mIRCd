@@ -26,9 +26,13 @@ alias mIRCd_command_accept {
 
   if (($pos(-+,$left($3,1)) == $null) || ($3 == $null)) {
     ; ¦-> Show any accepts (for a user).
-    ; `-> Please see the note under /mIRCd_command_silence.
     var %this.sock = $1
-    if ($getSockname($3) != $null) { var %this.sock = $v1 }
+    if ($getSockname($3) != $null) {
+      var %this.sock = $v1
+      if (($bool_fmt($mIRCd(HIDE_CLIENT_LISTS)) == $true) || ($bool_fmt($mIRCd(HIDE_ACCEPT_LIST)) == $true)) {
+        if ($is_oper($1) == $false) { var %this.sock = $1 }
+      }
+    }
     if ($hcount($mIRCd.accept(%this.sock)) == 0) {
       mIRCd.sraw $1 $mIRCd.reply(162,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick))
       return
@@ -346,10 +350,13 @@ alias mIRCd_command_silence {
 
   if (($pos(-+,$left($3,1)) == $null) || ($3 == $null)) {
     ; ¦-> Show any silences (for a user).
-    ; ¦-> NOTE: Being able to see the silence(s) of other users when non-oper is not a bug on some ircu IRCds. (UnderNet did change this, though.)
-    ; `-> However, I am torn if a non-user should be able to see them, or if I should make them self/oper only.
     var %this.sock = $1
-    if ($getSockname($3) != $null) { var %this.sock = $v1 }
+    if ($getSockname($3) != $null) {
+      var %this.sock = $v1
+      if (($bool_fmt($mIRCd(HIDE_CLIENT_LISTS)) == $true) || ($bool_fmt($mIRCd(HIDE_SILENCE_LIST)) == $true)) {
+        if ($is_oper($1) == $false) { var %this.sock = $1 }
+      }
+    }
     if ($hcount($mIRCd.silence(%this.sock)) == 0) {
       mIRCd.sraw $1 $mIRCd.reply(272,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick))
       return
