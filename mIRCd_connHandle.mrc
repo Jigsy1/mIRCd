@@ -8,7 +8,7 @@ on *:dns:{
     inc %this.dns 1
     if ($hfind($mIRCd.dns,$dns(%this.dns),1,W).data != $null) {
       var %this.sock = $v1
-      mIRCd.sraw %this.sock NOTICE $mIRCd.info(%this.sock,nick) :*** Found your hostname
+      mIRCd.sraw %this.sock NOTICE $iif($mIRCd.info(%this.sock,nick) != $null,$v1,*) :*** Found your hostname
       if ($mIRCd.info(%this.sock,isReg) == 0) {
         mIRCd.updateUser %this.sock host $dns(%this.dns).addr
         mIRCd.updateUser %this.sock trueHost $dns(%this.dns).addr
