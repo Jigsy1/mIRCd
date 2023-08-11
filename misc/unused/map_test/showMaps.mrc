@@ -1,18 +1,30 @@
 ; IRC /map demo - If you've ever done /map on a large IRC server, you will understand what this does.
 ; If you don't, see: https://i.imgur.com/jDaSHMa.png
 ;
-; * To try it out, rename one of the files - 1.txt, 2.txt - to MAPS.txt and then do: /addMaps
+; * To try it out, rename one of the files - 1.txt, 2.txt, etc. - to MAPS.txt and then do: /addMaps
 ; * To visualize the tree, do: /showMaps
+; * If you want to visualize the three from a specific point, do: /showMaps server
+; * To reverse lookup the original parent server, do: //echo -a $reverse_parent_search(server)
 ; * To free the table, do: //hfree $mapTable
 ;
-; Then try the other one to see the difference. You can also load maps up to a point. E.g. /addMaps 3
+; Then try the other one to see the difference.
+;
+; * You can also view the map from a certain point. E.g. /showMaps server.name
+; * You can also load maps up to a point. E.g. /addMaps 3
 ;
 ; If you wish to add more servers to MAPS.txt, it must be in the format of: child.server parent.server
+
+on *:unload:{
+  if ($hget($mapTable)) { hfree $v1 }
+}
+
+; Core:
 
 alias addMaps {
   ; /addMaps [limit]
 
-  if (($exists($mapFile) == $false) || ($lines($mapFile) == 0)) { return }
+  if ($hget($mapTable) != $null) { hfree $v1 }
+  if ($lines($mapFile) == 0) { return }
   var %this.loop = 0
   while (%this.loop < $iif($1 isnum 1-,$v1,$lines($mapFile))) {
     inc %this.loop 1
@@ -20,50 +32,80 @@ alias addMaps {
   }
 }
 alias showMaps {
-  ; /showMaps [server.name]
+  ; /showMaps [server]
 
-  var %this.main = $iif($1 != $null,$v1,towaherschel.localhost)
+  var %this.parent = $iif($1 != $null,$v1,$parent_server)
   ; `-> This is our parent server. Everything else is a child and progeny.
-  echo -at %this.main
-  if ($hfind($mapTable,%this.main,0,W).data == 0) { goto map_End }
-  var %this.loop = 0, %this.max = $hfind($mapTable,%this.main,0,W).data
+  echo -at %this.parent
+  if ($hfind($mapTable,%this.parent,0,W).data == 0) {
+    echo -at $end_of_map
+    return
+  }
+  var %this.loop = 0, %this.max = $hfind($mapTable,%this.parent,0,W).data
   while (%this.loop < %this.max) {
     inc %this.loop 1
-    var %this.server = $hfind($mapTable,%this.main,%this.loop,W).data, %this.count = $hfind($mapTable,%this.server,0,W).data
+    var %this.child = $hfind($mapTable,%this.parent,%this.loop,W).data, %this.count = $hfind($mapTable,%this.child,0,W).data
     var %this.pre = $iif(%this.count > 0,$iif(%this.loop != %this.max,$pipe,$tail),$iif(%this.loop != %this.max,$pipe,$tail)), %this.pos = $pos(%this.pre,$tail)
     ; `-> Note: Changed %this.loop <= %this.max to %this.loop != %this.max
-    echo -at $+(%this.pre,-,%this.server)
-    map_recurse 1 %this.count %this.server %this.pos
+    echo -at $+(%this.pre,$branch,%this.child)
+    map_recurse 1 %this.count %this.child %this.pos
   }
-  :map_End
-  echo -at End of /MAP
+  echo -at $end_of_map
   return
 }
 alias -l map_recurse {
-  ; /map_recurse <recursion number> <number of progeny> <server> [position-of-tail [position-of-tail ...]]
+  ; /map_recurse <recursion number> <number of progeny> <server.name> [position-of-tail [position-of-tail ...]]
 
-  var %this.recurse = $3, %this.pos = $4-
-  if ($hfind($mapTable,%this.recurse,0,W).data == 0) { return }
-  var %this.loop = 0, %this.max = $hfind($mapTable,%this.recurse,%this.loop,W).data
+  var %this.pos = $4-
+  if ($hfind($mapTable,$3,0,W).data == 0) { return }
+  var %this.loop = 0, %this.max = $hfind($mapTable,$3,0,W).data
   while (%this.loop < %this.max) {
     inc %this.loop 1
-    var %this.server = $hfind($mapTable,%this.recurse,%this.loop,W).data, %this.count = $hfind($mapTable,%this.server,0,W).data
+    var %this.child = $hfind($mapTable,$3,%this.loop,W).data, %this.count = $hfind($mapTable,%this.child,0,W).data
     var %this.pre = $str($+($pipe,$chr(32)),$1) $+ $iif(%this.count > 0,$iif(%this.loop != $2,$pipe,$tail),$iif(%this.loop < %this.max,$pipe,$tail)), %this.pos = %this.pos $pos(%this.pre,$tail)
     var %this.pretty = $regsubex($str(.,$len(%this.pre)),/./g,$iif($istok(%this.pos,\n,32) == $false,$mid(%this.pre,\n,1),$iif($mid(%this.pre,\n,1) != $tail,$chr(160),$tail)))
     ; `-> Remove any branches that lead to nowhere.
-    echo -at $+(%this.pretty,-,%this.server)
-    .signal -n map_recurse $calc($1 + 1) %this.count %this.server %this.pos
-    ; `-> Try replacing .signal -n map_recurse with recurse_map and adding the alias below?
+    echo -at $+(%this.pretty,$branch,%this.child)
+    recurse_map $calc($1 + 1) %this.count %this.child %this.pos
   }
   return
 }
-on *:signal:map_recurse:{ map_recurse $1- }
-; ¦-> Due to a change preventing direct recursion in mIRC 7.33, this *is* required.
-; `-> That said adding the following would have probably worked too: alias recurse_map { map_recurse $1- }
+alias recurse_map { map_recurse $1- }
+; `-> Due to a change preventing direct recursion in mIRC 7.33, this *is* required.
+alias reverse_parent_search {
+  ; $reverse_parent_search(<server>)
+  ;
+  ; Find the original parent the server descended from.
+  ;
+  ; <our server>
+  ; ¦-<original parent>
+  ; ¦ ¦-... ...
+  ; ... ... ...
+  ; ... ... `-<start>
+  ; ...
+
+  var %this.break = $parent_server
+  ; `-> We end right before this one.
+  if ($hget($mapTable,$1) == $null) { return }
+  var %this.search = $1
+  while (%this.search != %this.break) {
+    var %this.parent = $hget($mapTable,%this.search)
+    if (%this.parent == %this.break) { break }
+    if (%this.parent == $null) { return }
+    ; `-> Something went wrong.
+    var %this.search = %this.parent
+  }
+  return %this.search
+}
 
 ; "Constants"
 
+alias -l branch { return - }
+alias -l end_of_map { return End of /MAP }
 alias -l mapFile { return $qt($scriptdirMAPS.txt) }
 alias mapTable { return mapTest }
+alias -l parent_server { return towaherschel.localhost }
 alias -l pipe { return ¦ }
 alias -l tail { return ` }
+
+; EOF
