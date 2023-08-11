@@ -1,4 +1,4 @@
-; mIRCd v0.09hf15 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+; mIRCd v0.09hf16 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm (Jurrasic Park)
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
@@ -36,6 +36,7 @@ alias mIRCd.accept { return $+(mIRCd,$bracket($1),[Accept]) }
 alias mIRCd.badNicks { return mIRCd[BadNicks] }
 alias mIRCd.chans { return mIRCd[Chans] }
 alias mIRCd.chanBans { return $+(mIRCd,$bracket($1),[Bans]) }
+alias mIRCd.chanInvites { return $+(mIRCd,$bracket($1),[Invites]) }
 alias mIRCd.chanUsers { return $+(mIRCd,$bracket($1),[Users]) }
 alias mIRCd.commands { return $+(mIRCd[Commands],$bracket($1)) }
 ; `-> Unregistered = 0; Registered = 1; Shunned = 2.
@@ -406,7 +407,7 @@ alias mIRCd.unloadScripts {
   ; `-> A quick and dirty loop.
   if ($script($script) != $null) { .unload -rs $qt($script) }
 }
-alias mIRCd.version { return mIRCd[0.09hf15(Rev.2)][2021-2023] }
+alias mIRCd.version { return mIRCd[0.09hf16(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 alias -l nextHour { return $+($asctime($calc($ctime + 3600),HH),:00) }
 alias -l requiredVersion { return 7.66 }

@@ -1,4 +1,25 @@
-﻿mIRCd[0.09hf15(Rev.2)][2021-2023] - 01/08/2023
+﻿mIRCd[0.09hf16(Rev.2)][2021-2023] - 12/08/2023
+--------------------------------------------------
+I would like to point out that I have started work on Rev.3, but totally underestimated just how difficult it would be.
+
+At most - for test purposes - I've managed to get a Python C:line jupe server to connect to me, and then another server
+to me/me to another server (yes, both ways work) so they both acknowledge they and the users exist. (Screenshot on page.)
+
+Don't expect it to be completed any time in the next year (or two), but I am determined to do this.
+
+Anyway, there were bugs...
+
+1. Sort of changed the way that invite works due to the fact that an invite would be outstanding if the channel was destroyed,
+   meaning that a user could join the channel when they weren't supposed to (new ownership).
+
+   It's roughly the same, but there's now a separate list for a channel. When the channel is destroyed, it cycles through the
+   list and expunges it from the socket hash table.
+2. Fixed a few bugs with /INVITE. A numeric reply if the channel doesn't exist (duh!), used mIRCd.raw instead of mIRCd.sraw for one reply, and
+   +X users can now invite a user to a channel if the channel doesn't exist by forcing it through. (This doesn't appear in the /INVITE list though.)
+3. Fixed a bug in /NAMES where the reply wouldn't show up if the channel didn't exist.
+
+
+mIRCd[0.09hf15(Rev.2)][2021-2023] - 01/08/2023
 --------------------------------------------------
 1. You can now specify DEFAULT_OPERMODES in mIRCd.ini to be set by a user whenever they succesfully /OPER by adding
    DEFAULT_OPERMODES=modestring to [Mechanics] in mIRCd.ini. (Defaults to hardcoded +gsw.)

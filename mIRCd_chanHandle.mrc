@@ -22,6 +22,15 @@ alias mIRCd_command_invite {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
   }
+  if ($is_exists($4).chan == $false) {
+    ; `-> DENY_SECRET doesn't apply here.
+    if ($is_modeSet($1,X).nick == $true) {
+      var %this.forceInvite = 1, %this.name = $4
+      goto getSocket
+    }
+    mIRCd.sraw $1 $mIRCd.reply(442,$mIRCd.info($1,nick),$4)
+    return
+  }
   var %this.id = $getChanID($4), %this.name = $iif($mIRCd.info(%this.id,name) != $null,$v1,$4)
   if ($is_on(%this.id,$1) == $false) {
     ; `-> DENY_SECRET doesn't apply here.
@@ -36,6 +45,7 @@ alias mIRCd_command_invite {
       return
     }
   }
+  :getSocket
   var %this.sock = $getSockname($3)
   if (%this.sock == $null) {
     mIRCd.sraw $1 $mIRCd.reply(401,$mIRCd.info($1,nick),$3)
@@ -46,14 +56,17 @@ alias mIRCd_command_invite {
     mIRCd.sraw $1 $mIRCd.reply(443,$mIRCd.info($1,nick),%this.nick,%this.name)
     return
   }
+  if (%this.forceInvite == 1) { goto processInvite }
   if (($is_modeSet(%this.id,y).chan == $false) && ($is_op(%this.id,$1) == $false) && ($is_hop(%this.id,$1) == $false) && ($is_modeSet($1,X).nick == $false)) {
     mIRCd.sraw $1 $mIRCd.reply(482,$mIRCd.info($1,nick),%this.name)
     return
   }
+  :processInvite
   mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) INVITE %this.nick $+(:,%this.name)
-  mIRCd.raw $1 $mIRCd.reply(341,$mIRCd.info($1,nick),%this.nick,%this.name)
+  mIRCd.sraw $1 $mIRCd.reply(341,$mIRCd.info($1,nick),%this.nick,%this.name)
+  if ($is_exists(%this.name).chan == $false) { return }
   if ($istok($mIRCd.info(%this.sock,invites),%this.id,44) == $true) { return }
-  mIRCd.updateUser %this.sock invites $+(%this.id,$comma,$mIRCd.info(%this.sock,invites))
+  mIRCd.addInvite %this.id %this.sock
 }
 alias mIRCd_command_join {
   ; /mIRCd_command_join <sockname> JOIN <0|#chan[,#chan,#chan,...]> [key[,key,key,...]]
@@ -121,7 +134,7 @@ alias mIRCd_command_join {
     if ($is_on(%this.id,$1) == $true) { continue }
     if ($istok($mIRCd.info($1,invites),%this.id,44) == $true) {
       ; `-> Having an invite bypasses the restrictions below.
-      mIRCd.updateUser $1 invites $remtok($mIRCd.info($1,invites),%this.id,1,44)
+      mIRCd.delInvite %this.id $1
       goto parseJoin
     }
     if ($is_modeSet($1,X).nick == $true) { goto parseJoin }
@@ -362,7 +375,7 @@ alias mIRCd_command_names {
     }
     if (%this.string != $null) { mIRCd.sraw $1 $mIRCd.reply($iif(%this.d == 1,355,353),$mIRCd.info($1,nick),%this.flag,%this.name,%this.string) }
     :processNames
-    mIRCd.sraw $1 $mIRCd.reply(366,$mIRCd.info($1,nick),$iif($iif($is_secret(%this.id) == $true && $is_on(%this.id,$1) == $false,%this.chan,%this.name) != $null,$v1,%this.chan))
+    mIRCd.sraw $1 $mIRCd.reply(366,$mIRCd.info($1,nick),$iif($is_exists(%this.chan).chan == $true,$iif($iif($is_secret(%this.id) == $true && $is_on(%this.id,$1) == $false,%this.chan,%this.name) != $null,$v1,%this.chan),%this.chan))
     if (%this.offChan == 1) { var %this.offChan = 0 }
   }
 }
@@ -606,6 +619,12 @@ alias mIRCd.addBan {
 
   hadd -m $mIRCd.chanBans($1) $2 $3 $4
 }
+alias mIRCd.addInvite {
+  ; /mIRCd.addInvite <chan ID> <sockname>
+
+  hadd -m $mIRCd.chanInvites($1) $2 $ctime
+  mIRCd.updateUser $2 invites $+($1,$comma,$mIRCd.info($2,invites))
+}
 alias mIRCd.makeAutoJoin {
   ; $mIRCd.makeAutoJoin
 
@@ -696,6 +715,14 @@ alias mIRCd.delChanItem {
 
   hdel $mIRCd.table($1) $2
 }
+alias mIRCd.delInvite {
+  ; /mIRCd.delInvite <chan ID> <sockname>
+
+  hdel $mIRCd.chanInvites($1) $2
+  if ($hcount($mIRCd.chanInvites($1)) == 0) { hfree $mIRCd.chanInvites($1) }
+  ; `-> Free up the empty table.
+  mIRCd.updateUser $2 invites $remtok($mIRCd.info($2,invites),$1,1,44)
+}
 alias mIRCd.deleteBan {
   ; /mIRCd.deleteBan <chan ID> <n!u@h>
 
@@ -708,6 +735,15 @@ alias mIRCd.destroyChan {
 
   var %this.id = $1
   hfree $mIRCd.table(%this.id)
+  if ($hcount($mIRCd.chanInvites(%this.id)) > 0) {
+    var %this.invite = $hcount($mIRCd.chanInvites(%this.id))
+    while (%this.invite > 0) {
+      mIRCd.delInvite %this.id $hget($mIRCd.chanInvites(%this.id),%this.invite).item
+      dec %this.invite 1
+    }
+  }
+  if ($hget($mIRCd.chanInvites(%this.id)) != $null) { hfree $mIRCd.chanInvites(%this.id) }
+  ; `-> Failsafe. Technically this'll be freed by delInvite.
   if ($hget($mIRCd.chanBans(%this.id)) != $null) { hfree $mIRCd.chanBans(%this.id) }
   hfree $mIRCd.chanUsers(%this.id)
   hdel $mIRCd.chans %this.id
