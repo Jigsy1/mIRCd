@@ -34,6 +34,7 @@ Please consult readme.txt on how to get it running. -Jigsy
 
 <img src="https://github.com/Jigsy1/mIRCd/assets/34282672/70a59d1c-a713-4e1e-9cac-1a179b866848" width="25%" height="25%" title="Linking demonstration" />
 
+
 <sup>1</sup> Though this could be an issue related to Windows 8.1. (I need to check on an XP VM.)
 
 <sup>2</sup> Assuming I don't burn out and actually get this completed.
