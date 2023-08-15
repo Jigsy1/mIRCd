@@ -32,8 +32,7 @@ Please consult readme.txt on how to get it running. -Jigsy
 
 ###### Screenshots (Rev.3 - WIP<sup>2</sup>)
 
-<img src="https://github.com/Jigsy1/mIRCd/assets/34282672/70a59d1c-a713-4e1e-9cac-1a179b866848" width="25%" height="25%" title="Linking demonstration" />
-
+<img src="https://github.com/Jigsy1/mIRCd/assets/34282672/1e576f2b-0761-4e2b-ae89-c1c5dec323e1" width="25%" height="25%" title="Linking demonstration and /MAP" />
 
 <sup>1</sup> Though this could be an issue related to Windows 8.1. (I need to check on an XP VM.)
 
