@@ -32,7 +32,7 @@ Please consult readme.txt on how to get it running. -Jigsy
 
 ###### Screenshots (Rev.3 - WIP<sup>2</sup>)
 
-<img src="https://github.com/Jigsy1/mIRCd/assets/34282672/1e576f2b-0761-4e2b-ae89-c1c5dec323e1" width="25%" height="25%" title="Linking demonstration and /MAP" />
+<img src="https://github.com/Jigsy1/mIRCd/assets/34282672/1e576f2b-0761-4e2b-ae89-c1c5dec323e1" width="25%" height="25%" title="Linking demonstration and /MAP" /> <img src="https://github.com/Jigsy1/mIRCd/assets/34282672/d3844688-d7cc-43ac-bc48-c431a52f7d31" width="25%" height="25%" title="Relaying a /MOTD through mIRCd to bewareIRCd" />
 
 <sup>1</sup> Though this could be an issue related to Windows 8.1. (I need to check on an XP VM.)
 
