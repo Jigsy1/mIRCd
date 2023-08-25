@@ -1,4 +1,4 @@
-; mIRCd v0.09hf16 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+; mIRCd v0.09hf17 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm (Jurrasic Park)
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
@@ -407,7 +407,7 @@ alias mIRCd.unloadScripts {
   ; `-> A quick and dirty loop.
   if ($script($script) != $null) { .unload -rs $qt($script) }
 }
-alias mIRCd.version { return mIRCd[0.09hf16(Rev.2)][2021-2023] }
+alias mIRCd.version { return mIRCd[0.09hf17(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 alias -l nextHour { return $+($asctime($calc($ctime + 3600),HH),:00) }
 alias -l requiredVersion { return 7.66 }

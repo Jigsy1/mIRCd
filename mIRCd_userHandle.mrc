@@ -47,9 +47,11 @@ alias mIRCd_command_kill {
     mIRCd.sraw $1 $mIRCd.reply(484,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick))
     return
   }
-  mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) KILL $mIRCd.info(%this.sock,nick) $colonize($4-)
-  mIRCd.errorUser %this.sock Killed $parenthesis($mIRCd.info($1,nick) $parenthesis($decolonize($colonize($4-))))
-  mIRCd.serverNotice 4 Received $upper($2) message for $mIRCd.info(%this.sock,nick) $parenthesis($gettok($mIRCd.fulladdr(%this.sock),2,33)) from $mIRCd.info($1,nick) $parenthesis($decolonize($colonize($4-)))
+  var %this.kill = $left($colonize($4-),$mIRCd(TOPICLEN))
+  ; `-> Truncate the /KILL so it conforms to /QUIT length.
+  mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) KILL $mIRCd.info(%this.sock,nick) %this.kill
+  mIRCd.errorUser %this.sock Killed $parenthesis($mIRCd.info($1,nick) $parenthesis($decolonize(%this.kill)))
+  mIRCd.serverNotice 4 Received $upper($2) message for $mIRCd.info(%this.sock,nick) $parenthesis($gettok($mIRCd.fulladdr(%this.sock),2,33)) from $mIRCd.info($1,nick) $parenthesis($decolonize(%this.kill))
 }
 alias mIRCd_command_nick {
   ; /mIRCd_command_nick <sockname> NICK [:]<nick>
@@ -190,7 +192,7 @@ alias mIRCd_command_pong {
     return
   }
   ; `-> K-line takes priority (because it's local), but there's no specific order to Z-line or G-line. (03/02/2023: Now with local Z-lines, Z-line takes priority over G-line.)
-  if ((127.* iswm $sock($1).ip) || (192.168.* iswm $sock($1).ip)) {
+  if ($is_local_ip($sock($1).ip) == $true) {
     if ($bool_fmt($mIRCd(LOCAL_IMMUNITY)) == $true) {
       mIRCd.welcome $1
       return

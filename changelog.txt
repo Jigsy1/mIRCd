@@ -1,4 +1,18 @@
-﻿mIRCd[0.09hf16(Rev.2)][2021-2023] - 12/08/2023
+﻿mIRCd[0.09hf17(Rev.2)][2021-2023] - 25/08/2023
+--------------------------------------------------
+1. Discovered /SETHOST has an UNDO command, so added that in.
+2. Fixed a bug with /SETHOST and /mode <you> +h where you could continually set your host with the same host.
+   Now it'll check to see if the host is different. (Allowing for changes in capitalization of course.)
+3. NOTICE, PRIVMSG, WALLCHOPS, WALLHOPS, WALLOPS, WALLUSERS and WALLVOICES now conform to "Input line too long."
+4. GLINE, KILL, ZLINE, etc. now truncate the removal message to conform with the maximum length of QUIT messages.
+5. SHUN also truncates the reason to the maximum length of a TOPIC.
+6. DNS/Ident now tells the connecting user if it failed to obtain that information.
+7. INFO now returns "INFO is missing" if the INFO file is missing. (My own non-standard numeric reply.)
+8. Fixed a bunch of mIRCd.raws messages.
+9. Other cosmetic/minor change(s).
+
+
+mIRCd[0.09hf16(Rev.2)][2021-2023] - 12/08/2023
 --------------------------------------------------
 I would like to point out that I have started work on Rev.3, but totally underestimated just how difficult it would be.
 

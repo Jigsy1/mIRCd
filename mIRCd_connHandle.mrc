@@ -8,8 +8,8 @@ on *:dns:{
     inc %this.dns 1
     if ($hfind($mIRCd.dns,$dns(%this.dns),1,W).data != $null) {
       var %this.sock = $v1
-      mIRCd.sraw %this.sock NOTICE $iif($mIRCd.info(%this.sock,nick) != $null,$v1,*) :*** Found your hostname
       if ($mIRCd.info(%this.sock,isReg) == 0) {
+        mIRCd.sraw %this.sock NOTICE $iif($mIRCd.info(%this.sock,nick) != $null,$v1,*) :*** Found your hostname
         mIRCd.updateUser %this.sock host $dns(%this.dns).addr
         mIRCd.updateUser %this.sock trueHost $dns(%this.dns).addr
         mIRCd.updateUser %this.sock dnsChecked 1
@@ -59,13 +59,19 @@ on *:sockread:mIRCd.*:{
     var %this.sock = $+(mIRCd.user.,$gettok($sockname,-1,46))
     mIRCd.updateUser %this.sock identChecked 1
     if ($sockerr > 0) {
+      mIRCd.sraw %this.sock NOTICE $iif($mIRCd.info(%this.sock,nick) != $null,$v1,*) :*** Failed to get ident
       mIRCd.destroyIdent $sockname
       return
     }
     mIRCd.destroyIdent $sockname
     tokenize 58 $3-
-    if ($mIRCd.info(%this.sock,isReg) == 1) { return }
+    if ($mIRCd.info(%this.sock,isReg) == 1) {
+      mIRCd.sraw %this.sock NOTICE $iif($mIRCd.info(%this.sock,nick) != $null,$v1,*) :*** Failed to get ident
+      return
+    }
+    if ($3 == $null) { mIRCd.sraw %this.sock NOTICE $iif($mIRCd.info(%this.sock,nick) != $null,$v1,*) :*** Failed to get ident }
     if ($3 != $null) {
+      mIRCd.sraw %this.sock NOTICE $iif($mIRCd.info(%this.sock,nick) != $null,$v1,*) :*** Found your ident
       mIRCd.updateUser %this.sock ident $left($3,$mIRCd.userLen)
       mIRCd.updateUser %this.sock trueIdent $3
       ; `-> 03/02/2023: Like user, there was a reason for this. I forget what.
@@ -137,6 +143,12 @@ on *:sockread:mIRCd.*:{
 
 ; Commands and Functions
 
+alias is_local_ip {
+  ; $is_local_ip(<ip>)
+
+  if ($longip($1) == $null) { return $false }
+  return $iif(127.* iswm $1 || 192.168.* iswm $1,$true,$false)
+}
 alias makeHost {
   ; $makeHost(<ip>)
 
@@ -178,7 +190,7 @@ alias mIRCd.createUser {
 
   sockaccept $1
   mIRCd.sraw $1 NOTICE * :*** Processing your connection; please wait...
-  hinc $mIRCd.temp totalCount 1
+  hinc -m $mIRCd.temp totalCount 1
   hadd -m $mIRCd.unknown $1 $ctime
   mIRCd.updateUser $1 isReg 0
   mIRCd.updateUser $1 thruSock $2
@@ -188,19 +200,22 @@ alias mIRCd.createUser {
   mIRCd.updateUser $1 host $sock($1).ip
   mIRCd.updateUser $1 trueHost $sock($1).ip
   if ($bool_fmt($mIRCd(DNS_USERS)) == $true) {
-    if ((127.* !iswm $sock($1).ip) && (192.168.* !iswm $sock($1).ip)) {
+    if ($is_local_ip($sock($1).ip) == $false) {
       ; `-> I'm still trying to decide if resolving localhost/LAN is a good or bad idea. (For now, I've made it so it won't look it up.)
-      mIRCd.sraw $1 NOTICE * :*** Looking up your hostname...
+      mIRCd.sraw $1 NOTICE $iif($mIRCd.info($1,nick) != $null,$v1,*) :*** Looking up your hostname...
       mIRCd.dnsUser $1 $sock($1).ip
     }
     else { mIRCd.updateUser $1 dnsChecked 0 }
     ; `-> A little hack for the local users.
   }
+  if (($bool_fmt($mIRCd(DNS_USERS)) == $true) && ($mIRCd.info($1,dnsChecked) != 1)) {
+    if ($is_local_ip($sock($1).ip) == $false) { mIRCd.sraw $1 NOTICE $iif($mIRCd.info($1,nick) != $null,$v1,*) :*** Failed to resolve hostname }
+  }
   if ($bool_fmt($mIRCd(ACCESS_IDENT_SERVER)) == $false) {
     mIRCd.updateUser $1 identChecked 0
     return
   }
-  mIRCd.sraw $1 NOTICE * :*** Checking ident...
+  mIRCd.sraw $1 NOTICE $iif($mIRCd.info($1,nick) != $null,$v1,*) :*** Checking ident...
   var %this.sock = $+(mIRCd.ident.,$gettok($1,-1,46))
   hadd -m $mIRCd.ident %this.sock $sock($1).port $+ , $gettok($2,-1,46)
   sockopen %this.sock $sock($1).ip 113

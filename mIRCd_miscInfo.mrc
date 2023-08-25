@@ -22,20 +22,22 @@ alias mIRCd_command_hash {
   mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :Hash Table Statistics:
   mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :Channel entries: $hcount($mIRCd.chans)
   mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :Client entries: $hcount($mIRCd.users)
-  ; `-> Buckets(?) should also be part of this...
+  ; `-> Buckets - whatever they are - should also be part of this...
 }
 alias mIRCd_command_info {
   ; /mIRCd_command_info <sockname> INFO
 
-  if ($lines($mIRCd.fileInfo) == 0) { return }
+  if ($lines($mIRCd.fileInfo) == 0) {
+    mIRCd.sraw $1 $mIRCd.reply(424,$mIRCd.info($1,nick))
+    return
+  }
   var %this.loop = 0
   while (%this.loop < $lines($mIRCd.fileInfo)) {
     inc %this.loop 1
     mIRCd.sraw $1 $mIRCd.reply(371,$mIRCd.info($1,nick),- $replace($read($mIRCd.fileInfo, n, %this.loop), <thisVersion>, $mIRCd.version))
   }
   mIRCd.sraw $1 $mIRCd.reply(374,$mIRCd.info($1,nick))
-  ; ¦-> Technically INFO is written in the source code; but I didn't want to do that. Honestly? It looks tacky as hell.
-  ; `-> So, if the <fileInfo> is missing, nothing happens. No error message; nothing.
+  ; `-> Technically INFO is written in the source code; but I didn't want to do that. Honestly? It looks tacky as hell.
 }
 alias mIRCd_command_links {
   ; /mIRCd_command_links <sockname> LINKS

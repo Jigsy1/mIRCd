@@ -33,6 +33,10 @@ alias mIRCd_command_wallops {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
   }
+  if ($calc($len($2) + $len($3-)) > $mIRCd.maxLineLen) {
+    mIRCd.sraw $1 $mIRCd.reply(417,$mIRCd.info($1,nick))
+    return
+  }
   var %this.loop = 0
   while (%this.loop < $hcount($mIRCd.users)) {
     inc %this.loop 1
@@ -52,6 +56,10 @@ alias mIRCd_command_wallusers {
     mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
     return
   }
+  if ($calc($len($2) + $len($3-)) > $mIRCd.maxLineLen) {
+    mIRCd.sraw $1 $mIRCd.reply(417,$mIRCd.info($1,nick))
+    return
+  }
   var %this.loop = 0
   while (%this.loop < $hcount($mIRCd.users)) {
     inc %this.loop 1
@@ -68,6 +76,8 @@ alias mIRCd_command_wallvoices {
 
 ; Commands and Functions
 
+alias mIRCd.maxLineLen { return 512 }
+; `-> WARNING(!): DO *NOT* CHANGE THIS!
 alias mIRCd.parseMsg {
   ; /mIRCd.parseMsg <args>
 
@@ -96,13 +106,18 @@ alias mIRCd.parseMsg {
     inc %this.loop 1
     var %this.target = $gettok(%this.targets,%this.loop,44), %skip.error = 0
     if ($istok($gettok(%this.targets,$+($calc(%this.loop - 1),--),44),%this.target,44) == $true) { continue }
-    ; `-> Send the message to the target once, and only once. Otherwise notice|privmsg #chan,#chan,#chan Hi! would annoyingly show "Hi!" in #chan three times.
+    ; `-> Send the message to the target once, and only once. Otherwise NOTICE|PRIVMSG #chan,#chan,#chan Hi! would annoyingly show "Hi!" in #chan three times.
     if ($is_valid(%this.target).chan == $true) {
       if ($is_exists(%this.target).chan == $false) {
         mIRCd.sraw $1 $mIRCd.reply(403,$mIRCd.info($1,nick),%this.target)
         continue
       }
       var %this.id = $getChanID(%this.target), %this.name = $mIRCd.info(%this.id,name)
+      if ($calc($len($2) + $len(%this.name) + $len($4-)) > $mIRCd.maxLineLen) {
+        ; `-> NOTE TO SELF(!): Is this even right?
+        mIRCd.sraw $1 $mIRCd.reply(417,$mIRCd.info($1,nick))
+        continue
+      }
       if ($is_modeSet($1,X).nick == $true) { goto parsePublic }
       if (($is_modeSet(%this.id,n).chan == $true) && ($is_on(%this.id,$1) == $false)) {
         if (($is_secret(%this.id) == $true) && ($bool_fmt($mIRCd(DENY_SECRET)) == $true)) {
@@ -255,6 +270,10 @@ alias mIRCd.parseMsg {
       if ($is_modeSet($1,X).nick == $false) { continue }
     }
     :parsePrivate
+    if ($calc($len($2) + $len($mIRCd.info(%this.sock,nick)) + $len($4-)) > $mIRCd.maxLineLen) {
+      mIRCd.sraw $1 $mIRCd.reply(417,$mIRCd.info($1,nick))
+      continue
+    }
     if ($mIRCd.info(%this.sock,away) != $null) { mIRCd.sraw $1 $mIRCd.reply(301,$mIRCd.info($1,nick),$mIRCd.info(%this.sock,nick),$mIRCd.info(%this.sock,away)) }
     mIRCd.raw %this.sock $+(:,$mIRCd.fulladdr($1)) $upper($2) %this.nick $colonize(%this.message)
   }
@@ -278,6 +297,10 @@ alias mIRCd.parseWall {
       return
     }
     mIRCd.sraw $1 $mIRCd.reply(404,$mIRCd.info($1,nick),%this.name) (No external messages (+n))
+    return
+  }
+  if ($calc($len($2) + $len(%this.name) + $len($4-)) > $mIRCd.maxLineLen) {
+    mIRCd.sraw $1 $mIRCd.reply(417,$mIRCd.info($1,nick))
     return
   }
   :parseWallmsg

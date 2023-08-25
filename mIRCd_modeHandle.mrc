@@ -118,6 +118,7 @@ alias mIRCd_command_clearmode {
   }
   if ($calc($len(%this.minus) - 1) > 0) {
     ; `-> And now the leftovers.
+    ; mIRCd.modeTell $1 CLEARMODE %this.id + %this.minus 0 , %this.argMinus
     var %mIRCd.showNumber = 0
     while (%mIRCd.showNumber < $hcount($mIRCd.chanUsers(%this.id))) {
       inc %mIRCd.showNumber 1
@@ -182,7 +183,7 @@ alias mIRCd_command_oper {
   ; `-> Send +o separately because the next bit is entirely optional. (Plus we need o to be part of modes to push certain modes with mIRCd_command_mode.)
   hadd -m $mIRCd.opersOnline $1 $ctime
   ; `-> This is a very hacky way of fiddling with the LUSERS numbers.
-  if ($mIRCd(DEFAULT_OPERMODES).temp != +) { mIRCd_command_mode $1 MODE $mIRCd.info($1,nick) $+(:,$mIRCd(DEFAULT_OPERMODES).temp) }
+  if ($mIRCd(DEFAULT_OPERMODES).temp != +) { mIRCd_command_mode $1 MODE $mIRCd.info($1,nick) $mIRCd(DEFAULT_OPERMODES).temp }
   if ($is_modeSet($1,s).nick == $true) {
     if (s !isincs %this.initial) {
       var %this.snoMask = $iif($mIRCd(DEFAULT_OPER_SNOMASK) isnum 1-65535,$v1,17157)
@@ -208,10 +209,21 @@ alias mIRCd_command_opmode {
 }
 alias mIRCd_command_sethost {
   ; /mIRCd_command_sethost <sockname> SETHOST <fakehost> <password>
+  ; /mIRCd_command_sethost <sockname> SETHOST UNDO
 
   if ($mIRCd(SLINE_SUPPORT).temp == 0) {
     ; `-> It's either this, or an annoying way of deleting and readding the command each time the flag gets toggled.
     mIRCd.sraw $1 NOTICE $mIRCd.info($1,nick) :*** Notice -- $upper($2) is disabled.
+    return
+  }
+  if ($3 == $null) {
+    mIRCd.sraw $1 $mIRCd.reply(461,$mIRCd.info($1,nick),$2)
+    return
+  }
+  if ($3 == undo) {
+    if (h !isincs $mIRCd.info($1,modes)) { return }
+    mIRCd.updateUser $1 modes $removecs($mIRCd.info($1,modes),h)
+    mIRCd.hostQuit $1 $iif($mIRCd.info($1,originalHost) != $null,$v1,$mIRCd.info($1,trueHost))
     return
   }
   if ($4 == $null) {
@@ -230,10 +242,11 @@ alias mIRCd_command_sethost {
   if ($mIRCd.info($1,originalHost) == $null) { mIRCd.updateUser $1 originalHost $mIRCd.info($1,host) }
   ; `-> If they ever -h, we need to revert back to their original host, even if it's just an +x host.
   if (h !isincs $mIRCd.info($1,modes)) { mIRCd.updateUser $1 modes $+($mIRCd.info($1,modes),h) }
-  mIRCd.hostQuit $1 $hfind($mIRCd.slines,$3)
+  if ($mIRCd.info($1,host) !== $hfind($mIRCd.slines,$3)) { mIRCd.hostQuit $1 $hfind($mIRCd.slines,$3) }
+  ; `-> Use !== for cosmetic changes. E.g. Changes in capitalization.
 }
-; ¦-> Interestingly, bircd lists oper as having completely different args. Needless to say, it didn't follow that. It was <host> <pass>
-; `-> regardless of status. (Probably a bug, but either way less work for me!)
+; ¦-> Interestingly, bircd lists oper as having completely different args. Needless to say, it didn't follow that.
+; `-> It was <host> <pass> regardless of status. (Probably a bug, but either way less work for me!)
 
 ; Commands and Functions
 
@@ -489,7 +502,8 @@ alias -l mIRCd.parseMode {
       if ($mIRCd.info($1,originalHost) == $null) { mIRCd.updateUser $1 originalHost $mIRCd.info($1,host) }
       ; `-> If they ever -h, we need to revert back to their original host, even if it's just an +x host.
       if (h !isincs $mIRCd.info($1,modes)) { mIRCd.updateUser $1 modes $+($mIRCd.info($1,modes),h) }
-      mIRCd.hostQuit $1 %this.hiddenHostSline
+      if ($mIRCd.info($1,host) !== %this.hiddenHostSline) { mIRCd.hostQuit $1 %this.hiddenHostSline }
+      ; `-> Use !== for cosmetic changes. E.g. Changes in capitalization.
       return
     }
     if (%this.hiddenHost == 0) {

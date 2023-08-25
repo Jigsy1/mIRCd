@@ -101,7 +101,7 @@ alias mIRCd_command_gline {
     mIRCd.sraw $1 $mIRCd.reply(515,$mIRCd.info($1,nick),$4)
     return
   }
-  var %this.what = $right($3,-1), %this.reason = $5-
+  var %this.what = $right($3,-1), %this.reason = $left($5-,$mIRCd(TOPICLEN))
   if (%this.flag == -) {
     if ($is_glined(%this.what) == $false) {
       mIRCd.sraw $1 $mIRCd.reply(512,$mIRCd.info($1,nick),%this.what)
@@ -273,7 +273,7 @@ alias mIRCd_command_shun {
     mIRCd.sraw $1 $mIRCd.reply(515,$mIRCd.info($1,nick),$4)
     return
   }
-  var %this.what = $right($3,-1), %this.reason = $5-
+  var %this.what = $right($3,-1), %this.reason = $left($5-,$mIRCd(TOPICLEN))
   if (%this.flag == -) {
     if ($is_shunned(%this.what) == $false) {
       mIRCd.sraw $1 $mIRCd.reply(594,$mIRCd.info($1,nick),$2)
@@ -439,7 +439,7 @@ alias mIRCd_command_zline {
     mIRCd.sraw $1 $mIRCd.reply(595,$mIRCd.info($1,nick),%this.ip)
     return
   }
-  var %this.reason = $5-
+  var %this.reason = $left($5-,$mIRCd(TOPICLEN))
   if (%this.flag == -) {
     if ($is_zlined(%this.ip) == $false) {
       mIRCd.sraw $1 $mIRCd.reply(596,$mIRCd.info($1,nick),%this.ip)
