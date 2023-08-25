@@ -22,7 +22,7 @@ Please consult readme.txt on how to get it running. -Jigsy
 
 ##### Things I would at least like to try to do some day:
 * Giving the entire script a line-by-line once over to check for bugs.
-* Server linking. Though given the nature of this, it's going to require me to rescript the entire IRCd from scratch. (Rev.3)
+* <s>Server linking. Though given the nature of this, it's going to require me to rescript the entire IRCd from scratch. (Rev.3)</s> (Ongoing...)
 
 ###### Screenshots (Rev.2)
 
