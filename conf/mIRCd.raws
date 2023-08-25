@@ -97,7 +97,7 @@ $3 $4 $5 * $+(:,$6-)
 315
 $3 $4 :End of /WHO list.
 316
-:does not accept private messages
+$3 :does not accept private messages
 317
 $3 $4 $5 :seconds idle, signon time
 318
@@ -189,13 +189,17 @@ $3 :There was no such nickname
 412
 :No text to send
 416
-$3 :Too many lines in the output, restrict your query
+$3 :Too many lines in the output, please restrict your query
+417
+:Input line was too long
 421
 $upper($3) :Unknown command
 422
-MOTD File is missing
+:MOTD File is missing
 423
 $mIRCd(SERVER_NAME).temp :No administrative info available
+424
+:INFO is missing
 431
 :No nickname given
 432
@@ -225,7 +229,7 @@ $upper($3) $4- :Not enough parameters
 467
 $3 :Channel key already set
 469
-$3 :Cannot join channel (+j) (New connection throttle: Try again in $4 second(s).)
+$3 :Cannot join channel (+j) (New connection throttle. Try again in $4 second(s).)
 470
 $3 :Cannot join channel (+O)
 471
@@ -247,7 +251,7 @@ $3 :Permission Denied: Insufficient privileges
 482
 $3 :You're not channel operator
 483
-:You cant kill a server!
+:You can't kill a server!
 484
 $3 $4 :Cannot kill, kick or deop a network service
 485
