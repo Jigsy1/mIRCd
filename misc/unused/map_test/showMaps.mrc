@@ -41,15 +41,7 @@ alias showMaps {
     echo -at $end_of_map
     return
   }
-  var %this.loop = 0, %this.max = $hfind($mapTable,%this.parent,0,W).data
-  while (%this.loop < %this.max) {
-    inc %this.loop 1
-    var %this.child = $hfind($mapTable,%this.parent,%this.loop,W).data, %this.count = $hfind($mapTable,%this.child,0,W).data
-    var %this.pre = $iif(%this.count > 0,$iif(%this.loop != %this.max,$pipe,$tail),$iif(%this.loop != %this.max,$pipe,$tail)), %this.pos = $pos(%this.pre,$tail)
-    ; `-> Note: Changed %this.loop <= %this.max to %this.loop != %this.max
-    echo -at $+(%this.pre,$branch,%this.child)
-    map_recurse 1 %this.count %this.child %this.pos
-  }
+  map_recurse 0 $hfind($mapTable,%this.parent,0,W).data %this.parent
   echo -at $end_of_map
   return
 }
@@ -75,7 +67,7 @@ alias recurse_map { map_recurse $1- }
 alias reverse_parent_search {
   ; $reverse_parent_search(<server>)
   ;
-  ; Find the original parent the server descended from.
+  ; Find the original parent in the chain that the server descended from.
   ;
   ; <our server>
   ; ¦-<original parent>
@@ -94,6 +86,31 @@ alias reverse_parent_search {
     if (%this.parent == $null) { return }
     ; `-> Something went wrong.
     var %this.search = %this.parent
+  }
+  return %this.search
+}
+alias reverse_chain_search {
+  ; $reverse_chain_search(<server>,<possible parent>[,hops])
+  ;
+  ; Find out if a server is in fact above a server in the chain.
+  ;
+  ; E.g. A->B->C->D->E
+  ;
+  ; 1. D is above E
+  ; 2. C is above E
+  ; 3. E is not above D, C, etc.
+
+  if ($hget($mapTable,$1) == $null) { return }
+  if ($hget($mapTable,$2) == $null) { return }
+  if ($3 isnum 1-) { var %this.loop = 0 }
+  var %this.break = $2, %this.search = $1
+  while (%this.search != %this.break) {
+    if (($3 isnum 1-) && (%this.loop == $3)) { break }
+    var %this.parent = $hget($mapTable,%this.search)
+    if (%this.parent == %this.break) { return %this.break }
+    if (%this.parent == $null) { return }
+    var %this.search = %this.parent
+    if ($3 isnum 1-) { inc %this.loop 1 }
   }
   return %this.search
 }
