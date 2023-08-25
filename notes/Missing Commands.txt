@@ -2,8 +2,8 @@ The following commands are missing from the IRCd.
 
 Misc:
 -----
-CNOTICE		(Reason: mIRCd has no "Excess Flood" coded in until I decide to code it.)
-CPRIVMSG	(Reason: Ditto.)
+CNOTICE		(Reason: Although mIRCd now has "excess flood protection" - sort of, this is supposed to override
+CPRIVMSG		 that. However, mIRCd uses a different method, so I cannot add these two afaik.)
 PROTO		(Reason: I've never been able to figure out what this command is actually supposed to do.)
 
 Server linking:
@@ -19,7 +19,7 @@ EOB_ACK
 JUPE
 RPING
 RPONG
-SERVER
+SERVER		(Note: I could technically add this in and make it work a little like POST.)
 SQUIT
 TRACE
 

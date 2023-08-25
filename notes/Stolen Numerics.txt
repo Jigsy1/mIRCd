@@ -1,7 +1,8 @@
 The following were not part of s_err.c in the ircu source code, so I've stolen them for my own reasons.
 They are obviously not binding to real IRCds.
 
-ERR_JOINTHROTTLECHAN	= 469: <nick> :Cannot join channel (+j) (New connection throttle: Try again in <secs> second(s).)
+ERR_NOINFO		= 424: :INFO is missing
+ERR_JOINTHROTTLECHAN	= 469: <nick> :Cannot join channel (+j) (New connection throttle. Try again in <secs> second(s).)
 ERR_ACCEPTLISTFULL	= 510: <mask> :Your accept list is full
 ERR_NOSUCHSHUN		= 594: <input> :No such shun
 ERR_NOTANIP		= 595: <input> :Not a valid ip address

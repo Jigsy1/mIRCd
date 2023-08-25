@@ -5,7 +5,7 @@ The following commands are generally not part of ircu based IRCds, but I have in
 * SHUN		(Well, this one sort of is.)
 * ZLINE
 
-Also added the following - now deprecated - due to the fact that /msg or /notice $* didn't work because I hadn't
+Also added the following - now deprecated - due to the fact that /msg or /notice $* didn't work because I hadn't at the time
 coded it in.
 
 * GNOTICE
