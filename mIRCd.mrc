@@ -1,4 +1,4 @@
-; mIRCd v0.09hf17 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
+; mIRCd v0.10 (Revision 2) - an IRCd scripted entirely in mSL - by Jigsy (https://github.com/Jigsy1/mIRCd)
 ;   "You were so preoccupied with whether or not you could, you didn't stop to think if you should." -Dr. Ian Malcolm (Jurrasic Park)
 ;
 ; Note: It is recommended running these scripts in a separate instance of mIRC - or in a Virtual Machine/under WINE.
@@ -34,6 +34,7 @@ on *:unload:{ mIRCd.unload }
 
 alias mIRCd.accept { return $+(mIRCd,$bracket($1),[Accept]) }
 alias mIRCd.badNicks { return mIRCd[BadNicks] }
+alias mIRCd.block { return $+(mIRCd,$bracket($1),[Block]) }
 alias mIRCd.chans { return mIRCd[Chans] }
 alias mIRCd.chanBans { return $+(mIRCd,$bracket($1),[Bans]) }
 alias mIRCd.chanInvites { return $+(mIRCd,$bracket($1),[Invites]) }
@@ -69,6 +70,7 @@ alias _debugline { echo -aet [DEBUG]: $1- }
 ; `-> Useful for hunting down annoying bugs.
 alias _stripMatch { return $remove($1-, !, <, =, >) }
 alias _stripNumbers { return $remove($1-, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9) }
+; `-> These two are very half-assed.
 alias bracket { return [[ $+ $$1- $+ ]] }
 alias bool_fmt { return $iif($istok(1 ok okay on one t tr true y yes,$1,32) == $true,$true,$false) }
 alias colonize { return $iif($count($1-,:) == 0,$+(:,$gettok($1-,-1,32)),$gettok($1-,$+($findtok($1-,$matchtok($1-,:,1,32),1,32),-),32)) }
@@ -116,7 +118,7 @@ alias -l mIRCd.die_ {
   .timermIRCd.* off
   sockclose mIRCd.*
   hfree -w mIRCd[mIRCd.*
-  ; `-> This should cover ban(s), channel(s), channel user(s), user(s), user accept(s) and user silence(s) themselves.
+  ; `-> This should cover ban(s), channel(s), channel user(s), user(s), user accept(s), user block(s) and user silence(s) themselves.
   hfree -w $mIRCd.whoWas(*)
   var %these.tables = $mIRCd.dns , $mIRCd.chans , $mIRCd.glines , $mIRCd.ident , $mIRCd.invisible , $mIRCd.mStats , $mIRCd.opersOnline , $mIRCd.shuns , $mIRCd.temp , $mIRCd.unknown , $mIRCd.users , $mIRCd.whoWas , $mIRCd.zlines
   tokenize 44 %these.tables
@@ -243,7 +245,7 @@ alias -l mIRCd.restart_ {
   .timermIRCd.* off
   sockclose mIRCd.*
   hfree -w mIRCd[mIRCd.*
-  ; `-> This should cover ban(s), channel(s), channel user(s), user(s), user accept(s) and user silence(s) themselves.
+  ; `-> This should cover ban(s), channel(s), channel user(s), user(s), user accept(s), user block(s) and user silence(s) themselves.
   hfree -w $mIRCd.whoWas(*)
   var %these.tables = $mIRCd.dns , $mIRCd.chans , $mIRCd.glines , $mIRCd.ident , $mIRCd.invisible , $mIRCd.mStats , $mIRCd.opersOnline , $mIRCd.shuns , $mIRCd.temp , $mIRCd.unknown , $mIRCd.users , $mIRCd.whoWas , $mIRCd.zlines
   tokenize 44 %these.tables
@@ -407,7 +409,7 @@ alias mIRCd.unloadScripts {
   ; `-> A quick and dirty loop.
   if ($script($script) != $null) { .unload -rs $qt($script) }
 }
-alias mIRCd.version { return mIRCd[0.09hf17(Rev.2)][2021-2023] }
+alias mIRCd.version { return mIRCd[0.10(Rev.2)][2021-2023] }
 alias mIRCd.window { return @mIRCd }
 alias -l nextHour { return $+($asctime($calc($ctime + 3600),HH),:00) }
 alias -l requiredVersion { return 7.66 }

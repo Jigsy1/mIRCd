@@ -281,6 +281,7 @@ alias mIRCd.destroyUser {
   if ($hget($mIRCd.unknown,%this.sock) != $null) { hdel $mIRCd.unknown %this.sock }
   if ($hget($mIRCd.users,%this.sock) != $null) { hdel $mIRCd.users %this.sock }
   if ($hget($mIRCd.accept(%this.sock)) != $null) { hfree $mIRCd.accept(%this.sock) }
+  if ($hget($mIRCd.block(%this.sock)) != $null) { hfree $mIRCd.block(%this.sock) }
   if ($hget($mIRCd.silence(%this.sock)) != $null) { hfree $mIRCd.silence(%this.sock) }
   if ($hget($mIRCd.table(%this.sock)) != $null) { hfree $mIRCd.table(%this.sock) }
   if ($timer($+(mIRCd.ping,%this.sock)) != $null) { $+(.timermIRCd.ping,%this.sock) off }

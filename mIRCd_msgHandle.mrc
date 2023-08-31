@@ -261,6 +261,10 @@ alias mIRCd.parseMsg {
       mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user denies /CTCP requests (+C))
       continue
     }
+    if (($is_blockMatch(%this.sock,$mIRCd.fulladdr($1)) == $true) || ($is_blockMatch(%this.sock,$mIRCd.ipaddr($1)) == $true) || ($is_blockMatch(%this.sock,$mIRCd.trueAddr($1)) == $true)) {
+      mIRCd.sraw $1 $mIRCd.reply(599,$mIRCd.info($1,nick),%this.nick) (This user denies messages from those on their /BLOCK list)
+      continue
+    }
     :preParsePrivate
     ; >-> Even though we've skipped the above if they're an oper, IRC opers still adhere to this unless usermode +X.
     if ($is_modeSet(%this.sock,S).nick == $true) {

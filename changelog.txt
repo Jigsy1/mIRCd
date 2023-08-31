@@ -1,4 +1,11 @@
-﻿mIRCd[0.09hf17(Rev.2)][2021-2023] - 25/08/2023
+﻿mIRCd[0.10(Rev.2)][2021-2023] - 31/08/2023
+--------------------------------------------------
+1. Added /BLOCK which works like /ACCEPT and /SILENCE. Unlike /ACCEPT, this doesn't require any specific user modes
+   being set before using it. You just /BLOCK the nick or n!u@h from being able to message you.
+   And unlike /SILENCE, you will still see their channel message(s).
+
+
+mIRCd[0.09hf17(Rev.2)][2021-2023] - 25/08/2023
 --------------------------------------------------
 1. Discovered /SETHOST has an UNDO command, so added that in.
 2. Fixed a bug with /SETHOST and /mode <you> +h where you could continually set your host with the same host.

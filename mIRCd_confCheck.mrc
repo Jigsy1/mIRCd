@@ -72,6 +72,10 @@ alias mIRCd.check {
     mIRCd.echo $+($bracket(%this.section),:) MAXACCEPT must be a numerical value greater than 1.
     return 1
   }
+  if ($readini($mIRCd.fileConf, %this.section, MAXBLOCKS) !isnum 1-) {
+    mIRCd.echo $+($bracket(%this.section),:) MAXBLOCKS must be a numerical value greater than 1.
+    return 1
+  }
   if ($readini($mIRCd.fileConf, %this.section, MAXCHANNELS) !isnum 1-) {
     mIRCd.echo $+($bracket(%this.section),:) MAXCHANNELS must be a numerical value greater than 1.
     return 1
