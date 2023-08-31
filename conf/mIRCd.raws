@@ -18,6 +18,10 @@ $+(:,$3) $bracket($4 clients)
 $3 $4
 162
 $3 :End of Accept list
+163
+$3 $4
+164
+$3 :End of Block list
 212
 $upper($3) $4 $5
 216
@@ -264,6 +268,8 @@ $3 :User does not accept private messages
 $3 :Unknown user MODE flag
 502
 :Can't change mode for other users
+509
+$3 :Your block list is full
 510
 $3 :Your accept list is full
 511
