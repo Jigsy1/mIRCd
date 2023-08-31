@@ -3,6 +3,7 @@ They are obviously not binding to real IRCds.
 
 ERR_NOINFO		= 424: :INFO is missing
 ERR_JOINTHROTTLECHAN	= 469: <nick> :Cannot join channel (+j) (New connection throttle. Try again in <secs> second(s).)
+ERR_BLOCKLISTFULL	= 509: <mask> :Your block list is full
 ERR_ACCEPTLISTFULL	= 510: <mask> :Your accept list is full
 ERR_NOSUCHSHUN		= 594: <input> :No such shun
 ERR_NOTANIP		= 595: <input> :Not a valid ip address
@@ -11,8 +12,10 @@ ERR_CANTKNOCK		= 597: <chan> :<string>
 ERR_INVITEDISALLOWED	= 598: <chan> :INVITE not allowed (+Y)
 ERR_CANNOTSENDTOUSER	= 599: <nick> :Cannot send to user
 
-RPL_ACCEPTLIST		= 161: <nick> :<mask>
+RPL_ACCEPTLIST		= 161: <nick> <mask>
 RPL_ENDOFACCEPTLIST	= 162: <nick> :End of accept list
+RPL_BLOCKLIST		= 163: <nick> <mask>
+RPL_ENDOFBLOCKLIST	= 164: <nick> :End of block list
 RPL_SLIST		= 290: S <mask> <expire time> +ol :<reason>
 RPL_ENDOFSLIST		= 291: :End of Shun List
 RPL_ZLIST		= 292: Z <ip> <expire time> +ol :<reason>
