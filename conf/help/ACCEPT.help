@@ -1,4 +1,4 @@
-﻿<thisCommand> [<-|+nick!user@host>]
+﻿<thisCommand> [<nick>|<-|+nick!user@host>]
 
 Will add or remove a nick!user@host to/from your accept list, limiting who can /msg you directly.
 

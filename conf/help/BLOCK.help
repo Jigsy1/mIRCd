@@ -1,0 +1,13 @@
+﻿<thisCommand> [<nick>|<-|+nick!user@host>]
+
+Will add or remove a nick!user@host to/from your block list, limiting who can /msg you directly.
+
+If no nick!user@host is specified, all blocks are listed.
+
+All blocks are cleared upon disconnection.
+
+Example(s):
+---------------
+/<thisCommand>
+/<thisCommand> +Bob!*@*
+/<thisCommand> -Alice!*@*
